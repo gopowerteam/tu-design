@@ -12,5 +12,13 @@
     "vite-plus": "catalog:",
     "vue": "catalog:",
     "vue-tsc": "catalog:"
+  },
+  "peerDependencies": {
+    "vue": ">=3.5"
+  },
+  "inlinedDependencies": {
+    "@vue/reactivity": "3.5.43",
+    "@vue/runtime-core": "3.5.43",
+    "@vue/shared": "3.5.43"
   }
 }
