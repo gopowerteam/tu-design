@@ -16,6 +16,7 @@
     "access": "public"
   },
   "scripts": {
+    "prepack": "vp run build",
     "build": "vp pack && tsx scripts/fix-bin.ts",
     "typecheck": "tsc --noEmit",
     "test": "vp test --run"
