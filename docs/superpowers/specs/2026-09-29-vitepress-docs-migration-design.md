@@ -124,7 +124,7 @@ html.dark .shiki span {
 @import "tailwindcss/utilities.css" layer(utilities);
 
 /* 组件库 tokens（.dark 变量 + @theme inline），路径 apps/packages/vue */
-@import "../../../packages/vue/src/styles/tokens.css";
+@import "../../../../packages/vue/src/styles/tokens.css";
 ```
 
 - tokens.css 的 `@custom-variant dark (&:where(.dark, .dark *))` 与 VitePress 在 `<html>` 上切换 `.dark` 天然对齐
@@ -139,7 +139,7 @@ html.dark .shiki span {
 
 - **dev**：vite 插件 `configureServer` 中间件，逻辑原样保留（`/r/vue/*.json` URL 校验、路径穿越防护、404、content-type）
 - **build**：VitePress `buildEnd(siteConfig)` 钩子：`cpSync(registryDir, resolve(siteConfig.outDir, "r/vue"), { recursive: true })`
-- alias 仅保留 `"@tu-design/vue"` → `packages/vue/src/index.ts`（原 `@` alias 无消费者，不迁移）
+- alias 保留两项：`"@"` → `../../../packages/vue/src`（组件源码内部 `import "@/lib/utils"` 的真实依赖）、`"@tu-design/vue"` → `../../../packages/vue/src/index.ts`（config.mts 位于 `.vitepress/` 下，相对深度均多一层）（spec §7）
 - 验收：dev 下 `curl localhost:5173/r/vue/button.json` 返回 JSON；build 后 `dist/r/vue/` 含 11 个 JSON（8 组件 + tokens + utils + registry.json）
 
 ## 8. 依赖、脚本与工程配置

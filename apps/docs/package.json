@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vp dev",
-    "build": "vp build"
+    "dev": "vitepress dev",
+    "build": "vitepress build",
+    "preview": "vitepress preview"
   },
   "dependencies": {
     "@tu-design/vue": "workspace:*",
@@ -13,10 +14,8 @@
   },
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
-    "@vitejs/plugin-vue": "catalog:",
     "shiki": "catalog:",
     "tailwindcss": "catalog:",
-    "vite-plus": "catalog:",
-    "vue-router": "catalog:"
+    "vitepress": "catalog:"
   }
 }

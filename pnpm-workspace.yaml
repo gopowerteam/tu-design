@@ -23,7 +23,8 @@ catalog:
   vitest: ^5.0.1
   happy-dom: ^20
   vue-router: ^4.5.0
-  shiki: ^3.0.0
+  shiki: ^4.4.3
+  vitepress: "2.0.0-alpha.20"
   yaml: ^2.4.0
   tsx: ^4.0.0
   commander: ^15

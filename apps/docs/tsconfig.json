@@ -2,7 +2,8 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "module": "preserve",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "types": ["vitepress/client"]
   },
-  "include": ["env.d.ts", "src", "vite.config.ts"]
+  "include": [".vitepress/**/*.ts", ".vitepress/**/*.mts", ".vitepress/**/*.vue", "demos/**/*.vue"]
 }
