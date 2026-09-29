@@ -1,1 +1,1 @@
-export { default as Spike } from "./Spike.vue";
+export * from "./lib/utils";

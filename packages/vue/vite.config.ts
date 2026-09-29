@@ -7,4 +7,7 @@ export default defineConfig({
     dts: { vue: true },
     exports: true,
   },
+  test: {
+    environment: "happy-dom",
+  },
 });
