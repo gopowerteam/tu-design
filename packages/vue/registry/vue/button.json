@@ -4,9 +4,7 @@
   "type": "registry:ui",
   "description": "带变体与尺寸的按钮，支持 as 标签切换。",
   "registryDependencies": ["utils"],
-  "dependencies": {
-    "class-variance-authority": "^0.7.1"
-  },
+  "dependencies": ["class-variance-authority@^0.7.1"],
   "files": [
     {
       "path": "button/Button.vue",

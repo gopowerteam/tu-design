@@ -44,17 +44,18 @@ export function collectDeps(items: RegistryItem[]): {
 } {
   const dependencies: string[] = [];
   const devDependencies: string[] = [];
-  const push = (list: string[], name: string) => {
-    if (!list.includes(name)) {
-      list.push(name);
+  const push = (list: string[], dep: string) => {
+    // registry 数组形式为 name@version —— 安装命令用完整 spec，去重按完整 spec
+    if (!list.includes(dep)) {
+      list.push(dep);
     }
   };
   for (const item of items) {
-    for (const name of Object.keys(item.dependencies ?? {})) {
-      push(dependencies, name);
+    for (const dep of item.dependencies ?? []) {
+      push(dependencies, dep);
     }
-    for (const name of Object.keys(item.devDependencies ?? {})) {
-      push(devDependencies, name);
+    for (const dep of item.devDependencies ?? []) {
+      push(devDependencies, dep);
     }
   }
   return { dependencies, devDependencies };

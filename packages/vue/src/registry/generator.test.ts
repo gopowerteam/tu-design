@@ -100,12 +100,12 @@ describe("generateRegistry", () => {
     expect(vue!.content.length).toBeGreaterThan(0);
     expect(vue!.target).toBe("components/ui/button/Button.vue");
     expect(button.registryDependencies).toContain("utils");
-    expect(button.dependencies?.["class-variance-authority"]).toBe("^0.7.1");
+    expect(button.dependencies).toContain("class-variance-authority@^0.7.1");
   });
 
   it("avatar item 的 @ark-ui/vue 翻译为具体版本", () => {
     const avatar = items.find((i) => i.name === "avatar")!;
-    expect(avatar.dependencies?.["@ark-ui/vue"]).toBe("^5.39.2");
+    expect(avatar.dependencies).toContain("@ark-ui/vue@^5.39.2");
   });
 
   it("files 不含测试文件（仅分发源码）", () => {

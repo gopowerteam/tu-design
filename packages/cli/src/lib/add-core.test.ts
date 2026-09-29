@@ -7,14 +7,14 @@ import type { Io } from "./io";
 function item(
   name: string,
   registryDependencies: string[] = [],
-  dependencies: Record<string, string> = {},
+  dependencies: string[] = [],
 ): RegistryItem {
   return {
     $schema: "https://ui.shadcn.com/schema/registry-item.json",
     name,
     type: "registry:ui",
     ...(registryDependencies.length ? { registryDependencies } : {}),
-    ...(Object.keys(dependencies).length ? { dependencies } : {}),
+    ...(dependencies.length ? { dependencies } : {}),
     files: [
       {
         path: `${name}/${name}.vue`,
@@ -27,8 +27,8 @@ function item(
 }
 
 const ITEMS: Record<string, RegistryItem> = {
-  button: item("button", ["utils"], { clsx: "^2" }),
-  utils: item("utils", [], { "tailwind-merge": "^3" }),
+  button: item("button", ["utils"], ["clsx@^2"]),
+  utils: item("utils", [], ["tailwind-merge@^3"]),
   a: item("a", ["b"]),
   b: item("b", ["a"]),
   solo: item("solo"),
@@ -59,16 +59,16 @@ describe("resolveTopo", () => {
 describe("collectDeps", () => {
   it("合并去重保持出现序", () => {
     const r = collectDeps([
-      item("x", [], { clsx: "^2" }),
-      item("y", [], { clsx: "^2", "tailwind-merge": "^3" }),
+      item("x", [], ["clsx@^2"]),
+      item("y", [], ["clsx@^2", "tailwind-merge@^3"]),
     ]);
-    expect(r.dependencies).toEqual(["clsx", "tailwind-merge"]);
+    expect(r.dependencies).toEqual(["clsx@^2", "tailwind-merge@^3"]);
     expect(r.devDependencies).toEqual([]);
   });
 
   it("出现序按 items 传入顺序（拓扑序）", () => {
     const r = collectDeps([ITEMS.utils, ITEMS.button]);
-    expect(r.dependencies).toEqual(["tailwind-merge", "clsx"]);
+    expect(r.dependencies).toEqual(["tailwind-merge@^3", "clsx@^2"]);
   });
 });
 
@@ -119,9 +119,9 @@ describe("runAdd", () => {
     const io = memIo(project());
     const summary = await runAdd(io, "/proj/a/b", ["button"], {});
     expect(summary.files).toContain("/proj/src/components/ui/button/button.vue");
-    expect(summary.dependencies).toEqual(["tailwind-merge", "clsx"]);
+    expect(summary.dependencies).toEqual(["tailwind-merge@^3", "clsx@^2"]);
     const cmd = JSON.parse(io.readFile("__exec__")) as string[];
-    expect(cmd).toContain("clsx");
+    expect(cmd).toContain("clsx@^2");
     expect(io.readFile("/proj/src/components/ui/button/button.vue")).toContain("button");
   });
 

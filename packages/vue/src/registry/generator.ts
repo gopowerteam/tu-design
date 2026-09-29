@@ -40,6 +40,11 @@ function toPascal(name: string): string {
   return name.replace(/(^|-)([a-z])/g, (_, __: string, c: string) => c.toUpperCase());
 }
 
+/** 官方 registry-item schema 的 dependencies 是字符串数组 —— 以 name@version 形式钉具体版本。 */
+function toNameAtVersion(deps: Record<string, string>): string[] {
+  return Object.entries(deps).map(([name, version]) => `${name}@${version}`);
+}
+
 export function generateRegistry(
   io: RegistryIo,
   input: {
@@ -80,8 +85,10 @@ export function generateRegistry(
       ...(meta.registryDependencies?.length
         ? { registryDependencies: meta.registryDependencies }
         : {}),
-      ...(Object.keys(dependencies).length ? { dependencies } : {}),
-      ...(Object.keys(devDependencies).length ? { devDependencies } : {}),
+      ...(Object.keys(dependencies).length ? { dependencies: toNameAtVersion(dependencies) } : {}),
+      ...(Object.keys(devDependencies).length
+        ? { devDependencies: toNameAtVersion(devDependencies) }
+        : {}),
       files,
     });
   }
@@ -91,13 +98,15 @@ export function generateRegistry(
     name: "utils",
     type: "registry:lib",
     description: "cn 类名合并工具（clsx + tailwind-merge）。",
-    dependencies: translateDeps(
-      {
-        clsx: "catalog:",
-        "tailwind-merge": "catalog:",
-        "class-variance-authority": "catalog:",
-      },
-      catalog,
+    dependencies: toNameAtVersion(
+      translateDeps(
+        {
+          clsx: "catalog:",
+          "tailwind-merge": "catalog:",
+          "class-variance-authority": "catalog:",
+        },
+        catalog,
+      ),
     ),
     files: [
       {

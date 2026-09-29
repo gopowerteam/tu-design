@@ -17,7 +17,8 @@
   },
   "scripts": {
     "build": "vp pack && tsx scripts/fix-bin.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vp test --run"
   },
   "dependencies": {
     "@tu-design/vue": "workspace:*",

@@ -4,9 +4,7 @@
   "type": "registry:ui",
   "description": "头像，含图片加载与回退（Ark UI）。",
   "registryDependencies": ["utils"],
-  "dependencies": {
-    "@ark-ui/vue": "^5.39.2"
-  },
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
   "files": [
     {
       "path": "avatar/Avatar.vue",

@@ -14,7 +14,7 @@ export interface RegistryItem {
   type: RegistryType;
   description?: string;
   registryDependencies?: string[];
-  dependencies?: Record<string, string>;
-  devDependencies?: Record<string, string>;
+  dependencies?: string[];
+  devDependencies?: string[];
   files: RegistryFile[];
 }

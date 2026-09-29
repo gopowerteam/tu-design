@@ -15,7 +15,8 @@
   "scripts": {
     "build": "vp run generate:registry && vp pack && mkdir -p dist/registry && cp -r registry/vue dist/registry/",
     "generate:registry": "tsx scripts/generate-registry.ts && vp fmt registry",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test": "vp test --run"
   },
   "dependencies": {
     "@ark-ui/vue": "catalog:",

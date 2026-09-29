@@ -4,9 +4,7 @@
   "type": "registry:ui",
   "description": "轻量状态徽标，支持四种变体。",
   "registryDependencies": ["utils"],
-  "dependencies": {
-    "class-variance-authority": "^0.7.1"
-  },
+  "dependencies": ["class-variance-authority@^0.7.1"],
   "files": [
     {
       "path": "badge/Badge.vue",
