@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Avatar as ArkAvatar } from "@ark-ui/vue/avatar";
-import { cn } from "../../lib/utils";
+import { cn } from "@/lib/utils";
 
 interface Props {
   src?: string;

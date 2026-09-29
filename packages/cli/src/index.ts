@@ -92,6 +92,9 @@ program
         overwrite: opts.overwrite,
         npm: nodeNpmChannel,
         confirm: async (msg) => {
+          if (!process.stdin.isTTY) {
+            return false;
+          }
           const { default: prompts } = await import("prompts");
           const r = await prompts({
             type: "confirm",

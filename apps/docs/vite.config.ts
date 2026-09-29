@@ -49,6 +49,7 @@ export default defineConfig({
   plugins: [vue(), tailwindcss(), registryPlugin()],
   resolve: {
     alias: {
+      "@": fileURLToPath(new URL("../../packages/vue/src", import.meta.url)),
       "@tu-design/vue": fileURLToPath(new URL("../../packages/vue/src/index.ts", import.meta.url)),
     },
   },

@@ -9,7 +9,7 @@
       "path": "label/Label.vue",
       "type": "registry:component",
       "target": "components/ui/label/Label.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <label :class=\"cn('text-sm font-medium leading-none', props.class)\">\n    <slot />\n  </label>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <label :class=\"cn('text-sm font-medium leading-none', props.class)\">\n    <slot />\n  </label>\n</template>\n"
     },
     {
       "path": "label/index.ts",

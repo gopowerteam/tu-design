@@ -9,7 +9,7 @@
       "path": "skeleton/Skeleton.vue",
       "type": "registry:component",
       "target": "components/ui/skeleton/Skeleton.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div aria-hidden=\"true\" :class=\"cn('animate-pulse rounded-md bg-muted', props.class)\" />\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div aria-hidden=\"true\" :class=\"cn('animate-pulse rounded-md bg-muted', props.class)\" />\n</template>\n"
     },
     {
       "path": "skeleton/index.ts",

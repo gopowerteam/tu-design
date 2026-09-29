@@ -12,7 +12,7 @@
       "path": "badge/Badge.vue",
       "type": "registry:component",
       "target": "components/ui/badge/Badge.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\nimport { badgeVariants, type BadgeVariants } from \"./index\";\n\ninterface Props {\n  variant?: BadgeVariants[\"variant\"];\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <span :class=\"cn(badgeVariants({ variant: props.variant }), props.class)\">\n    <slot />\n  </span>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { badgeVariants, type BadgeVariants } from \"./index\";\n\ninterface Props {\n  variant?: BadgeVariants[\"variant\"];\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <span :class=\"cn(badgeVariants({ variant: props.variant }), props.class)\">\n    <slot />\n  </span>\n</template>\n"
     },
     {
       "path": "badge/index.ts",

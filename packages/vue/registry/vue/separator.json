@@ -9,7 +9,7 @@
       "path": "separator/Separator.vue",
       "type": "registry:component",
       "target": "components/ui/separator/Separator.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\nimport { computed } from \"vue\";\n\ninterface Props {\n  orientation?: \"horizontal\" | \"vertical\";\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { orientation: \"horizontal\" });\n\nconst orientationClass = computed(() =>\n  props.orientation === \"vertical\" ? \"w-px h-full\" : \"h-px w-full\",\n);\n</script>\n\n<template>\n  <div\n    :data-orientation=\"props.orientation\"\n    :class=\"cn('bg-border shrink-0', orientationClass, props.class)\"\n  />\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { computed } from \"vue\";\n\ninterface Props {\n  orientation?: \"horizontal\" | \"vertical\";\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { orientation: \"horizontal\" });\n\nconst orientationClass = computed(() =>\n  props.orientation === \"vertical\" ? \"w-px h-full\" : \"h-px w-full\",\n);\n</script>\n\n<template>\n  <div\n    :data-orientation=\"props.orientation\"\n    :class=\"cn('bg-border shrink-0', orientationClass, props.class)\"\n  />\n</template>\n"
     },
     {
       "path": "separator/index.ts",

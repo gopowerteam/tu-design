@@ -84,6 +84,11 @@ describe("mergeViteAlias", () => {
     expect(mergeViteAlias(src, { find: "@", replacement: "x" })).toBe(src);
   });
 
+  it("已有同 find 的 alias 时不重复插入（幂等）", () => {
+    const src = `export default defineConfig({\n  resolve: {\n    alias: {\n      "@": "/already",\n    },\n  },\n});\n`;
+    expect(mergeViteAlias(src, { find: "@", replacement: "/new" })).toBe(src);
+  });
+
   it("已有 alias 时追加键", () => {
     const src = `export default defineConfig({\n  resolve: {\n    alias: {\n      "@x": "/x",\n    },\n  },\n});\n`;
     const out = mergeViteAlias(src, { find: "@", replacement: "/src" });

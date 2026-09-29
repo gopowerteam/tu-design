@@ -61,6 +61,9 @@ export function mergeViteAlias(source: string, alias: ViteAlias): string {
   if (!source.includes("defineConfig(")) {
     return source;
   }
+  if (new RegExp(`["']${alias.find}["']\\s*:`).test(source)) {
+    return source;
+  }
   const entry = `    "${alias.find}": ${alias.replacement},\n`;
 
   if (source.includes("alias: {")) {

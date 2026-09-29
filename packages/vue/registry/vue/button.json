@@ -12,7 +12,7 @@
       "path": "button/Button.vue",
       "type": "registry:component",
       "target": "components/ui/button/Button.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\nimport { buttonVariants, type ButtonVariants } from \"./index\";\n\ninterface Props {\n  variant?: ButtonVariants[\"variant\"];\n  size?: ButtonVariants[\"size\"];\n  as?: string;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { as: \"button\" });\n</script>\n\n<template>\n  <component\n    :is=\"props.as\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot />\n  </component>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { buttonVariants, type ButtonVariants } from \"./index\";\n\ninterface Props {\n  variant?: ButtonVariants[\"variant\"];\n  size?: ButtonVariants[\"size\"];\n  as?: string;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { as: \"button\" });\n</script>\n\n<template>\n  <component\n    :is=\"props.as\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot />\n  </component>\n</template>\n"
     },
     {
       "path": "button/index.ts",

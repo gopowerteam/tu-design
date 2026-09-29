@@ -12,7 +12,7 @@
       "path": "avatar/Avatar.vue",
       "type": "registry:component",
       "target": "components/ui/avatar/Avatar.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Avatar as ArkAvatar } from \"@ark-ui/vue/avatar\";\nimport { cn } from \"../../lib/utils\";\n\ninterface Props {\n  src?: string;\n  alt?: string;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkAvatar.Root :class=\"cn('inline-flex size-10 overflow-hidden rounded-full', props.class)\">\n    <ArkAvatar.Image\n      v-if=\"props.src\"\n      :src=\"props.src\"\n      :alt=\"props.alt\"\n      class=\"size-full object-cover\"\n    />\n    <ArkAvatar.Fallback class=\"flex size-full items-center justify-center bg-muted\">\n      <slot />\n    </ArkAvatar.Fallback>\n  </ArkAvatar.Root>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { Avatar as ArkAvatar } from \"@ark-ui/vue/avatar\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  src?: string;\n  alt?: string;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkAvatar.Root :class=\"cn('inline-flex size-10 overflow-hidden rounded-full', props.class)\">\n    <ArkAvatar.Image\n      v-if=\"props.src\"\n      :src=\"props.src\"\n      :alt=\"props.alt\"\n      class=\"size-full object-cover\"\n    />\n    <ArkAvatar.Fallback class=\"flex size-full items-center justify-center bg-muted\">\n      <slot />\n    </ArkAvatar.Fallback>\n  </ArkAvatar.Root>\n</template>\n"
     },
     {
       "path": "avatar/index.ts",
