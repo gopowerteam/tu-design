@@ -11,11 +11,13 @@
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
+    "class-variance-authority": "catalog:",
     "clsx": "catalog:",
     "tailwind-merge": "catalog:",
     "tw-animate-css": "catalog:"
   },
   "devDependencies": {
+    "@vitejs/plugin-vue": "catalog:",
     "@vue/test-utils": "catalog:",
     "happy-dom": "catalog:",
     "typescript": "catalog:",
