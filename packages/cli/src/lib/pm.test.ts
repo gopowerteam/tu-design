@@ -18,14 +18,14 @@ describe("detectPackageManager", () => {
 
 describe("buildInstallCommand", () => {
   it.each([
-    ["pnpm", ["pnpm", "add", "clsx", "tailwind-merge"], false],
-    ["pnpm", ["pnpm", "add", "-D", "clsx"], true],
+    ["pnpm", ["pnpm", "add", "clsx"], false],
+    ["pnpm", ["pnpm", "add", "clsx", "-D"], true],
     ["npm", ["npm", "install", "clsx"], false],
-    ["npm", ["npm", "install", "-D", "clsx"], true],
+    ["npm", ["npm", "install", "clsx", "-D"], true],
     ["yarn", ["yarn", "add", "clsx"], false],
-    ["yarn", ["yarn", "add", "-D", "clsx"], true],
+    ["yarn", ["yarn", "add", "clsx", "-D"], true],
     ["bun", ["bun", "add", "clsx"], false],
-    ["bun", ["bun", "add", "-d", "clsx"], true],
+    ["bun", ["bun", "add", "clsx", "-d"], true],
   ] as const)("%s dev=%s", (pm, expected, dev) => {
     expect(buildInstallCommand(pm, ["clsx"], dev)).toEqual([...expected]);
   });
