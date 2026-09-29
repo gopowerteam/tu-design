@@ -1,0 +1,16 @@
+{
+  "name": "@tu-design/vue",
+  "version": "0.0.0",
+  "type": "module",
+  "exports": {
+    ".": "./dist/index.mjs",
+    "./package.json": "./package.json"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "unplugin-vue": "^8.0.0",
+    "vite-plus": "catalog:",
+    "vue": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}
