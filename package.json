@@ -5,9 +5,12 @@
   "type": "module",
   "scripts": {
     "ready": "vp check && vp run -r test && vp run -r build",
-    "prepare": "vp config"
+    "prepare": "vp config",
+    "version:pkg": "changeset version",
+    "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks"
   },
   "devDependencies": {
+    "@changesets/cli": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {

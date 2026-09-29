@@ -1,8 +1,8 @@
 {
   "name": "@tu-design/cli",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "bin": {
-    "cli": "./dist/index.mjs"
+    "tu-design": "./dist/index.mjs"
   },
   "files": [
     "dist"
@@ -12,8 +12,11 @@
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "vp pack",
+    "build": "vp pack && tsx scripts/fix-bin.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -25,6 +28,7 @@
   },
   "devDependencies": {
     "@types/prompts": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"

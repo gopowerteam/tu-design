@@ -1,6 +1,6 @@
 {
   "name": "@tu-design/vue",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "files": [
     "dist"
   ],
@@ -8,6 +8,9 @@
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "vp run generate:registry && vp pack && mkdir -p dist/registry && cp -r registry/vue dist/registry/",
