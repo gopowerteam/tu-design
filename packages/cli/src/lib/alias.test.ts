@@ -49,6 +49,22 @@ describe("mergeTsconfigPaths", () => {
   it("非法 JSON 返回原文", () => {
     expect(mergeTsconfigPaths("not json", { "@/*": ["./src/*"] })).toBe("not json");
   });
+
+  it("JSONC（带注释）无法 round-trip 时文本插入 paths 且保留注释", () => {
+    const source = `{
+  "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "compilerOptions": {
+    "types": ["vite/client"],
+    /* Linting */
+    "noUnusedLocals": true
+  }
+}`;
+    const out = mergeTsconfigPaths(source, { "@/*": ["./src/*"] });
+    expect(out).toContain('"paths"');
+    expect(out).toContain('"@/*"');
+    expect(out).toContain("/* Linting */");
+    expect(out).toContain('"noUnusedLocals"');
+  });
 });
 
 describe("mergeViteAlias", () => {

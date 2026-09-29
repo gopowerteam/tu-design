@@ -1,18 +1,18 @@
 import type { Io } from "./io";
 
 /**
- * 将 paths 合并进 tsconfig 文本。JSON round-trip（不引入 AST 依赖）：
- * 解析失败时返回原文，由调用方提示手动配置。注意：会丢失 tsconfig 中的注释。
+ * 将 paths 合并进 tsconfig 文本。优先 JSON round-trip；
+ * JSONC（带注释等无法解析）时回退纯文本插入，保留原注释。
  */
 export function mergeTsconfigPaths(source: string, paths: Record<string, string[]>): string {
   let parsed: unknown;
   try {
     parsed = JSON.parse(source);
   } catch {
-    return source;
+    return insertPathsText(source, paths);
   }
   if (typeof parsed !== "object" || parsed === null) {
-    return source;
+    return insertPathsText(source, paths);
   }
   const root = parsed as Record<string, unknown>;
   const options =
@@ -26,6 +26,23 @@ export function mergeTsconfigPaths(source: string, paths: Record<string, string[
   options.paths = { ...existing, ...paths };
   root.compilerOptions = options;
   return `${JSON.stringify(root, null, 2)}\n`;
+}
+
+/**
+ * JSONC 回退：在 "compilerOptions": { 后做纯文本插入，保留注释；
+ * 已有 paths 或结构不识别时返回原文（调用方提示手动配置）。
+ */
+function insertPathsText(source: string, paths: Record<string, string[]>): string {
+  if (/"paths"\s*:/.test(source)) {
+    return source;
+  }
+  const match = /"compilerOptions"\s*:\s*\{/.exec(source);
+  if (!match) {
+    return source;
+  }
+  const insertAt = match.index + match[0].length;
+  const text = `\n    "paths": ${JSON.stringify(paths)},`;
+  return `${source.slice(0, insertAt)}${text}${source.slice(insertAt)}`;
 }
 
 export interface ViteAlias {
