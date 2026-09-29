@@ -14,7 +14,9 @@
   "devDependencies": {
     "@tailwindcss/vite": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "shiki": "catalog:",
     "tailwindcss": "catalog:",
-    "vite-plus": "catalog:"
+    "vite-plus": "catalog:",
+    "vue-router": "catalog:"
   }
 }

@@ -21,6 +21,8 @@ catalog:
   "@vue/test-utils": ^2.5.1
   vitest: ^5.0.1
   happy-dom: ^20
+  vue-router: ^4.5.0
+  shiki: ^3.0.0
   commander: ^15
   prompts: ^2
   picocolors: ^1
