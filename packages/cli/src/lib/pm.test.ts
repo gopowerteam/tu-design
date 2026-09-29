@@ -48,7 +48,7 @@ describe("installDependencies", () => {
       },
     } satisfies ExecIo & Io;
     installDependencies(io, "/proj", ["clsx"], true, "pnpm");
-    expect(calls).toEqual([["pnpm", "add", "-D", "clsx"]]);
+    expect(calls).toEqual([["pnpm", "add", "clsx", "-D"]]);
   });
 
   it("未传 pm 时按锁文件推断", () => {
