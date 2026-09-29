@@ -120,4 +120,23 @@ describe("runInit", () => {
     expect(() => runInit(io, "/proj", opts)).toThrow(/Tailwind/);
     expect(io.exists("/proj/components.json")).toBe(false);
   });
+
+  it("css 在非默认常见路径时探测命中（vue-ts 模板 src/style.css）", () => {
+    const io = memIo({
+      "/proj/package.json": JSON.stringify(PKG_OK),
+      "/proj/src/style.css": CSS_OK,
+    });
+    const s = runInit(io, "/proj", opts);
+    expect(s.cssPath).toBe("/proj/src/style.css");
+    expect(io.readFile("/proj/src/style.css")).toContain("@custom-variant");
+  });
+
+  it("opts.css 显式指定路径优先", () => {
+    const io = memIo({
+      "/proj/package.json": JSON.stringify(PKG_OK),
+      "/proj/custom/app.css": CSS_OK,
+    });
+    const s = runInit(io, "/proj", { ...opts, css: "custom/app.css" });
+    expect(s.cssPath).toBe("/proj/custom/app.css");
+  });
 });

@@ -96,6 +96,19 @@ describe("applyAliases", () => {
     expect(vite).toContain('"/proj/src"');
   });
 
+  it("tsconfig.app.json 存在时一并合并（vue-ts 模板布局）", () => {
+    const io = memIo({
+      "/proj/tsconfig.json": JSON.stringify({ files: [], references: [] }),
+      "/proj/tsconfig.app.json": JSON.stringify({
+        compilerOptions: { target: "ES2022" },
+      }),
+    });
+    applyAliases(io, "/proj", "src");
+    const app = JSON.parse(io.readFile("/proj/tsconfig.app.json"));
+    expect(app.compilerOptions.paths["@/*"]).toEqual(["./src/*"]);
+    expect(app.compilerOptions.target).toBe("ES2022");
+  });
+
   it("文件不存在时静默跳过", () => {
     const io = memIo({});
     expect(() => applyAliases(io, "/proj", "src")).not.toThrow();

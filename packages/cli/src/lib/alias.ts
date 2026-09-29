@@ -69,12 +69,12 @@ export function mergeViteAlias(source: string, alias: ViteAlias): string {
 }
 
 export function applyAliases(io: Io, cwd: string, aliasRoot: string): void {
-  const tsconfigPath = `${cwd}/tsconfig.json`;
-  if (io.exists(tsconfigPath)) {
-    const merged = mergeTsconfigPaths(io.readFile(tsconfigPath), {
-      "@/*": [`./${aliasRoot}/*`],
-    });
-    io.writeFile(tsconfigPath, merged);
+  const paths = { "@/*": [`./${aliasRoot}/*`] };
+  for (const name of ["tsconfig.json", "tsconfig.app.json"]) {
+    const tsconfigPath = `${cwd}/${name}`;
+    if (io.exists(tsconfigPath)) {
+      io.writeFile(tsconfigPath, mergeTsconfigPaths(io.readFile(tsconfigPath), paths));
+    }
   }
 
   const viteConfigPath = `${cwd}/vite.config.ts`;

@@ -127,14 +127,35 @@ function joinPosix(...parts: string[]): string {
     .join("/");
 }
 
+/** 常见全局 CSS 位置（探测依次命中第一个含 @import "tailwindcss" 的文件）。 */
+const CSS_PROBE = [
+  "src/assets/main.css",
+  "src/style.css",
+  "src/index.css",
+  "src/main.css",
+  "src/App.css",
+  "style.css",
+];
+
+function probeCssPath(io: Io, cwd: string, configured: string): string {
+  for (const rel of [configured, ...CSS_PROBE]) {
+    const full = joinPosix(cwd, rel);
+    if (io.exists(full) && io.readFile(full).includes('@import "tailwindcss"')) {
+      return rel;
+    }
+  }
+  return configured;
+}
+
 export function runInit(
   io: Io,
   cwd: string,
-  opts: { registry: string; aliasRoot?: string },
+  opts: { registry: string; aliasRoot?: string; css?: string },
 ): InitSummary {
   const aliasRoot = opts.aliasRoot ?? "src";
   const config = defaultConfig(opts.registry);
-  const cssPath = joinPosix(cwd, config.tailwind.css);
+  const cssRel = probeCssPath(io, cwd, opts.css ?? config.tailwind.css);
+  const cssPath = joinPosix(cwd, cssRel);
   const globalCss = io.exists(cssPath) ? io.readFile(cssPath) : "";
 
   const pkg = JSON.parse(io.readFile(joinPosix(cwd, "package.json"))) as {
@@ -151,7 +172,7 @@ export function runInit(
   if (io.exists(configPath)) {
     validateConfig(JSON.parse(io.readFile(configPath)));
   } else {
-    saveConfig(io, cwd, config);
+    saveConfig(io, cwd, { ...config, tailwind: { css: cssRel } });
   }
 
   const utilsRel = config.aliases.utils.replace(/^@\//, "");

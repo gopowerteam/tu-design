@@ -31,10 +31,14 @@ program
   .command("init")
   .description("初始化 components.json 并注入基础依赖与样式 tokens")
   .option("--registry <url>", "registry URL 通道", DEFAULT_REGISTRY)
-  .action(async (opts: { registry: string }) => {
+  .option("--css <path>", "全局 CSS 路径（默认自动探测常见位置）")
+  .action(async (opts: { registry: string; css?: string }) => {
     const cwd = process.cwd();
     try {
-      const summary = runInit(nodeIo, cwd, { registry: opts.registry });
+      const summary = runInit(nodeIo, cwd, {
+        registry: opts.registry,
+        css: opts.css,
+      });
       console.log(`✔ 已写入 ${summary.configPath}`);
       console.log(`✔ 已注入 cn 工具 ${summary.cnPath}`);
       console.log(
