@@ -16,6 +16,7 @@
     "@tailwindcss/vite": "catalog:",
     "shiki": "catalog:",
     "tailwindcss": "catalog:",
+    "vite": "catalog:",
     "vitepress": "catalog:"
   }
 }
