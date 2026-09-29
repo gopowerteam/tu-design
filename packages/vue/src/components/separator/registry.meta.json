@@ -1,0 +1,4 @@
+{
+  "description": "分隔线，支持水平与垂直方向。",
+  "registryDependencies": ["utils"]
+}

@@ -1,0 +1,5 @@
+{
+  "description": "轻量状态徽标，支持四种变体。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "class-variance-authority": "catalog:" }
+}

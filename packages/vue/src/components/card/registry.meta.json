@@ -1,0 +1,4 @@
+{
+  "description": "卡片容器族：Header/Title/Description/Content/Footer。",
+  "registryDependencies": ["utils"]
+}

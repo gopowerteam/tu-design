@@ -1,0 +1,4 @@
+{
+  "description": "加载占位骨架屏。",
+  "registryDependencies": ["utils"]
+}

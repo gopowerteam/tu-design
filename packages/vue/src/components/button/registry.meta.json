@@ -1,0 +1,5 @@
+{
+  "description": "带变体与尺寸的按钮，支持 as 标签切换。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "class-variance-authority": "catalog:" }
+}

@@ -1,0 +1,4 @@
+{
+  "description": "表单标签。",
+  "registryDependencies": ["utils"]
+}
