@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar",
+  "type": "registry:ui",
+  "description": "头像，含图片加载与回退（Ark UI）。",
+  "registryDependencies": ["utils"],
+  "dependencies": {
+    "@ark-ui/vue": "^5.39.2"
+  },
+  "files": [
+    {
+      "path": "avatar/Avatar.vue",
+      "type": "registry:component",
+      "target": "components/ui/avatar/Avatar.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Avatar as ArkAvatar } from \"@ark-ui/vue/avatar\";\nimport { cn } from \"../../lib/utils\";\n\ninterface Props {\n  src?: string;\n  alt?: string;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkAvatar.Root :class=\"cn('inline-flex size-10 overflow-hidden rounded-full', props.class)\">\n    <ArkAvatar.Image\n      v-if=\"props.src\"\n      :src=\"props.src\"\n      :alt=\"props.alt\"\n      class=\"size-full object-cover\"\n    />\n    <ArkAvatar.Fallback class=\"flex size-full items-center justify-center bg-muted\">\n      <slot />\n    </ArkAvatar.Fallback>\n  </ArkAvatar.Root>\n</template>\n"
+    },
+    {
+      "path": "avatar/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/avatar/index.ts",
+      "content": "export { default as Avatar } from \"./Avatar.vue\";\n"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "tu-design",
+  "items": [
+    {
+      "name": "avatar",
+      "title": "Avatar",
+      "type": "registry:ui",
+      "description": "头像，含图片加载与回退（Ark UI）。"
+    },
+    {
+      "name": "badge",
+      "title": "Badge",
+      "type": "registry:ui",
+      "description": "轻量状态徽标，支持四种变体。"
+    },
+    {
+      "name": "button",
+      "title": "Button",
+      "type": "registry:ui",
+      "description": "带变体与尺寸的按钮，支持 as 标签切换。"
+    },
+    {
+      "name": "card",
+      "title": "Card",
+      "type": "registry:ui",
+      "description": "卡片容器族：Header/Title/Description/Content/Footer。"
+    },
+    {
+      "name": "input",
+      "title": "Input",
+      "type": "registry:ui",
+      "description": "文本输入框，支持 v-model 与 attrs 透传。"
+    },
+    {
+      "name": "label",
+      "title": "Label",
+      "type": "registry:ui",
+      "description": "表单标签。"
+    },
+    {
+      "name": "separator",
+      "title": "Separator",
+      "type": "registry:ui",
+      "description": "分隔线，支持水平与垂直方向。"
+    },
+    {
+      "name": "skeleton",
+      "title": "Skeleton",
+      "type": "registry:ui",
+      "description": "加载占位骨架屏。"
+    },
+    {
+      "name": "tokens",
+      "title": "Tokens",
+      "type": "registry:style",
+      "description": "Tailwind CSS v4 语义 tokens（shadcn 官方 v4 集合）。"
+    },
+    {
+      "name": "utils",
+      "title": "Utils",
+      "type": "registry:lib",
+      "description": "cn 类名合并工具（clsx + tailwind-merge）。"
+    }
+  ]
+}

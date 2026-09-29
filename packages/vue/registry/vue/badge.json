@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "badge",
+  "type": "registry:ui",
+  "description": "轻量状态徽标，支持四种变体。",
+  "registryDependencies": ["utils"],
+  "dependencies": {
+    "class-variance-authority": "^0.7.1"
+  },
+  "files": [
+    {
+      "path": "badge/Badge.vue",
+      "type": "registry:component",
+      "target": "components/ui/badge/Badge.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\nimport { badgeVariants, type BadgeVariants } from \"./index\";\n\ninterface Props {\n  variant?: BadgeVariants[\"variant\"];\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <span :class=\"cn(badgeVariants({ variant: props.variant }), props.class)\">\n    <slot />\n  </span>\n</template>\n"
+    },
+    {
+      "path": "badge/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/badge/index.ts",
+      "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Badge } from \"./Badge.vue\";\n\nexport const badgeVariants = cva(\n  \"inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap shrink-0\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground\",\n        secondary: \"bg-secondary text-secondary-foreground\",\n        destructive: \"bg-destructive text-white\",\n        outline: \"text-foreground border border-input\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n    },\n  },\n);\n\nexport type BadgeVariants = VariantProps<typeof badgeVariants>;\n"
+    }
+  ]
+}

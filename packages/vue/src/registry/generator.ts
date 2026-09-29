@@ -62,7 +62,7 @@ export function generateRegistry(
     const meta = JSON.parse(metaRaw) as RegistryMeta;
     const files: RegistryFile[] = io
       .readDir(`${input.componentsDir}/${dir}`)
-      .filter((f) => f !== "registry.meta.json")
+      .filter((f) => f !== "registry.meta.json" && !f.endsWith(".test.ts"))
       .sort()
       .map((f) => ({
         path: `${dir}/${f}`,

@@ -1,13 +1,17 @@
 {
   "name": "@tu-design/vue",
   "version": "0.0.0",
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": "./dist/index.mjs",
     "./package.json": "./package.json"
   },
   "scripts": {
-    "build": "vp pack",
+    "build": "vp run generate:registry && vp pack && mkdir -p dist/registry && cp -r registry/vue dist/registry/",
+    "generate:registry": "tsx scripts/generate-registry.ts && vp fmt registry",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -21,6 +25,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "@vue/test-utils": "catalog:",
     "happy-dom": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "unplugin-vue": "^8.0.0",
     "vite-plus": "catalog:",

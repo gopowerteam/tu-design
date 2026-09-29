@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "label",
+  "type": "registry:ui",
+  "description": "表单标签。",
+  "registryDependencies": ["utils"],
+  "files": [
+    {
+      "path": "label/Label.vue",
+      "type": "registry:component",
+      "target": "components/ui/label/Label.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <label :class=\"cn('text-sm font-medium leading-none', props.class)\">\n    <slot />\n  </label>\n</template>\n"
+    },
+    {
+      "path": "label/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/label/index.ts",
+      "content": "export { default as Label } from \"./Label.vue\";\n"
+    }
+  ]
+}

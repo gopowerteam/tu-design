@@ -1,0 +1,24 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "button",
+  "type": "registry:ui",
+  "description": "带变体与尺寸的按钮，支持 as 标签切换。",
+  "registryDependencies": ["utils"],
+  "dependencies": {
+    "class-variance-authority": "^0.7.1"
+  },
+  "files": [
+    {
+      "path": "button/Button.vue",
+      "type": "registry:component",
+      "target": "components/ui/button/Button.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\nimport { buttonVariants, type ButtonVariants } from \"./index\";\n\ninterface Props {\n  variant?: ButtonVariants[\"variant\"];\n  size?: ButtonVariants[\"size\"];\n  as?: string;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { as: \"button\" });\n</script>\n\n<template>\n  <component\n    :is=\"props.as\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot />\n  </component>\n</template>\n"
+    },
+    {
+      "path": "button/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/button/index.ts",
+      "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Button } from \"./Button.vue\";\n\nexport const buttonVariants = cva(\n  \"inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground hover:bg-primary/90\",\n        destructive: \"bg-destructive text-white hover:bg-destructive/90\",\n        outline: \"border border-input bg-background hover:bg-muted\",\n        secondary: \"bg-secondary text-secondary-foreground hover:bg-secondary/80\",\n        ghost: \"hover:bg-muted\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 px-3\",\n        lg: \"h-10 px-6\",\n        icon: \"size-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport type ButtonVariants = VariantProps<typeof buttonVariants>;\n"
+    }
+  ]
+}

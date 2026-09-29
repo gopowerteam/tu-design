@@ -1,0 +1,51 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "card",
+  "type": "registry:ui",
+  "description": "卡片容器族：Header/Title/Description/Content/Footer。",
+  "registryDependencies": ["utils"],
+  "files": [
+    {
+      "path": "card/Card.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/Card.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('rounded-xl border bg-card text-card-foreground shadow-sm', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardContent.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardContent.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardDescription.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardDescription.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <p :class=\"cn('text-sm text-muted-foreground', props.class)\">\n    <slot />\n  </p>\n</template>\n"
+    },
+    {
+      "path": "card/CardFooter.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardFooter.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('flex items-center p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardHeader.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardHeader.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('flex flex-col gap-1.5 p-6', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardTitle.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardTitle.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <h3 :class=\"cn('font-semibold leading-none', props.class)\">\n    <slot />\n  </h3>\n</template>\n"
+    },
+    {
+      "path": "card/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/card/index.ts",
+      "content": "export { default as Card } from \"./Card.vue\";\nexport { default as CardContent } from \"./CardContent.vue\";\nexport { default as CardDescription } from \"./CardDescription.vue\";\nexport { default as CardFooter } from \"./CardFooter.vue\";\nexport { default as CardHeader } from \"./CardHeader.vue\";\nexport { default as CardTitle } from \"./CardTitle.vue\";\n"
+    }
+  ]
+}

@@ -24,6 +24,7 @@ catalog:
   vue-router: ^4.5.0
   shiki: ^3.0.0
   yaml: ^2.4.0
+  tsx: ^4.0.0
   commander: ^15
   prompts: ^2
   picocolors: ^1
@@ -38,3 +39,5 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
+allowBuilds:
+  esbuild: set this to true or false

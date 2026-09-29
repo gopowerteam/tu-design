@@ -108,6 +108,13 @@ describe("generateRegistry", () => {
     expect(avatar.dependencies?.["@ark-ui/vue"]).toBe("^5.39.2");
   });
 
+  it("files 不含测试文件（仅分发源码）", () => {
+    const button = items.find((i) => i.name === "button")!;
+    for (const f of button.files) {
+      expect(f.path).not.toMatch(/\.test\.ts$/);
+    }
+  });
+
   it("utils 为 registry:lib，tokens 为 registry:style", () => {
     expect(items.find((i) => i.name === "utils")!.type).toBe("registry:lib");
     expect(items.find((i) => i.name === "tokens")!.type).toBe("registry:style");

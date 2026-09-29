@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "input",
+  "type": "registry:ui",
+  "description": "文本输入框，支持 v-model 与 attrs 透传。",
+  "registryDependencies": ["utils"],
+  "files": [
+    {
+      "path": "input/Input.vue",
+      "type": "registry:component",
+      "target": "components/ui/input/Input.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"../../lib/utils\";\n\nconst modelValue = defineModel<string | number>();\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <input\n    v-model=\"modelValue\"\n    :class=\"\n      cn(\n        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',\n        props.class,\n      )\n    \"\n  />\n</template>\n"
+    },
+    {
+      "path": "input/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/input/index.ts",
+      "content": "export { default as Input } from \"./Input.vue\";\n"
+    }
+  ]
+}
