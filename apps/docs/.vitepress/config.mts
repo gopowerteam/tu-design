@@ -63,5 +63,38 @@ export default defineConfig({
   },
   themeConfig: {
     search: { provider: "local" },
+    nav: [
+      { text: "指南", link: "/guide/introduction", activeMatch: "/guide/" },
+      { text: "组件", link: "/components/button", activeMatch: "/components/" },
+      { text: "GitHub", link: "https://github.com/zhuchentong/tu-design" },
+    ],
+    sidebar: {
+      "/guide/": [
+        {
+          text: "指南",
+          items: [
+            { text: "介绍", link: "/guide/introduction" },
+            { text: "安装", link: "/guide/installation" },
+            { text: "CLI", link: "/guide/cli" },
+            { text: "主题", link: "/guide/theming" },
+          ],
+        },
+      ],
+      "/components/": [
+        {
+          text: "组件",
+          items: [
+            { text: "Avatar", link: "/components/avatar" },
+            { text: "Badge", link: "/components/badge" },
+            { text: "Button", link: "/components/button" },
+            { text: "Card", link: "/components/card" },
+            { text: "Input", link: "/components/input" },
+            { text: "Label", link: "/components/label" },
+            { text: "Separator", link: "/components/separator" },
+            { text: "Skeleton", link: "/components/skeleton" },
+          ],
+        },
+      ],
+    },
   },
 });
