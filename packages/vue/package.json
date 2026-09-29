@@ -12,7 +12,8 @@
   },
   "dependencies": {
     "clsx": "catalog:",
-    "tailwind-merge": "catalog:"
+    "tailwind-merge": "catalog:",
+    "tw-animate-css": "catalog:"
   },
   "devDependencies": {
     "@vue/test-utils": "catalog:",
