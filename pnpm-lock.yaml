@@ -170,6 +170,9 @@ catalogs:
     '@tailwindcss/vite':
       specifier: ^4
       version: 4.3.3
+    '@types/prompts':
+      specifier: ^2.4.8
+      version: 2.4.9
     '@vitejs/plugin-vue':
       specifier: ^6
       version: 6.0.9
@@ -291,6 +294,9 @@ importers:
         specifier: 'catalog:'
         version: 2.4.2
     devDependencies:
+      '@types/prompts':
+        specifier: 'catalog:'
+        version: 2.4.9
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -1017,6 +1023,9 @@ packages:
 
   '@types/node@26.6.3':
     resolution: {integrity: sha512-dsqMQQoeTLqu9wynDD00q573mNzso3IdQOAfHRJqLCcmCFPoGo9A1bDpUcv/9tnKpErQWv9uKeGfl37EIS02Yg==}
+
+  '@types/prompts@2.4.9':
+    resolution: {integrity: sha512-qTxFi6Buiu8+50/+3DGIWLHM6QuWsEKugJnnP6iv2Mc4ncxE4A/OJkjuVOA+5X0X1S/nq5VJRa8Lu+nwcvbrKA==}
 
   '@types/unist@3.0.3':
     resolution: {integrity: sha512-ko/gIFJRv177XgZsZcBwnqJN5x/Gien8qNOn0D5bQU/zAzVf9Zt3BlcUiLqhV9y4ARk0GbT3tnUiPNgnTXzc/Q==}
@@ -2884,6 +2893,11 @@ snapshots:
   '@types/node@26.6.3':
     dependencies:
       undici-types: 8.9.0
+
+  '@types/prompts@2.4.9':
+    dependencies:
+      '@types/node': 26.6.3
+      kleur: 3.0.3
 
   '@types/unist@3.0.3': {}
 

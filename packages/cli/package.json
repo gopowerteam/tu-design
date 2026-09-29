@@ -24,6 +24,7 @@
     "prompts": "catalog:"
   },
   "devDependencies": {
+    "@types/prompts": "catalog:",
     "typescript": "catalog:",
     "vite-plus": "catalog:",
     "vitest": "catalog:"

@@ -1,5 +1,5 @@
 import type { ComponentsConfig } from "./config";
-import type { RegistryItem, RegistryType } from "./registry-types";
+import type { RegistryItem } from "./registry-types";
 
 export interface RegistryFetcher {
   fetchJson(url: string): Promise<unknown>;
