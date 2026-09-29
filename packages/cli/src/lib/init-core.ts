@@ -1,4 +1,5 @@
 import { defaultConfig, saveConfig, validateConfig } from "./config";
+import { applyAliases } from "./alias";
 import type { Io } from "./io";
 
 /**
@@ -162,6 +163,8 @@ export function runInit(
   if (!skippedCss) {
     io.writeFile(cssPath, merged);
   }
+
+  applyAliases(io, cwd, aliasRoot);
 
   return { configPath, cnPath, cssPath, skippedCss };
 }
