@@ -58,7 +58,7 @@ apps/docs/
 - **sidebar** 两组：
   - 指南：介绍 → 安装 → CLI → 主题
   - 组件：avatar / badge / button / card / input / label / separator / skeleton
-- **站点配置**：`lang: 'zh-CN'`、`appearance: true`、`lastUpdated: false`（迁移期修正：vp run 环境的 PATH 前置 pnpm bin 目录含名为 `git` 的空目录，vitepress 的 git 时间戳缓存会 EISDIR；待用户清理环境异物后可恢复 true）、`outDir: 'dist'`、`themeConfig.search.provider: 'local'`
+- **站点配置**：`lang: 'zh-CN'`、`appearance: true`、`lastUpdated: true`、`outDir: 'dist'`、`themeConfig.search.provider: 'local'`
 - 本地搜索为 minisearch（alpha.20 为 ^7），默认分词对 CJK 不友好；预留 `miniSearch.options` 自定义 tokenizer（如 `Intl.Segmenter`）作为调优点，不阻塞首版
 
 ### 组件页形态（以 button.md 为例）

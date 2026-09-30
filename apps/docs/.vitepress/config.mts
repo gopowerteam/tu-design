@@ -46,9 +46,7 @@ export default defineConfig({
   description: "tu-design 组件库文档",
   outDir: "dist",
   appearance: true,
-  // lastUpdated 关闭：vp run 环境会把 vite-plus 的 pnpm bin 目录前置到 PATH，
-  // 其中存在名为 `git` 的空目录，导致 vitepress 按 PATH 解析 git 时报 EISDIR。
-  // 详见 ledger Task 6 Ruling 与 spec §4。
+  lastUpdated: true,
   buildEnd(siteConfig) {
     cpSync(registryDir, resolve(siteConfig.outDir, "r/vue"), { recursive: true });
   },
