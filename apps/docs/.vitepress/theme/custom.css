@@ -9,6 +9,9 @@
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
 
+/* 显式扫描组件库源码，否则 CVA 中的类（bg-primary 等）不会生成 utilities */
+@source "../../../../packages/vue/src";
+
 /* 组件库 tokens（.dark 变量 + @theme inline 映射），路径：apps/packages/vue */
 @import "../../../../packages/vue/src/styles/tokens.css";
 
