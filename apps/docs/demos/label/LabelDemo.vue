@@ -1,10 +1,7 @@
-<script setup lang="ts">
-import { Input, Label } from "@tu-design/vue";
-</script>
-
 <template>
+  <!-- kebab-case 用法示例：与 PascalCase (TInput) 等价 -->
   <div class="w-72 space-y-2">
-    <Label for="demo-email">邮箱</Label>
-    <Input id="demo-email" type="email" placeholder="name@example.com" />
+    <t-label for="demo-email">邮箱</t-label>
+    <t-input id="demo-email" type="email" placeholder="name@example.com" />
   </div>
 </template>

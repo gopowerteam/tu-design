@@ -1,19 +1,15 @@
-<script setup lang="ts">
-import { Button } from "@tu-design/vue";
-</script>
-
 <template>
   <div class="flex flex-wrap items-center justify-center gap-3">
-    <Button>Default</Button>
-    <Button variant="secondary">Secondary</Button>
-    <Button variant="destructive">Destructive</Button>
-    <Button variant="outline">Outline</Button>
-    <Button variant="ghost">Ghost</Button>
-    <Button variant="link">Link</Button>
-    <Button size="sm">Small</Button>
-    <Button size="lg">Large</Button>
-    <Button size="icon">AI</Button>
-    <Button>
+    <TButton>Default</TButton>
+    <TButton variant="secondary">Secondary</TButton>
+    <TButton variant="destructive">Destructive</TButton>
+    <TButton variant="outline">Outline</TButton>
+    <TButton variant="ghost">Ghost</TButton>
+    <TButton variant="link">Link</TButton>
+    <TButton size="sm">Small</TButton>
+    <TButton size="lg">Large</TButton>
+    <TButton size="icon">AI</TButton>
+    <TButton>
       <template #icon>
         <svg
           viewBox="0 0 24 24"
@@ -28,8 +24,8 @@ import { Button } from "@tu-design/vue";
         </svg>
       </template>
       Icon 前置
-    </Button>
-    <Button variant="outline">
+    </TButton>
+    <TButton variant="outline">
       <template #icon>
         <svg
           viewBox="0 0 24 24"
@@ -44,6 +40,6 @@ import { Button } from "@tu-design/vue";
         </svg>
       </template>
       下载
-    </Button>
+    </TButton>
   </div>
 </template>

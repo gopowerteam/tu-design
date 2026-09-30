@@ -3,6 +3,8 @@ import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
 import tailwindcss from "@tailwindcss/vite";
+import Components from "unplugin-vue-components/vite";
+import { TuDesignResolver } from "../../../packages/vue/src/resolver";
 import type { Plugin } from "vite";
 
 const registryDir = fileURLToPath(new URL("../../../packages/vue/registry/vue", import.meta.url));
@@ -51,7 +53,11 @@ export default defineConfig({
     cpSync(registryDir, resolve(siteConfig.outDir, "r/vue"), { recursive: true });
   },
   vite: {
-    plugins: [tailwindcss(), registryPlugin()],
+    plugins: [
+      tailwindcss(),
+      Components({ resolvers: [TuDesignResolver()], dts: false }),
+      registryPlugin(),
+    ],
     resolve: {
       alias: {
         "@": fileURLToPath(new URL("../../../packages/vue/src", import.meta.url)),
@@ -77,6 +83,7 @@ export default defineConfig({
             { text: "安装", link: "/guide/installation" },
             { text: "CLI", link: "/guide/cli" },
             { text: "主题", link: "/guide/theming" },
+            { text: "自动导入", link: "/guide/auto-import" },
           ],
         },
       ],

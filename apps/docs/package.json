@@ -16,6 +16,7 @@
     "@tailwindcss/vite": "catalog:",
     "shiki": "catalog:",
     "tailwindcss": "catalog:",
+    "unplugin-vue-components": "catalog:",
     "vite": "catalog:",
     "vitepress": "catalog:"
   }

@@ -14,6 +14,7 @@ catalog:
   "@ark-ui/vue": ^5.39.2
   tailwindcss: ^4
   "@tailwindcss/vite": ^4
+  unplugin-vue-components: ^32.1.0
   clsx: ^2.1.1
   tailwind-merge: ^3.7.0
   class-variance-authority: ^0.7.1
