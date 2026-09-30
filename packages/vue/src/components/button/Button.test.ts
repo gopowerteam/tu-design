@@ -22,4 +22,14 @@ describe("Button", () => {
     expect(w.classes()).toContain("bg-red-500");
     expect(w.classes()).not.toContain("bg-primary");
   });
+
+  it("icon 插槽渲染在默认内容之前", () => {
+    const w = mount(Button, {
+      slots: { icon: '<svg data-test="icon"/>', default: "文字" },
+    });
+    const svg = w.find('svg[data-test="icon"]');
+    expect(svg.exists()).toBe(true);
+    const html = w.element.innerHTML;
+    expect(html.indexOf("<svg")).toBeLessThan(html.indexOf("文字"));
+  });
 });

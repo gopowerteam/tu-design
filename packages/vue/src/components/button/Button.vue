@@ -17,6 +17,7 @@ const props = withDefaults(defineProps<Props>(), { as: "button" });
     :is="props.as"
     :class="cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)"
   >
+    <slot name="icon" />
     <slot />
   </component>
 </template>
