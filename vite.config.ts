@@ -13,4 +13,7 @@ export default defineConfig({
   run: {
     cache: true,
   },
+  test: {
+    projects: ["packages/vue/vitest.config.ts", "packages/cli/vite.config.ts"],
+  },
 });

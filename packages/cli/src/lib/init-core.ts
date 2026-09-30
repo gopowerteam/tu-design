@@ -77,6 +77,14 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
   --color-input: var(--input);
   --color-ring: var(--ring);
 }
+
+/* 全局边框色兜底，对齐 shadcn v4 官方 tokens（上游另含 outline-ring/50，此处仅移植 border）：
+   裸 border 类不再回退 currentColor，而是使用 --border token。 */
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+}
 `;
 
 /** cn 工具模板，等价 @tu-design/vue/src/lib/utils.ts。 */
