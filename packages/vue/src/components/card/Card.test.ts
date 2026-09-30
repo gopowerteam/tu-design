@@ -39,5 +39,7 @@ describe("Card", () => {
     const w = mount(Card);
     expect(w.classes()).toContain("rounded-xl");
     expect(w.classes()).toContain("bg-card");
+    expect(w.classes()).toContain("border-border");
+    expect(w.classes()).toContain("shadow-xs");
   });
 });
