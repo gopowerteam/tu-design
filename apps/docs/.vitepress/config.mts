@@ -95,6 +95,7 @@ export default defineConfig({
             { text: "Badge", link: "/components/badge" },
             { text: "Button", link: "/components/button" },
             { text: "Card", link: "/components/card" },
+            { text: "Dialog", link: "/components/dialog" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
             { text: "Separator", link: "/components/separator" },

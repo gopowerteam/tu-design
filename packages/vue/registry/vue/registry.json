@@ -27,6 +27,12 @@
       "description": "卡片容器族：Header/Title/Description/Content/Footer。"
     },
     {
+      "name": "dialog",
+      "title": "Dialog",
+      "type": "registry:ui",
+      "description": "模态对话框：基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 asChild 与 v-model:open。"
+    },
+    {
       "name": "input",
       "title": "Input",
       "type": "registry:ui",
