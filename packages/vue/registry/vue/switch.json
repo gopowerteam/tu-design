@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "switch",
+  "type": "registry:ui",
+  "description": "开关：基于 Ark UI Switch 原语，支持标签插槽、受控/非受控与禁用。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "switch/Switch.vue",
+      "type": "registry:component",
+      "target": "components/ui/switch/Switch.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Switch as ArkSwitch } from \"@ark-ui/vue/switch\";\nimport { cn } from \"@/lib/utils\";\n\n// checked 用 default: undefined 禁用 Boolean casting（Dialog 同款约定）\nconst props = defineProps({\n  checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultChecked: { type: Boolean, default: false },\n  disabled: { type: Boolean, default: false },\n  class: { type: String, default: undefined },\n});\n\nconst emit = defineEmits<{ \"update:checked\": [checked: boolean] }>();\n\n// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）\nconst internalChecked = ref(props.defaultChecked);\nconst isChecked = computed(() => props.checked ?? internalChecked.value);\n\nfunction handleUpdate(checked: boolean) {\n  internalChecked.value = checked;\n  emit(\"update:checked\", checked);\n}\n</script>\n\n<template>\n  <ArkSwitch.Root\n    :checked=\"isChecked\"\n    :disabled=\"props.disabled\"\n    :class=\"cn('inline-flex items-center gap-2', props.class)\"\n    @update:checked=\"handleUpdate\"\n  >\n    <ArkSwitch.HiddenInput />\n    <ArkSwitch.Control\n      class=\"peer data-[state=checked]:bg-primary data-[state=unchecked]:bg-input focus-visible:ring-ring/50 inline-flex h-[1.15rem] w-8 shrink-0 items-center rounded-full border border-transparent shadow-xs transition-all outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50\"\n    >\n      <ArkSwitch.Thumb\n        class=\"bg-background pointer-events-none block size-4 rounded-full ring-0 transition-transform data-[state=checked]:translate-x-[calc(100%-2px)] data-[state=unchecked]:translate-x-0\"\n      />\n    </ArkSwitch.Control>\n    <ArkSwitch.Label v-if=\"$slots.default\" class=\"text-sm font-medium select-none\">\n      <slot />\n    </ArkSwitch.Label>\n  </ArkSwitch.Root>\n</template>\n"
+    },
+    {
+      "path": "switch/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/switch/index.ts",
+      "content": "export { default as Switch } from \"./Switch.vue\";\n"
+    }
+  ]
+}

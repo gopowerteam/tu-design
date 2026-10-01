@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "checkbox",
+  "type": "registry:ui",
+  "description": "复选框：基于 Ark UI Checkbox 原语，支持标签插槽、受控/非受控与禁用。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "checkbox/Checkbox.vue",
+      "type": "registry:component",
+      "target": "components/ui/checkbox/Checkbox.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Checkbox as ArkCheckbox } from \"@ark-ui/vue/checkbox\";\nimport { cn } from \"@/lib/utils\";\n\n// checked 用 default: undefined 禁用 Boolean casting（Dialog 同款约定）\nconst props = defineProps({\n  checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultChecked: { type: Boolean, default: false },\n  disabled: { type: Boolean, default: false },\n  class: { type: String, default: undefined },\n});\n\nconst emit = defineEmits<{ \"update:checked\": [checked: boolean] }>();\n\n// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）\nconst internalChecked = ref(props.defaultChecked);\nconst isChecked = computed(() => props.checked ?? internalChecked.value);\n\nfunction handleUpdate(checked: boolean) {\n  internalChecked.value = checked;\n  emit(\"update:checked\", checked);\n}\n</script>\n\n<template>\n  <ArkCheckbox.Root\n    :checked=\"isChecked\"\n    :disabled=\"props.disabled\"\n    :class=\"cn('inline-flex items-center gap-2', props.class)\"\n    @update:checked=\"handleUpdate\"\n  >\n    <ArkCheckbox.HiddenInput />\n    <ArkCheckbox.Control\n      class=\"border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 peer size-4 shrink-0 rounded-[4px] border bg-transparent shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50\"\n    >\n      <ArkCheckbox.Indicator class=\"flex items-center justify-center text-current\">\n        <svg\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          stroke-width=\"3\"\n          stroke-linecap=\"round\"\n          stroke-linejoin=\"round\"\n          class=\"size-3.5\"\n        >\n          <path d=\"M20 6 9 17l-5-5\" />\n        </svg>\n      </ArkCheckbox.Indicator>\n    </ArkCheckbox.Control>\n    <ArkCheckbox.Label v-if=\"$slots.default\" class=\"text-sm leading-none font-medium select-none\">\n      <slot />\n    </ArkCheckbox.Label>\n  </ArkCheckbox.Root>\n</template>\n"
+    },
+    {
+      "path": "checkbox/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/checkbox/index.ts",
+      "content": "export { default as Checkbox } from \"./Checkbox.vue\";\n"
+    }
+  ]
+}

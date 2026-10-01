@@ -27,6 +27,12 @@
       "description": "卡片容器族：Header/Title/Description/Content/Footer。"
     },
     {
+      "name": "checkbox",
+      "title": "Checkbox",
+      "type": "registry:ui",
+      "description": "复选框：基于 Ark UI Checkbox 原语，支持标签插槽、受控/非受控与禁用。"
+    },
+    {
       "name": "dialog",
       "title": "Dialog",
       "type": "registry:ui",
@@ -51,6 +57,12 @@
       "description": "表单标签。"
     },
     {
+      "name": "radio-group",
+      "title": "RadioGroup",
+      "type": "registry:ui",
+      "description": "单选组：基于 Ark UI Radio Group 原语，键盘导航与受控/非受控双模式。"
+    },
+    {
       "name": "select",
       "title": "Select",
       "type": "registry:ui",
@@ -69,10 +81,22 @@
       "description": "加载占位骨架屏。"
     },
     {
+      "name": "slider",
+      "title": "Slider",
+      "type": "registry:ui",
+      "description": "滑块：基于 Ark UI Slider 原语，支持单值/区间、步进与键盘微调。"
+    },
+    {
       "name": "slot",
       "title": "Slot",
       "type": "registry:ui",
       "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。"
+    },
+    {
+      "name": "switch",
+      "title": "Switch",
+      "type": "registry:ui",
+      "description": "开关：基于 Ark UI Switch 原语，支持标签插槽、受控/非受控与禁用。"
     },
     {
       "name": "tabs",

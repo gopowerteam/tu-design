@@ -1,0 +1,5 @@
+{
+  "description": "滑块：基于 Ark UI Slider 原语，支持单值/区间、步进与键盘微调。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

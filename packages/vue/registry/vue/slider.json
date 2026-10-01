@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "slider",
+  "type": "registry:ui",
+  "description": "滑块：基于 Ark UI Slider 原语，支持单值/区间、步进与键盘微调。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "slider/Slider.vue",
+      "type": "registry:component",
+      "target": "components/ui/slider/Slider.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed } from \"vue\";\nimport { Slider as ArkSlider } from \"@ark-ui/vue/slider\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  /** 当前值（配合 v-model）；单值或区间数组，不传时为非受控 */\n  value?: number | number[];\n  defaultValue?: number | number[];\n  min?: number;\n  max?: number;\n  step?: number;\n  disabled?: boolean;\n  class?: string;\n}\n\nconst props = withDefaults(\n  defineProps<{\n    value?: number | number[];\n    defaultValue?: number | number[];\n    min?: number;\n    max?: number;\n    step?: number;\n    disabled?: boolean;\n    class?: string;\n  }>(),\n  { min: 0, max: 100, step: 1 },\n);\n\nconst emit = defineEmits<{ \"update:modelValue\": [value: number[]] }>();\n\nconst toArray = (v: number | number[] | undefined) =>\n  v === undefined ? undefined : Array.isArray(v) ? v : [v];\n\nconst thumbs = computed(() => toArray(props.value) ?? toArray(props.defaultValue) ?? [props.min]);\n</script>\n\n<template>\n  <ArkSlider.Root\n    :model-value=\"toArray(props.value)\"\n    :default-value=\"toArray(props.defaultValue)\"\n    :min=\"props.min\"\n    :max=\"props.max\"\n    :step=\"props.step\"\n    :disabled=\"props.disabled\"\n    :class=\"\n      cn(\n        'relative flex w-full touch-none select-none items-center data-[disabled]:opacity-50',\n        props.class,\n      )\n    \"\n    @update:model-value=\"(value: number[]) => emit('update:modelValue', value)\"\n  >\n    <ArkSlider.Control class=\"relative flex h-5 w-full items-center\">\n      <ArkSlider.Track class=\"bg-muted relative h-1 w-full grow overflow-hidden rounded-full\">\n        <ArkSlider.Range class=\"bg-primary absolute h-full\" />\n      </ArkSlider.Track>\n      <ArkSlider.Thumb\n        v-for=\"(_, index) in thumbs\"\n        :key=\"index\"\n        :index=\"index\"\n        class=\"border-primary bg-background ring-ring/50 block size-4 shrink-0 rounded-full border shadow-sm transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50\"\n      >\n        <ArkSlider.HiddenInput />\n      </ArkSlider.Thumb>\n    </ArkSlider.Control>\n  </ArkSlider.Root>\n</template>\n"
+    },
+    {
+      "path": "slider/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/slider/index.ts",
+      "content": "export { default as Slider } from \"./Slider.vue\";\n"
+    }
+  ]
+}

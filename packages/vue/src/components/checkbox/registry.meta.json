@@ -1,0 +1,5 @@
+{
+  "description": "复选框：基于 Ark UI Checkbox 原语，支持标签插槽、受控/非受控与禁用。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}
