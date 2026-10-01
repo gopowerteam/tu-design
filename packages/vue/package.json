@@ -14,7 +14,7 @@
   },
   "scripts": {
     "prepack": "vp run build",
-    "build": "vp run generate:registry && vp pack && rm -rf dist/registry/vue && mkdir -p dist/registry/vue && cp -r registry/vue/. dist/registry/vue/",
+    "build": "vp run generate:registry && vp pack && tsx scripts/copy-registry.ts",
     "generate:registry": "tsx scripts/generate-registry.ts && vp fmt registry",
     "typecheck": "vue-tsc --noEmit",
     "test": "vp test --run"
