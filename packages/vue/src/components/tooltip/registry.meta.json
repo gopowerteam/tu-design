@@ -1,0 +1,5 @@
+{
+  "description": "文字提示气泡：悬停触发，基于 Ark UI Tooltip 原语，支持 asChild 与延迟配置。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

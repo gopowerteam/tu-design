@@ -33,6 +33,12 @@
       "description": "模态对话框：基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 asChild 与 v-model:open。"
     },
     {
+      "name": "dropdown-menu",
+      "title": "DropdownMenu",
+      "type": "registry:ui",
+      "description": "下拉菜单：基于 Ark UI Menu 原语，含键盘导航、选中回调与分组/分隔线，Trigger 支持 asChild。"
+    },
+    {
       "name": "input",
       "title": "Input",
       "type": "registry:ui",
@@ -67,6 +73,12 @@
       "title": "Tokens",
       "type": "registry:style",
       "description": "Tailwind CSS v4 语义 tokens（shadcn 官方 v4 集合）。"
+    },
+    {
+      "name": "tooltip",
+      "title": "Tooltip",
+      "type": "registry:ui",
+      "description": "文字提示气泡：悬停触发，基于 Ark UI Tooltip 原语，支持 asChild 与延迟配置。"
     },
     {
       "name": "utils",

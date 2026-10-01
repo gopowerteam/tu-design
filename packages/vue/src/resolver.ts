@@ -24,11 +24,21 @@ export const COMPONENT_NAMES = [
   "DialogHeader",
   "DialogTitle",
   "DialogTrigger",
+  "DropdownMenu",
+  "DropdownMenuContent",
+  "DropdownMenuGroup",
+  "DropdownMenuItem",
+  "DropdownMenuLabel",
+  "DropdownMenuSeparator",
+  "DropdownMenuTrigger",
   "Input",
   "Label",
   "Separator",
   "Skeleton",
   "Slot",
+  "Tooltip",
+  "TooltipContent",
+  "TooltipTrigger",
 ] as const;
 
 /** 结构兼容 unplugin-vue-components 的 ComponentResolveResult，无需依赖其类型 */

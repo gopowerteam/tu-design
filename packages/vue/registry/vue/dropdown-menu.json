@@ -1,0 +1,58 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "dropdown-menu",
+  "type": "registry:ui",
+  "description": "下拉菜单：基于 Ark UI Menu 原语，含键盘导航、选中回调与分组/分隔线，Trigger 支持 asChild。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "dropdown-menu/DropdownMenu.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\n\ninterface Props {\n  /** 受控开关（配合 v-model:open）；不传时为非受控 */\n  open?: boolean;\n  defaultOpen?: boolean;\n  lazyMount?: boolean;\n  unmountOnExit?: boolean;\n}\n\n// open 用 default: undefined 禁用 Boolean casting（Dialog/Tooltip 同款约定）\nconst props = defineProps({\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultOpen: { type: Boolean, default: false },\n  lazyMount: { type: Boolean, default: false },\n  unmountOnExit: { type: Boolean, default: false },\n});\n\nconst emit = defineEmits<{\n  \"update:open\": [open: boolean];\n  /** 选中某个 item 时触发（closeOnSelect 关闭后仍会先发出） */\n  select: [details: { value: string }];\n}>();\n\n// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n\nfunction handleSelect(details: { value: string }) {\n  emit(\"select\", details);\n}\n</script>\n\n<template>\n  <ArkMenu.Root\n    :open=\"isOpen\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:open=\"handleUpdate\"\n    @select=\"handleSelect\"\n  >\n    <slot />\n  </ArkMenu.Root>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuContent.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuContent.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkMenu.Positioner class=\"z-50\">\n    <ArkMenu.Content\n      :class=\"\n        cn(\n          'bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95',\n          props.class,\n        )\n      \"\n    >\n      <slot />\n    </ArkMenu.Content>\n  </ArkMenu.Positioner>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuGroup.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuGroup.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\n\ninterface Props {\n  /** 分组的可访问名称 */\n  label?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkMenu.ItemGroup :label=\"props.label\">\n    <slot />\n  </ArkMenu.ItemGroup>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuItem.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuItem.vue",
+      "content": "<script setup lang=\"ts\">\nimport { useId } from \"vue\";\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  /** 选中回调里回传的标识；缺省自动生成 */\n  value?: string;\n  disabled?: boolean;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { value: undefined, disabled: false });\n\nconst autoValue = useId();\n</script>\n\n<template>\n  <ArkMenu.Item\n    :value=\"props.value ?? autoValue\"\n    :disabled=\"props.disabled\"\n    :class=\"\n      cn(\n        'relative flex cursor-pointer select-none items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 [&_svg]:size-4 [&_svg]:shrink-0',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </ArkMenu.Item>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuLabel.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuLabel.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <div :class=\"cn('px-2 py-1.5 text-sm font-medium', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuSeparator.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuSeparator.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkMenu.Separator :class=\"cn('-mx-1 my-1 h-px bg-muted', props.class)\" />\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/DropdownMenuTrigger.vue",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/DropdownMenuTrigger.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\n\ninterface Props {\n  /** 以默认插槽子元素为渲染目标，行为合并其上 */\n  asChild?: boolean;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkMenu.Trigger :as-child=\"props.asChild\">\n    <slot />\n  </ArkMenu.Trigger>\n</template>\n"
+    },
+    {
+      "path": "dropdown-menu/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/dropdown-menu/index.ts",
+      "content": "export { default as DropdownMenu } from \"./DropdownMenu.vue\";\nexport { default as DropdownMenuContent } from \"./DropdownMenuContent.vue\";\nexport { default as DropdownMenuGroup } from \"./DropdownMenuGroup.vue\";\nexport { default as DropdownMenuItem } from \"./DropdownMenuItem.vue\";\nexport { default as DropdownMenuLabel } from \"./DropdownMenuLabel.vue\";\nexport { default as DropdownMenuSeparator } from \"./DropdownMenuSeparator.vue\";\nexport { default as DropdownMenuTrigger } from \"./DropdownMenuTrigger.vue\";\n"
+    }
+  ]
+}
