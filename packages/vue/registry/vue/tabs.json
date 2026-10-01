@@ -1,0 +1,39 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "tabs",
+  "type": "registry:ui",
+  "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。",
+  "registryDependencies": ["utils"],
+  "files": [
+    {
+      "path": "tabs/Tabs.vue",
+      "type": "registry:component",
+      "target": "components/ui/tabs/Tabs.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Tabs as ArkTabs } from \"@ark-ui/vue/tabs\";\n\ninterface Props {\n  /** 当前激活的 tab 值（配合 v-model:value）；不传时为非受控 */\n  value?: string;\n  defaultValue?: string;\n  /** 切换模式：automatic 悬停聚焦即切换 / manual 需点击或 Enter */\n  activationMode?: \"automatic\" | \"manual\";\n  lazyMount?: boolean;\n  unmountOnExit?: boolean;\n}\n\nconst props = defineProps<Props>();\n\nconst emit = defineEmits<{ \"update:value\": [value: string] }>();\n</script>\n\n<template>\n  <ArkTabs.Root\n    :model-value=\"props.value\"\n    :default-value=\"props.defaultValue\"\n    :activation-mode=\"props.activationMode\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:model-value=\"(value: string) => emit('update:value', value)\"\n  >\n    <slot />\n  </ArkTabs.Root>\n</template>\n"
+    },
+    {
+      "path": "tabs/TabsContent.vue",
+      "type": "registry:component",
+      "target": "components/ui/tabs/TabsContent.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Tabs as ArkTabs } from \"@ark-ui/vue/tabs\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  value: string;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkTabs.Content :value=\"props.value\" :class=\"cn('flex-1 outline-none', props.class)\">\n    <slot />\n  </ArkTabs.Content>\n</template>\n"
+    },
+    {
+      "path": "tabs/TabsList.vue",
+      "type": "registry:component",
+      "target": "components/ui/tabs/TabsList.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Tabs as ArkTabs } from \"@ark-ui/vue/tabs\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkTabs.List\n    :class=\"\n      cn(\n        'bg-muted text-muted-foreground inline-flex h-9 w-fit items-center justify-center rounded-lg p-[3px]',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </ArkTabs.List>\n</template>\n"
+    },
+    {
+      "path": "tabs/TabsTrigger.vue",
+      "type": "registry:component",
+      "target": "components/ui/tabs/TabsTrigger.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Tabs as ArkTabs } from \"@ark-ui/vue/tabs\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  value: string;\n  disabled?: boolean;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkTabs.Trigger\n    :value=\"props.value\"\n    :disabled=\"props.disabled\"\n    :class=\"\n      cn(\n        'data-[selected]:bg-background data-[selected]:text-foreground inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-2 py-1 text-sm font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:ring-ring/50 focus-visible:outline-none focus-visible:ring-[3px] disabled:pointer-events-none disabled:opacity-50 data-[selected]:shadow-sm',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </ArkTabs.Trigger>\n</template>\n"
+    },
+    {
+      "path": "tabs/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/tabs/index.ts",
+      "content": "export { default as Tabs } from \"./Tabs.vue\";\nexport { default as TabsContent } from \"./TabsContent.vue\";\nexport { default as TabsList } from \"./TabsList.vue\";\nexport { default as TabsTrigger } from \"./TabsTrigger.vue\";\n"
+    }
+  ]
+}

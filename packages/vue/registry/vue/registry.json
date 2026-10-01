@@ -51,6 +51,12 @@
       "description": "表单标签。"
     },
     {
+      "name": "select",
+      "title": "Select",
+      "type": "registry:ui",
+      "description": "下拉选择框：基于 Ark UI Select 原语，含键盘导航、选中回显与勾选指示，Trigger 支持 asChild。"
+    },
+    {
       "name": "separator",
       "title": "Separator",
       "type": "registry:ui",
@@ -67,6 +73,12 @@
       "title": "Slot",
       "type": "registry:ui",
       "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。"
+    },
+    {
+      "name": "tabs",
+      "title": "Tabs",
+      "type": "registry:ui",
+      "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。"
     },
     {
       "name": "tokens",

@@ -1,0 +1,52 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "select",
+  "type": "registry:ui",
+  "description": "下拉选择框：基于 Ark UI Select 原语，含键盘导航、选中回显与勾选指示，Trigger 支持 asChild。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "select/Select.vue",
+      "type": "registry:component",
+      "target": "components/ui/select/Select.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { createListCollection } from \"@ark-ui/vue/collection\";\nimport { Select as ArkSelect } from \"@ark-ui/vue/select\";\nimport type { SelectItemOption } from \"./types\";\n\n// modelValue 为 String 类型无 Boolean casting 问题；「未传」经 default: undefined 保持 undefined\nconst props = defineProps({\n  /** 选项列表（构建键盘导航/回显所需的 collection） */\n  items: { type: Array as PropType<(string | SelectItemOption)[]>, required: true },\n  /** 当前值（配合 v-model）；不传时为非受控 */\n  modelValue: { type: String as PropType<string | undefined>, default: undefined },\n  defaultValue: { type: String, default: undefined },\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultOpen: { type: Boolean, default: false },\n  lazyMount: { type: Boolean, default: false },\n  unmountOnExit: { type: Boolean, default: false },\n});\n\nconst emit = defineEmits<{\n  \"update:modelValue\": [value: string];\n  \"update:open\": [open: boolean];\n}>();\n\n// zag select 的 value 内部统一为数组，这里保持单选 string 的公开语义\nconst toArray = (v: string | undefined) => (v === undefined ? undefined : [v]);\n\n// 对 Root 恒走受控模式（Dialog 同款）：非受控语义由内部 ref 实现\nconst internalValue = ref<string | undefined>(props.defaultValue);\nconst modelValue = computed(() => props.modelValue ?? internalValue.value);\nconst collection = computed(() =>\n  createListCollection({\n    items: props.items.map((item) =>\n      typeof item === \"string\" ? { label: item, value: item } : item,\n    ),\n  }),\n);\n\nfunction handleModelUpdate(next: string | string[]) {\n  const value = Array.isArray(next) ? next[0]! : next;\n  internalValue.value = value;\n  emit(\"update:modelValue\", value);\n}\n\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleOpenUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n</script>\n\n<template>\n  <ArkSelect.Root\n    :collection=\"collection\"\n    :model-value=\"toArray(modelValue)\"\n    :open=\"isOpen\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:model-value=\"handleModelUpdate\"\n    @update:open=\"handleOpenUpdate\"\n  >\n    <slot />\n  </ArkSelect.Root>\n</template>\n"
+    },
+    {
+      "path": "select/SelectContent.vue",
+      "type": "registry:component",
+      "target": "components/ui/select/SelectContent.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Select as ArkSelect } from \"@ark-ui/vue/select\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkSelect.Positioner class=\"z-50\">\n    <ArkSelect.Content\n      :class=\"\n        cn(\n          'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md',\n          props.class,\n        )\n      \"\n    >\n      <slot />\n    </ArkSelect.Content>\n  </ArkSelect.Positioner>\n</template>\n"
+    },
+    {
+      "path": "select/SelectItem.vue",
+      "type": "registry:component",
+      "target": "components/ui/select/SelectItem.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed } from \"vue\";\nimport { Select as ArkSelect } from \"@ark-ui/vue/select\";\nimport { cn } from \"@/lib/utils\";\nimport { normalizeSelectItem, type SelectItemOption } from \"./types\";\n\ninterface Props {\n  /** 选项（与 TSelect 的 items 中对应项一致，或直接传字符串） */\n  item: string | SelectItemOption;\n  class?: string;\n}\n\nconst props = defineProps({\n  item: {\n    type: [String, Object] as PropType<string | SelectItemOption>,\n    required: true,\n  },\n  class: { type: String, default: undefined },\n});\n\nconst normalized = computed(() => normalizeSelectItem(props.item));\n</script>\n\n<template>\n  <ArkSelect.Item\n    :item=\"normalized\"\n    :class=\"\n      cn(\n        'data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground relative flex w-full cursor-pointer items-center gap-2 rounded-sm py-1.5 pr-8 pl-2 text-sm outline-none select-none data-[disabled]:pointer-events-none data-[disabled]:opacity-50',\n        props.class,\n      )\n    \"\n  >\n    <ArkSelect.ItemText>{{ normalized.label }}</ArkSelect.ItemText>\n    <ArkSelect.ItemIndicator class=\"absolute right-2\">\n      <svg\n        viewBox=\"0 0 24 24\"\n        fill=\"none\"\n        stroke=\"currentColor\"\n        stroke-width=\"2\"\n        stroke-linecap=\"round\"\n        stroke-linejoin=\"round\"\n        class=\"size-4\"\n      >\n        <path d=\"M20 6 9 17l-5-5\" />\n      </svg>\n    </ArkSelect.ItemIndicator>\n  </ArkSelect.Item>\n</template>\n"
+    },
+    {
+      "path": "select/SelectTrigger.vue",
+      "type": "registry:component",
+      "target": "components/ui/select/SelectTrigger.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Select as ArkSelect } from \"@ark-ui/vue/select\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  /** 以默认插槽子元素为渲染目标（chevron 需自行放置） */\n  asChild?: boolean;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkSelect.Control class=\"w-fit\">\n    <ArkSelect.Trigger\n      :as-child=\"props.asChild\"\n      :class=\"\n        cn(\n          'border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs focus-visible:outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',\n          props.class,\n        )\n      \"\n    >\n      <slot />\n      <svg\n        v-if=\"!props.asChild\"\n        viewBox=\"0 0 24 24\"\n        fill=\"none\"\n        stroke=\"currentColor\"\n        stroke-width=\"2\"\n        stroke-linecap=\"round\"\n        stroke-linejoin=\"round\"\n        class=\"size-4 opacity-50\"\n      >\n        <path d=\"m6 9 6 6 6-6\" />\n      </svg>\n    </ArkSelect.Trigger>\n  </ArkSelect.Control>\n</template>\n"
+    },
+    {
+      "path": "select/SelectValueText.vue",
+      "type": "registry:component",
+      "target": "components/ui/select/SelectValueText.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Select as ArkSelect } from \"@ark-ui/vue/select\";\n\ninterface Props {\n  placeholder?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<!-- 注意：不能向 ValueText 传插槽内容，其内部会对默认插槽做字符串化渲染 -->\n<template>\n  <ArkSelect.ValueText :placeholder=\"props.placeholder\" />\n</template>\n"
+    },
+    {
+      "path": "select/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/select/index.ts",
+      "content": "export { default as Select } from \"./Select.vue\";\nexport { default as SelectContent } from \"./SelectContent.vue\";\nexport { default as SelectItem } from \"./SelectItem.vue\";\nexport { default as SelectTrigger } from \"./SelectTrigger.vue\";\nexport { default as SelectValueText } from \"./SelectValueText.vue\";\nexport type { SelectItemOption } from \"./types\";\n"
+    },
+    {
+      "path": "select/types.ts",
+      "type": "registry:component",
+      "target": "components/ui/select/types.ts",
+      "content": "export interface SelectItemOption {\n  label: string;\n  value: string;\n  disabled?: boolean;\n}\n\nexport function normalizeSelectItem(item: string | SelectItemOption): SelectItemOption {\n  return typeof item === \"string\" ? { label: item, value: item } : item;\n}\n"
+    }
+  ]
+}
