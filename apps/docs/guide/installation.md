@@ -35,7 +35,7 @@ export default defineConfig({
 
 ## 2. 引入主题变量
 
-将 [tokens.css](https://github.com/zhuchentong/tu-design)（shadcn 风格 CSS 变量 + Tailwind `@theme inline` 映射）加入你的全局样式：
+将 [tokens.css](https://github.com/gopowerteam/tu-design/blob/master/packages/vue/src/styles/tokens.css)（shadcn 风格 CSS 变量 + Tailwind `@theme inline` 映射）加入你的全局样式：
 
 ```css
 /* src/style.css */

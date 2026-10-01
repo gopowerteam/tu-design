@@ -9,7 +9,15 @@
     "shadcn",
     "vue"
   ],
+  "homepage": "https://github.com/gopowerteam/tu-design#readme",
+  "bugs": {
+    "url": "https://github.com/gopowerteam/tu-design/issues"
+  },
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gopowerteam/tu-design.git"
+  },
   "bin": {
     "tu-design": "./dist/index.mjs"
   },

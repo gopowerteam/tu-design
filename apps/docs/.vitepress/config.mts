@@ -72,7 +72,7 @@ export default defineConfig({
     nav: [
       { text: "指南", link: "/guide/introduction", activeMatch: "/guide/" },
       { text: "组件", link: "/components/button", activeMatch: "/components/" },
-      { text: "GitHub", link: "https://github.com/zhuchentong/tu-design" },
+      { text: "GitHub", link: "https://github.com/gopowerteam/tu-design" },
     ],
     sidebar: {
       "/guide/": [

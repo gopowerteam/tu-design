@@ -11,14 +11,14 @@
     "vue",
     "vue3"
   ],
-  "homepage": "https://github.com/zhuchentong/tu-design#readme",
+  "homepage": "https://github.com/gopowerteam/tu-design#readme",
   "bugs": {
-    "url": "https://github.com/zhuchentong/tu-design/issues"
+    "url": "https://github.com/gopowerteam/tu-design/issues"
   },
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/zhuchentong/tu-design.git"
+    "url": "git+https://github.com/gopowerteam/tu-design.git"
   },
   "files": [
     "dist"
