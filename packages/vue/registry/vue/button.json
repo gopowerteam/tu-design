@@ -2,15 +2,15 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "button",
   "type": "registry:ui",
-  "description": "带变体与尺寸的按钮，支持 as 标签切换。",
-  "registryDependencies": ["utils"],
+  "description": "带变体与尺寸的按钮，支持 as 标签切换与 asChild 组合。",
+  "registryDependencies": ["utils", "slot"],
   "dependencies": ["class-variance-authority@^0.7.1"],
   "files": [
     {
       "path": "button/Button.vue",
       "type": "registry:component",
       "target": "components/ui/button/Button.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { buttonVariants, type ButtonVariants } from \"./index\";\n\ninterface Props {\n  variant?: ButtonVariants[\"variant\"];\n  size?: ButtonVariants[\"size\"];\n  as?: string;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { as: \"button\" });\n</script>\n\n<template>\n  <component\n    :is=\"props.as\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot name=\"icon\" />\n    <slot />\n  </component>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { Slot } from \"@/components/slot\";\nimport { buttonVariants, type ButtonVariants } from \"./index\";\n\ninterface Props {\n  variant?: ButtonVariants[\"variant\"];\n  size?: ButtonVariants[\"size\"];\n  as?: string;\n  asChild?: boolean;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { as: \"button\" });\n</script>\n\n<template>\n  <Slot\n    v-if=\"props.asChild\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot />\n  </Slot>\n  <component\n    v-else\n    :is=\"props.as\"\n    :class=\"cn(buttonVariants({ variant: props.variant, size: props.size }), props.class)\"\n  >\n    <slot name=\"icon\" />\n    <slot />\n  </component>\n</template>\n"
     },
     {
       "path": "button/index.ts",

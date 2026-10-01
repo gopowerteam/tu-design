@@ -8,3 +8,4 @@ export * from "./components/input";
 export * from "./components/label";
 export * from "./components/separator";
 export * from "./components/skeleton";
+export * from "./components/slot";

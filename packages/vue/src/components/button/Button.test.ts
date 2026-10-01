@@ -33,3 +33,43 @@ describe("Button", () => {
     expect(html.indexOf("<svg")).toBeLessThan(html.indexOf("文字"));
   });
 });
+
+describe("Button asChild", () => {
+  const child = '<a class="font-bold" href="/docs">文档</a>';
+
+  it("渲染子元素并携带变体类与子元素自身类", () => {
+    const w = mount(Button, { props: { asChild: true }, slots: { default: child } });
+    expect(w.element.tagName).toBe("A");
+    expect(w.classes()).toContain("bg-primary");
+    expect(w.classes()).toContain("font-bold");
+    expect(w.attributes("href")).toBe("/docs");
+  });
+
+  it("as 属性被忽略", () => {
+    const w = mount(Button, {
+      props: { asChild: true, as: "span" },
+      slots: { default: child },
+    });
+    expect(w.element.tagName).toBe("A");
+  });
+
+  it("子元素 class 与变体类经 cn 冲突合并（子元素优先）", () => {
+    const w = mount(Button, {
+      props: { asChild: true, class: "px-10" },
+      slots: { default: '<a class="bg-red-500 px-20">x</a>' },
+    });
+    expect(w.classes()).toContain("bg-red-500");
+    expect(w.classes()).toContain("px-20");
+    expect(w.classes()).not.toContain("bg-primary");
+    expect(w.classes()).not.toContain("px-4");
+  });
+
+  it("透传 attrs 落到子元素", () => {
+    const w = mount(Button, {
+      props: { asChild: true },
+      attrs: { type: "submit" },
+      slots: { default: child },
+    });
+    expect(w.attributes("type")).toBe("submit");
+  });
+});

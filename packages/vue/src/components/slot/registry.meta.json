@@ -1,0 +1,4 @@
+{
+  "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。",
+  "registryDependencies": ["utils"]
+}

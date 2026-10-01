@@ -20,6 +20,7 @@ export const COMPONENT_NAMES = [
   "Label",
   "Separator",
   "Skeleton",
+  "Slot",
 ] as const;
 
 /** 结构兼容 unplugin-vue-components 的 ComponentResolveResult，无需依赖其类型 */
