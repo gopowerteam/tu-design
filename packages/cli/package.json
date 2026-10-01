@@ -1,6 +1,15 @@
 {
   "name": "@tu-design/cli",
   "version": "0.1.0",
+  "description": "tu-design CLI：初始化并按 registry 分发组件源码到用户项目（shadcn 模式）。",
+  "keywords": [
+    "cli",
+    "registry",
+    "scaffold",
+    "shadcn",
+    "vue"
+  ],
+  "license": "MIT",
   "bin": {
     "tu-design": "./dist/index.mjs"
   },

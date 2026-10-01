@@ -1,6 +1,25 @@
 {
   "name": "@tu-design/vue",
   "version": "0.1.0",
+  "description": "shadcn 风格的 Vue 3 组件库：Tailwind CSS v4 主题 + Ark UI 原语，CLI 分发组件源码。",
+  "keywords": [
+    "components",
+    "registry",
+    "shadcn",
+    "tailwindcss",
+    "ui",
+    "vue",
+    "vue3"
+  ],
+  "homepage": "https://github.com/zhuchentong/tu-design#readme",
+  "bugs": {
+    "url": "https://github.com/zhuchentong/tu-design/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhuchentong/tu-design.git"
+  },
   "files": [
     "dist"
   ],
