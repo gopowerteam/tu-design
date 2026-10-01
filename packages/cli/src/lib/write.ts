@@ -1,4 +1,3 @@
-import { join } from "node:path";
 import type { Io } from "./io";
 import type { ComponentsConfig } from "./config";
 import type { RegistryItem } from "./registry-types";
@@ -13,7 +12,8 @@ function parentDir(dir: string): string | null {
 
 /** 自 cwd 向上找最近的 components.json；到文件系统根仍无 → 抛错提示 init。 */
 export function findProjectRoot(io: Io, cwd: string): string {
-  let dir = cwd;
+  // 纯逻辑层统一 POSIX 分隔符，真实 Windows cwd（反斜杠）也能正确逐级上溯
+  let dir = cwd.replace(/\\/g, "/");
   for (;;) {
     if (io.exists(`${dir}/components.json`)) {
       return dir;
@@ -28,12 +28,12 @@ export function findProjectRoot(io: Io, cwd: string): string {
   }
 }
 
-/** registry target 恒为 POSIX /；此处按平台逐段 join 规范化。 */
+/** registry target 恒为 POSIX /；纯逻辑层统一 POSIX 路径，真实 fs 由 node IO 兜底（Windows 同样接受 /）。 */
 export function resolveTarget(target: string, config: ComponentsConfig, aliasRoot: string): string {
   // config 当前用于保留 alias 语义的扩展位（target 已按 components/ui 布局生成）
   void config;
-  const root = aliasRoot.replace(/[/\\]+$/, "");
-  return join(root, ...target.split("/"));
+  const root = aliasRoot.replace(/\\/g, "/").replace(/\/+$/, "");
+  return `${root}/${target}`;
 }
 
 export interface WritePlan {
