@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: check / typecheck / test / build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # 版本取自根 package.json 的 packageManager 字段（pnpm@12.6.0，与 devEngines 一致）
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # oxfmt + oxlint（typeAware）
+      - name: Check
+        run: pnpm exec vp check
+
+      # vp check 不覆盖 SFC，vue-tsc / tsc 在此兜底（spec §11）
+      - name: Typecheck
+        run: pnpm exec vp run -r typecheck
+
+      - name: Test
+        run: pnpm exec vp test
+
+      - name: Build
+        run: pnpm exec vp run -r build
