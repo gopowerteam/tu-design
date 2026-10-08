@@ -9,6 +9,9 @@ import type { Plugin } from "vite";
 
 const registryDir = fileURLToPath(new URL("../../../packages/vue/registry/vue", import.meta.url));
 
+/** GitHub Pages 项目页部署在仓库子路径下，本地 dev 同样挂在该前缀。 */
+const BASE = "/tu-design/";
+
 /**
  * dev 期以中间件伺服 /r/vue/*.json（CLI `npx tu-design add` 的数据源）。
  * build 期由下方 buildEnd 钩子复制进 outDir/r/vue。
@@ -18,7 +21,11 @@ function registryPlugin(): Plugin {
     name: "tu-design-registry",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const url = (req.url ?? "").split("?")[0]!;
+        let url = (req.url ?? "").split("?")[0]!;
+        // configureServer 先于 Vite 内部 base 剥离执行，需手动去掉子路径前缀
+        if (url.startsWith(BASE)) {
+          url = url.slice(BASE.length - 1);
+        }
         if (!url.startsWith("/r/vue/")) {
           next();
           return;
@@ -46,6 +53,7 @@ export default defineConfig({
   lang: "zh-CN",
   title: "tu-design",
   description: "tu-design 组件库文档",
+  base: BASE,
   outDir: "dist",
   appearance: true,
   lastUpdated: true,

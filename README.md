@@ -27,7 +27,7 @@ vp test           # 根目录一键测试（分项目运行：vue 41 + cli 79）
 ```
 
 ```bash
-cd apps/docs && vp run dev            # 文档站开发服务器（默认端口 5174）
+cd apps/docs && vp run dev            # 文档站开发服务器（默认端口 5174，路径前缀 /tu-design/）
 cd packages/vue && vp run generate:registry   # 重生成 registry JSON
 ```
 
@@ -40,4 +40,4 @@ vp run publish:pkg     # 发布 @tu-design/* 到 npm
 
 ## 文档
 
-源码位于 `apps/docs`，本地 `vp run dev` 后访问组件页（`/components/<name>.html`）与指南（安装 / 主题 / CLI / 自动导入）。
+源码位于 `apps/docs`，本地 `vp run dev` 后访问组件页（`/tu-design/components/<name>.html`）与指南（安装 / 主题 / CLI / 自动导入）。

@@ -1,0 +1,59 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "apps/docs/**"
+      - "packages/vue/**"
+      - ".github/workflows/deploy-pages.yml"
+  workflow_dispatch:
+
+# deploy-pages 通过 OIDC 获取 Pages 部署凭证，id-token 必须显式开启
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: docs + registry
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        # VitePress lastUpdated 依赖完整 git 历史
+        with:
+          fetch-depth: 0
+
+      # 版本取自根 package.json 的 packageManager 字段（pnpm@12.6.0，与 devEngines 一致）
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # buildEnd 钩子把 packages/vue/registry/vue 复制进 dist/r/vue；
+      # registry 提交物与源码的同步由 CI 的防漂移测试保证
+      - name: Build docs (含 registry)
+        run: pnpm --filter @tu-design/docs run build
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/docs/dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
