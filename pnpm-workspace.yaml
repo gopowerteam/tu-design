@@ -31,7 +31,7 @@ catalog:
   prompts: ^2
   picocolors: ^1
   package-manager-detector: ^1
-  "@changesets/cli": ^3.0.3
+  bumpp: ^12.3.0
   vue-tsc: ^3.3.11
   "@vitejs/plugin-vue": ^6
 overrides:

@@ -15,7 +15,7 @@ shadcn 风格的 Vue 3 组件库 monorepo —— 基于 Tailwind v4 与 oklch CS
 - **主题系统**：`:root` / `.dark` 中性 `default` 主题，支持 `data-theme` 自定义品牌主题配方（见[主题指南](apps/docs/guide/theming.md)）
 - **组件自动导入**：`TuDesignResolver`（unplugin-vue-components），按需引入零样板
 - **Registry**：CLI 分发的组件清单 JSON，由 `generate:registry` 生成并做防漂移测试
-- **工程化**：Vite+（`vp`）统一 check / test / build，pnpm catalog 统一依赖版本，changesets 管理发版
+- **工程化**：Vite+（`vp`）统一 check / test / build，pnpm catalog 统一依赖版本，bumpp 管理发版
 
 ## 开发
 
@@ -34,9 +34,13 @@ cd packages/vue && vp run generate:registry   # 重生成 registry JSON
 ### 发版
 
 ```bash
-vp run version:pkg     # changeset version，消费 .changeset/ 并升版本
-vp run publish:pkg     # 发布 @tu-design/* 到 npm
+pnpm release:vue        # 交互选版本 → 自动 commit + tag + push → CI 发布
+pnpm release:cli        # 同上，针对 @tu-design/cli
+vp run publish:pkg      # 手动兜底：直接发布 @tu-design/*
 ```
+
+tag（`@tu-design/<pkg>@<version>`）推送后由 `.github/workflows/publish.yml` 自动完成
+npm 发布（OIDC Trusted Publishing，无需 NPM_TOKEN）并生成 GitHub Release notes（changelogithub）。
 
 ## 文档
 

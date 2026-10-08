@@ -1,3 +1,41 @@
+# tu-design
+
+shadcn 风格的 Vue 3 组件库 monorepo（Tailwind v4 + oklch CSS 变量主题 + Ark UI 原语）。
+
+## 包结构
+
+- `packages/vue` — `@tu-design/vue` 组件库，组件源码在 `src/components/<name>/`
+- `packages/cli` — `tu-design` CLI（`init`/`add`），按 registry 向用户项目分发组件源码
+- `apps/docs` — VitePress 文档站（`vp run dev`，端口 5174）
+
+## 常用命令
+
+```bash
+vp install              # 安装依赖（拉取远端变更后先执行）
+vp check                # oxfmt + oxlint（typeAware），不覆盖 Vue SFC
+vp run -r typecheck     # SFC 类型兜底：vue-tsc（vue 包）+ tsc（cli 包）
+vp test                 # 根目录一键测试（vitest projects：packages/vue + packages/cli）
+vp run ready            # 全量体检 = vp check + 递归 test + 递归 build（等同于 CI）
+```
+
+- 运行单个包的测试：`cd packages/vue && vp test --run`（可追加文件名过滤参数）。
+- CI 顺序固定：check → typecheck → test → build（`.github/workflows/ci.yml`）；`vp check` 不覆盖 SFC，typecheck 不能省。
+- 本地提交会触发 pre-commit 钩子（`vp staged` → 对暂存文件执行 `vp check --fix`）。
+
+## 高频陷阱
+
+- 一切经由 `vp`：`vp run <script>` 跑 package.json 脚本，`vp <name>` 是内置命令，两者可能不同。不要直接调 vite/vitest/oxlint。
+- 依赖版本统一走 pnpm catalog（`catalogMode: prefer`）：新增依赖须加进 `pnpm-workspace.yaml` 的 `catalog:`，包内写 `"catalog:"`。
+- **registry 是生成物且已提交**：改动 `src/components/`、`src/lib/utils.ts`、`src/styles/tokens.css` 或 workspace catalog 后，必须 `cd packages/vue && vp run generate:registry` 重新生成 `registry/vue/*.json`，否则防漂移测试失败。生成时会将 `catalog:` 依赖翻译为真实版本号并剔除 `.test.ts` 文件。
+- `TuDesignResolver`（`src/resolver.ts`）用组件名白名单而非 `/^T[A-Z]/` 正则（避免误捕 Transition/Teleport 等内置组件）；白名单必须与 `index.ts` 导出保持同步，`resolver.test.ts` 强制校验。
+- 环境要求：Node ≥ 22.18.0，pnpm 12.6.0（`packageManager` 字段固定）。
+
+## 发版（bumpp）
+
+1. conventional commits 累积变更，发版时 `pnpm release:vue` / `pnpm release:cli`（根目录运行）：交互选版本 → 自动 commit + 打 tag（`@tu-design/<pkg>@<version>`）+ push。
+2. tag 触发 `.github/workflows/publish.yml`：校验 tag 与 package.json 一致 → pnpm pack（prepack 完整构建）→ npm OIDC 发布（无需 NPM_TOKEN，需在 npmjs.com 配置 Trusted Publisher）→ changelogithub 生成 GitHub Release。
+3. 手动兜底：`vp run publish:pkg`（注意 pnpm publish 会触发 prepack 构建）。changesets 已退役，`.changeset/` 与 `version:pkg` 已移除。
+
 <!--VITE PLUS START-->
 
 # Using Vite+, the Unified Toolchain for the Web

@@ -6,11 +6,12 @@
   "scripts": {
     "ready": "vp check && vp run -r test && vp run -r build",
     "prepare": "vp config",
-    "version:pkg": "changeset version",
-    "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks"
+    "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks",
+    "release:vue": "bumpp --tag \"@tu-design/vue@{version}\" --commit \"chore: 🔖 release @tu-design/vue@{version}\"",
+    "release:cli": "bumpp --tag \"@tu-design/cli@{version}\" --commit \"chore: 🔖 release @tu-design/cli@{version}\""
   },
   "devDependencies": {
-    "@changesets/cli": "catalog:",
+    "bumpp": "catalog:",
     "vite-plus": "catalog:"
   },
   "devEngines": {
