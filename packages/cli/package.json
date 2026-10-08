@@ -1,6 +1,6 @@
 {
   "name": "@tu-design/cli",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "tu-design CLI：初始化并按 registry 分发组件源码到用户项目（shadcn 模式）。",
   "keywords": [
     "cli",
