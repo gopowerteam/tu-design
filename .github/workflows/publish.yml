@@ -23,12 +23,14 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      # pnpm 必须先于 setup-node 安装（setup-node@v5 的 Environment details
+      # 会探测 packageManager 字段，pnpm 缺失时硬失败；与 ci.yml 顺序对齐）
+      - uses: pnpm/action-setup@v4
+
       - uses: actions/setup-node@v5
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
-
-      - uses: pnpm/action-setup@v4
 
       - name: 校验锁定版本（所有发布包 = tag 版本）
         run: |
