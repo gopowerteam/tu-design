@@ -1,14 +1,13 @@
 {
   "name": "tu-design",
-  "version": "0.0.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
     "ready": "vp check && vp run -r test && vp run -r build",
     "prepare": "vp config",
     "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks",
-    "release:vue": "bumpp --tag \"@tu-design/vue@{version}\" --commit \"chore: 🔖 release @tu-design/vue@{version}\"",
-    "release:cli": "bumpp --tag \"@tu-design/cli@{version}\" --commit \"chore: 🔖 release @tu-design/cli@{version}\""
+    "release": "bumpp -r --tag \"v{version}\" --commit \"chore: 🔖 release v{version}\""
   },
   "devDependencies": {
     "bumpp": "catalog:",

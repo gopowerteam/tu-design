@@ -1,15 +1,21 @@
 name: Publish
 
-# 推送 @tu-design/<pkg>@<version> 格式的 tag 时自动发布对应包到 npm。
-# tag 由本地 bumpp 创建（pnpm release:vue / pnpm release:cli）。
+# 推送 v<version> 格式的 tag 时自动发布 @tu-design/* 包到 npm（锁定版本模型）。
+# tag 由本地 bumpp -r 创建（pnpm release）。
+#
+# ⚠️ 新增可发布包时，必须同步更新 PACKAGES 清单，否则该包永不发布。
 on:
   push:
     tags:
-      - "@tu-design/**"
+      - "v*"
 
 permissions:
   contents: write # changelogithub 创建 GitHub Release
   id-token: write # npm OIDC Trusted Publishing（无需 NPM_TOKEN）
+
+env:
+  # 显式发布清单 = 版本校验 / 打包的唯一事实源（@tu-design/docs 为私有文档站，禁止加入）
+  PACKAGES: "@tu-design/vue @tu-design/cli"
 
 jobs:
   publish:
@@ -24,37 +30,35 @@ jobs:
 
       - uses: pnpm/action-setup@v4
 
-      - name: 解析 tag
-        id: tag
+      - name: 校验锁定版本（所有发布包 = tag 版本）
         run: |
-          pkg="${GITHUB_REF_NAME%@*}"
-          version="${GITHUB_REF_NAME##*@}"
-          echo "pkg=$pkg" >> "$GITHUB_OUTPUT"
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "发布 $pkg@$version"
-
-      - name: 校验 tag 与 package.json 版本一致
-        run: |
-          pkg="${{ steps.tag.outputs.pkg }}"
-          dir="${pkg#@tu-design/}"
-          actual="$(node -p "require('./packages/$dir/package.json').version")"
-          expected="${{ steps.tag.outputs.version }}"
-          if [ "$actual" != "$expected" ]; then
-            echo "::error::tag 版本 $expected 与 packages/$dir/package.json 版本 $actual 不一致"
-            exit 1
-          fi
+          expected="${GITHUB_REF_NAME#v}"
+          for pkg in $PACKAGES; do
+            dir="${pkg#@tu-design/}"
+            actual="$(node -p "require('./packages/$dir/package.json').version")"
+            if [ "$actual" != "$expected" ]; then
+              echo "::error::$pkg 版本 $actual 与 tag v$expected 不一致（锁定版本模型要求全部一致）"
+              exit 1
+            fi
+          done
+          echo "锁定版本校验通过：v$expected"
 
       - name: 安装依赖
         run: pnpm install --frozen-lockfile
 
-      - name: 构建并打包（prepack 触发完整构建）
-        run: pnpm --filter "${{ steps.tag.outputs.pkg }}" pack --pack-destination "$RUNNER_TEMP/dist"
+      - name: 逐包构建打包（prepack 触发完整构建）
+        run: |
+          for pkg in $PACKAGES; do
+            pnpm --filter "$pkg" pack --pack-destination "$RUNNER_TEMP/dist"
+          done
 
-      - name: 发布到 npm（OIDC）
+      - name: 逐包发布到 npm（OIDC）
         run: |
           npm install -g npm@latest
           cd "$RUNNER_TEMP/dist"
-          npm publish *.tgz
+          for f in ./*.tgz; do
+            npm publish "$f"
+          done
 
       - name: 生成 GitHub Release
         run: npx changelogithub

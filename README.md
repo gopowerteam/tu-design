@@ -34,13 +34,13 @@ cd packages/vue && vp run generate:registry   # 重生成 registry JSON
 ### 发版
 
 ```bash
-pnpm release:vue        # 交互选版本 → 自动 commit + tag + push → CI 发布
-pnpm release:cli        # 同上，针对 @tu-design/cli
+pnpm release            # 锁定版本模型：全 workspace 统一升版本 → commit + tag v{version} + push
 vp run publish:pkg      # 手动兜底：直接发布 @tu-design/*
 ```
 
-tag（`@tu-design/<pkg>@<version>`）推送后由 `.github/workflows/publish.yml` 自动完成
-npm 发布（OIDC Trusted Publishing，无需 NPM_TOKEN）并生成 GitHub Release notes（changelogithub）。
+tag（`v<version>`）推送后由 `.github/workflows/publish.yml` 逐包发布 `@tu-design/vue` 与
+`@tu-design/cli`（锁定版本模型，OIDC Trusted Publishing 无需 NPM_TOKEN），并生成 GitHub Release。
+新增可发布包时须同步更新 publish.yml 的 `PACKAGES` 清单。
 
 ## 文档
 

@@ -30,11 +30,12 @@ vp run ready            # 全量体检 = vp check + 递归 test + 递归 build�
 - `TuDesignResolver`（`src/resolver.ts`）用组件名白名单而非 `/^T[A-Z]/` 正则（避免误捕 Transition/Teleport 等内置组件）；白名单必须与 `index.ts` 导出保持同步，`resolver.test.ts` 强制校验。
 - 环境要求：Node ≥ 22.18.0，pnpm 12.6.0（`packageManager` 字段固定）。
 
-## 发版（bumpp）
+## 发版（bumpp 锁定版本模型）
 
-1. conventional commits 累积变更，发版时 `pnpm release:vue` / `pnpm release:cli`（根目录运行）：交互选版本 → 自动 commit + 打 tag（`@tu-design/<pkg>@<version>`）+ push。
-2. tag 触发 `.github/workflows/publish.yml`：校验 tag 与 package.json 一致 → pnpm pack（prepack 完整构建）→ npm OIDC 发布（无需 NPM_TOKEN，需在 npmjs.com 配置 Trusted Publisher）→ changelogithub 生成 GitHub Release。
-3. 手动兜底：`vp run publish:pkg`（注意 pnpm publish 会触发 prepack 构建）。changesets 已退役，`.changeset/` 与 `version:pkg` 已移除。
+1. conventional commits 累积变更，发版时根目录 `pnpm release`：全 workspace 统一升版本（vue/cli 锁定同版本）→ 单 commit + tag `v{version}` + push。
+2. tag 触发 `.github/workflows/publish.yml`：遍历 `PACKAGES` 清单校验锁定版本 → 逐包 pnpm pack（prepack 完整构建）→ 逐包 npm publish（OIDC，无需 NPM_TOKEN，需在 npmjs.com 配置 Trusted Publisher）→ changelogithub 生成单个 GitHub Release。
+3. **新增可发布包时必须同步更新 publish.yml 的 `PACKAGES` 清单**，否则该包永不发布。
+4. 手动兜底：`vp run publish:pkg`（注意 pnpm publish 会触发 prepack 构建）。changesets 已退役，`.changeset/` 与 `version:pkg` 已移除。
 
 <!--VITE PLUS START-->
 
