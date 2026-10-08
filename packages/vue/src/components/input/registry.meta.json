@@ -1,4 +1,4 @@
 {
-  "description": "文本输入框，支持 v-model 与 attrs 透传。",
+  "description": "文本输入框，支持 v-model、attrs 透传与 invalid 校验态。",
   "registryDependencies": ["utils"]
 }

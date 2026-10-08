@@ -14,10 +14,11 @@ npx tu-design add input
 
 ## Props / v-model
 
-| 项        | 类型               | 说明                          |
-| --------- | ------------------ | ----------------------------- |
-| `v-model` | `string \| number` | 输入值（`defineModel`）       |
-| `class`   | `string`           | 追加/覆盖样式（经 `cn` 合并） |
+| 项        | 类型               | 说明                                            |
+| --------- | ------------------ | ----------------------------------------------- |
+| `v-model` | `string \| number` | 输入值（`defineModel`）                         |
+| `invalid` | `boolean`          | 校验失败态（`aria-invalid` + destructive 样式） |
+| `class`   | `string`           | 追加/覆盖样式（经 `cn` 合并）                   |
 
 其余原生属性（`type`、`placeholder`、`disabled` 等）通过 `attrs` 透传到 `<input>`。
 

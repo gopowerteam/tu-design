@@ -2,14 +2,14 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "input",
   "type": "registry:ui",
-  "description": "文本输入框，支持 v-model 与 attrs 透传。",
+  "description": "文本输入框，支持 v-model、attrs 透传与 invalid 校验态。",
   "registryDependencies": ["utils"],
   "files": [
     {
       "path": "input/Input.vue",
       "type": "registry:component",
       "target": "components/ui/input/Input.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst modelValue = defineModel<string | number>();\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <input\n    v-model=\"modelValue\"\n    :class=\"\n      cn(\n        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50',\n        props.class,\n      )\n    \"\n  />\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst modelValue = defineModel<string | number>();\nconst props = defineProps<{ class?: string; invalid?: boolean }>();\n</script>\n\n<template>\n  <input\n    v-model=\"modelValue\"\n    :aria-invalid=\"props.invalid ? 'true' : undefined\"\n    :class=\"\n      cn(\n        'flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive',\n        props.class,\n      )\n    \"\n  />\n</template>\n"
     },
     {
       "path": "input/index.ts",

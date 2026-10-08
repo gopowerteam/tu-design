@@ -24,4 +24,15 @@ describe("Input", () => {
     expect(w.classes()).toContain("border-red-500");
     expect(w.classes()).toContain("h-9");
   });
+
+  it("invalid 时输出 aria-invalid 并带 destructive 校验样式", () => {
+    const w = mount(Input, { props: { invalid: true } });
+    expect(w.attributes("aria-invalid")).toBe("true");
+    expect(w.classes()).toContain("aria-invalid:border-destructive");
+  });
+
+  it("不传 invalid 时无 aria-invalid 属性", () => {
+    const w = mount(Input);
+    expect(w.attributes("aria-invalid")).toBeUndefined();
+  });
 });
