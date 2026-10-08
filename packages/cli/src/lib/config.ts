@@ -8,7 +8,7 @@ export interface ComponentsConfig {
 }
 
 /** init 未显式传 --registry 时写入 components.json 的默认 URL 通道（不可达时 add 走 npm 兜底）。 */
-export const DEFAULT_REGISTRY = "https://<org>.github.io/tu-design/r/vue";
+export const DEFAULT_REGISTRY = "https://gopowerteam.github.io/tu-design/r/vue";
 
 const CONFIG_FILE = "components.json";
 const ALIAS_KEYS = ["components", "utils", "ui", "lib"] as const;

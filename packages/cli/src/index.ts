@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import picocolors from "picocolors";
 import { detect } from "package-manager-detector";
@@ -8,6 +9,7 @@ import { DEFAULT_REGISTRY } from "./lib/config";
 import { runInit } from "./lib/init-core";
 import { runAdd } from "./lib/add-core";
 import { detectPackageManager, installDependencies, type ExecIo } from "./lib/pm";
+import { parsePkgVersion } from "./lib/version";
 
 const RUNTIME_DEPS = ["clsx", "tailwind-merge", "class-variance-authority"];
 
@@ -25,7 +27,13 @@ function makeExecIo(cwd: string): ExecIo {
 
 const program = new Command();
 
-program.name("tu-design").description("tu-design 组件 registry CLI").version("0.0.0");
+program
+  .name("tu-design")
+  .description("tu-design 组件 registry CLI")
+  // 版本号从包根 package.json 读取（原硬编码 0.0.0 与发版脱节）。
+  // 读取须留在 src/index.ts 层级：源码（src/../package.json）与打包产物
+  // （dist/../package.json）相对包根深度一致，抽到 lib/ 后打包路径会多一层。
+  .version(parsePkgVersion(readFileSync(new URL("../package.json", import.meta.url), "utf8")));
 
 program
   .command("init")
