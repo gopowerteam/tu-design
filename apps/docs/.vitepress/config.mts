@@ -115,6 +115,7 @@ export default defineConfig({
             { text: "Skeleton", link: "/components/skeleton" },
             { text: "Slider", link: "/components/slider" },
             { text: "Tabs", link: "/components/tabs" },
+            { text: "Textarea", link: "/components/textarea" },
             { text: "Tooltip", link: "/components/tooltip" },
           ],
         },

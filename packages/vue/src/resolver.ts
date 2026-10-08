@@ -53,6 +53,7 @@ export const COMPONENT_NAMES = [
   "TabsContent",
   "TabsList",
   "TabsTrigger",
+  "Textarea",
   "Tooltip",
   "TooltipContent",
   "TooltipTrigger",

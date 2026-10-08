@@ -1,0 +1,4 @@
+{
+  "description": "多行文本输入：纯样式封装，支持 invalid 校验态。",
+  "registryDependencies": ["utils"]
+}

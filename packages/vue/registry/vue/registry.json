@@ -111,6 +111,12 @@
       "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。"
     },
     {
+      "name": "textarea",
+      "title": "Textarea",
+      "type": "registry:ui",
+      "description": "多行文本输入：纯样式封装，支持 invalid 校验态。"
+    },
+    {
       "name": "tokens",
       "title": "Tokens",
       "type": "registry:style",

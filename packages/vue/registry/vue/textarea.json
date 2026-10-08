@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "textarea",
+  "type": "registry:ui",
+  "description": "多行文本输入：纯样式封装，支持 invalid 校验态。",
+  "registryDependencies": ["utils"],
+  "files": [
+    {
+      "path": "textarea/Textarea.vue",
+      "type": "registry:component",
+      "target": "components/ui/textarea/Textarea.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst modelValue = defineModel<string | number>();\nconst props = defineProps<{ class?: string; invalid?: boolean }>();\n</script>\n\n<template>\n  <textarea\n    v-model=\"modelValue\"\n    :aria-invalid=\"props.invalid ? 'true' : undefined\"\n    :class=\"\n      cn(\n        'flex field-sizing-content min-h-16 w-full rounded-md border border-input bg-transparent px-3 py-2 text-base shadow-sm transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:ring-destructive/20 aria-invalid:border-destructive md:text-sm',\n        props.class,\n      )\n    \"\n  />\n</template>\n"
+    },
+    {
+      "path": "textarea/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/textarea/index.ts",
+      "content": "export { default as Textarea } from \"./Textarea.vue\";\n"
+    }
+  ]
+}
