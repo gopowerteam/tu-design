@@ -64,7 +64,7 @@ jobs:
           for f in ./*.tgz; do
             if out="$(npm publish "$f" 2>&1)"; then
               echo "发布成功: $f"
-            elif echo "$out" | grep -q "Cannot publish over"; then
+            elif echo "$out" | grep -qi "cannot publish over"; then
               # 403 已发布 / 409 进入 staged 审核（npm 新包安全管线）
               echo "已发布或待 npm 审批（staged），跳过: $f"
               echo "$out"
