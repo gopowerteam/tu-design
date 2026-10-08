@@ -61,13 +61,16 @@ jobs:
           for f in ./*.tgz; do
             if out="$(npm publish "$f" 2>&1)"; then
               echo "发布成功: $f"
-            elif echo "$out" | grep -q "You cannot publish over"; then
-              echo "已发布，跳过: $f"
+            elif echo "$out" | grep -q "Cannot publish over"; then
+              # 403 已发布 / 409 进入 staged 审核（npm 新包安全管线）
+              echo "已发布或待 npm 审批（staged），跳过: $f"
+              echo "$out"
             else
               echo "$out" >&2
               exit 1
             fi
           done
+          echo "提示：被跳过的版本若处于 staged，需在 npmjs.com 的 Staged Packages 审批后才会上线"
 
       - name: 生成 GitHub Release
         # 用 pnpm dlx 而非 npx：npx 在仓库内会触发 devEngines.packageManager 硬失败
