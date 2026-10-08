@@ -54,15 +54,23 @@ jobs:
             pnpm --filter "$pkg" pack --pack-destination "$RUNNER_TEMP/dist"
           done
 
-      - name: 逐包发布到 npm（OIDC）
+      - name: 逐包发布到 npm（OIDC，幂等：重跑时跳过已发布版本）
         run: |
           npm install -g npm@latest
           cd "$RUNNER_TEMP/dist"
           for f in ./*.tgz; do
-            npm publish "$f"
+            if out="$(npm publish "$f" 2>&1)"; then
+              echo "发布成功: $f"
+            elif echo "$out" | grep -q "You cannot publish over"; then
+              echo "已发布，跳过: $f"
+            else
+              echo "$out" >&2
+              exit 1
+            fi
           done
 
       - name: 生成 GitHub Release
-        run: npx changelogithub
+        # 用 pnpm dlx 而非 npx：npx 在仓库内会触发 devEngines.packageManager 硬失败
+        run: pnpm dlx changelogithub
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
