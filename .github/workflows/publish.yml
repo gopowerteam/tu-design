@@ -1,0 +1,62 @@
+name: Publish
+
+# 推送 @tu-design/<pkg>@<version> 格式的 tag 时自动发布对应包到 npm。
+# tag 由本地 bumpp 创建（pnpm release:vue / pnpm release:cli）。
+on:
+  push:
+    tags:
+      - "@tu-design/**"
+
+permissions:
+  contents: write # changelogithub 创建 GitHub Release
+  id-token: write # npm OIDC Trusted Publishing（无需 NPM_TOKEN）
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+
+      - uses: pnpm/action-setup@v4
+
+      - name: 解析 tag
+        id: tag
+        run: |
+          pkg="${GITHUB_REF_NAME%@*}"
+          version="${GITHUB_REF_NAME##*@}"
+          echo "pkg=$pkg" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "发布 $pkg@$version"
+
+      - name: 校验 tag 与 package.json 版本一致
+        run: |
+          pkg="${{ steps.tag.outputs.pkg }}"
+          dir="${pkg#@tu-design/}"
+          actual="$(node -p "require('./packages/$dir/package.json').version")"
+          expected="${{ steps.tag.outputs.version }}"
+          if [ "$actual" != "$expected" ]; then
+            echo "::error::tag 版本 $expected 与 packages/$dir/package.json 版本 $actual 不一致"
+            exit 1
+          fi
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建并打包（prepack 触发完整构建）
+        run: pnpm --filter "${{ steps.tag.outputs.pkg }}" pack --pack-destination "$RUNNER_TEMP/dist"
+
+      - name: 发布到 npm（OIDC）
+        run: |
+          npm install -g npm@latest
+          cd "$RUNNER_TEMP/dist"
+          npm publish *.tgz
+
+      - name: 生成 GitHub Release
+        run: npx changelogithub
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
