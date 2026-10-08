@@ -1,0 +1,43 @@
+<script setup lang="ts">
+import type { PropType } from "vue";
+import { computed, ref } from "vue";
+import { Popover as ArkPopover } from "@ark-ui/vue/popover";
+
+interface Props {
+  /** 受控开关（配合 v-model:open）；不传时为非受控 */
+  open?: boolean;
+  defaultOpen?: boolean;
+  lazyMount?: boolean;
+  unmountOnExit?: boolean;
+}
+
+// open 用 default: undefined 禁用 Boolean casting，保证「未传」可辨（Dialog 同款约定）
+const props = defineProps({
+  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  defaultOpen: { type: Boolean, default: false },
+  lazyMount: { type: Boolean, default: false },
+  unmountOnExit: { type: Boolean, default: false },
+});
+
+const emit = defineEmits<{ "update:open": [open: boolean] }>();
+
+// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）
+const internalOpen = ref(props.defaultOpen);
+const isOpen = computed(() => props.open ?? internalOpen.value);
+
+function handleUpdate(open: boolean) {
+  internalOpen.value = open;
+  emit("update:open", open);
+}
+</script>
+
+<template>
+  <ArkPopover.Root
+    :open="isOpen"
+    :lazy-mount="props.lazyMount"
+    :unmount-on-exit="props.unmountOnExit"
+    @update:open="handleUpdate"
+  >
+    <slot />
+  </ArkPopover.Root>
+</template>

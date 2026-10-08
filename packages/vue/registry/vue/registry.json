@@ -57,6 +57,12 @@
       "description": "表单标签。"
     },
     {
+      "name": "popover",
+      "title": "Popover",
+      "type": "registry:ui",
+      "description": "气泡弹层：基于 Ark UI Popover 原语，受控/非受控开关，Trigger 支持 asChild。"
+    },
+    {
       "name": "radio-group",
       "title": "RadioGroup",
       "type": "registry:ui",

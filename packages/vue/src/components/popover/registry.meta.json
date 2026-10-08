@@ -1,0 +1,5 @@
+{
+  "description": "气泡弹层：基于 Ark UI Popover 原语，受控/非受控开关，Trigger 支持 asChild。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

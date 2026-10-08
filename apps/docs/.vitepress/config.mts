@@ -108,6 +108,7 @@ export default defineConfig({
             { text: "DropdownMenu", link: "/components/dropdown-menu" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
+            { text: "Popover", link: "/components/popover" },
             { text: "RadioGroup", link: "/components/radio-group" },
             { text: "Select", link: "/components/select" },
             { text: "Separator", link: "/components/separator" },
