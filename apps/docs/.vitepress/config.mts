@@ -106,6 +106,7 @@ export default defineConfig({
             { text: "Checkbox", link: "/components/checkbox" },
             { text: "Dialog", link: "/components/dialog" },
             { text: "DropdownMenu", link: "/components/dropdown-menu" },
+            { text: "Field", link: "/components/field" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
             { text: "Popover", link: "/components/popover" },

@@ -45,6 +45,12 @@
       "description": "下拉菜单：基于 Ark UI Menu 原语，含键盘导航、选中回调与分组/分隔线，Trigger 支持 asChild。"
     },
     {
+      "name": "field",
+      "title": "Field",
+      "type": "registry:ui",
+      "description": "表单字段容器：Label/HelperText/ErrorText/输入控件经 Ark UI Field 上下文自动接线 id、aria-invalid 与 aria-describedby/aria-errormessage。"
+    },
+    {
       "name": "input",
       "title": "Input",
       "type": "registry:ui",
