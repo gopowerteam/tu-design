@@ -268,9 +268,15 @@ importers:
 
   apps/docs:
     dependencies:
+      '@tanstack/vue-form':
+        specifier: 'catalog:'
+        version: 1.33.5(vue@3.5.43(typescript@5.9.3))
       '@tu-design/vue':
         specifier: workspace:*
         version: link:../../packages/vue
+      valibot:
+        specifier: 'catalog:'
+        version: 1.5.0(typescript@5.9.3)
       vue:
         specifier: 'catalog:'
         version: 3.5.43(typescript@5.9.3)

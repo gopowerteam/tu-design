@@ -9,7 +9,9 @@
     "preview": "vitepress preview"
   },
   "dependencies": {
+    "@tanstack/vue-form": "catalog:",
     "@tu-design/vue": "workspace:*",
+    "valibot": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

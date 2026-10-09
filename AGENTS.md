@@ -6,7 +6,7 @@ shadcn 风格的 Vue 3 组件库 monorepo（Tailwind v4 + oklch CSS 变量主题
 
 - `packages/vue` — `@tu-design/vue` 组件库，组件源码在 `src/components/<name>/`
 - `packages/cli` — `tu-design` CLI（`init`/`add`），按 registry 向用户项目分发组件源码
-- `apps/docs` — VitePress 文档站（`vp run dev`，端口 5174）
+- `apps/docs` — VitePress 文档站（根目录 `pnpm docs` 或 `pnpm --filter @tu-design/docs dev`，http://localhost:5173/tu-design/）
 
 ## 常用命令
 

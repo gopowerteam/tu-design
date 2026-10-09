@@ -7,6 +7,7 @@
     "ready": "vp check && vp run -r test && vp run -r build",
     "prepare": "vp config",
     "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks",
+    "docs": "pnpm --filter @tu-design/docs dev",
     "release": "bumpp -r --tag \"v{version}\" --commit \"chore: 🔖 release v{version}\""
   },
   "devDependencies": {
