@@ -32,6 +32,26 @@
       </TFormItem>
     </TFormField>
 
+    <TFormField name="age" v-slot="{ field }">
+      <TFormItem>
+        <TFormLabel>年龄</TFormLabel>
+        <TFormControl>
+          <TNumberInput
+            :model-value="field.state.value"
+            :min="1"
+            :max="120"
+            @update:model-value="field.handleChange"
+            @blur="field.handleBlur"
+          >
+            <TNumberInputDecrement>−</TNumberInputDecrement>
+            <TNumberInputInput />
+            <TNumberInputIncrement>+</TNumberInputIncrement>
+          </TNumberInput>
+        </TFormControl>
+        <TFormMessage />
+      </TFormItem>
+    </TFormField>
+
     <TFormSubscribe v-slot="{ canSubmit, isSubmitting }">
       <TButton type="submit" :disabled="!canSubmit">
         {{ isSubmitting ? "提交中…" : "登录" }}
@@ -45,11 +65,12 @@ import * as v from "valibot";
 import { useForm } from "@tanstack/vue-form";
 
 const form = useForm({
-  defaultValues: { email: "", password: "" },
+  defaultValues: { email: "", password: "", age: 18 },
   validators: {
     onSubmit: v.object({
       email: v.pipe(v.string(), v.email("邮箱格式不正确")),
       password: v.pipe(v.string(), v.minLength(8, "至少 8 位")),
+      age: v.pipe(v.number(), v.minValue(1, "至少 1 岁"), v.maxValue(120, "最多 120 岁")),
     }),
   },
   onSubmit: async ({ value }) => {
