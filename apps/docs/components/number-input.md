@@ -1,6 +1,6 @@
 # NumberInput
 
-数字输入框：步进按钮 + 数值边界，值以 `number | null` 受控（空值归一为 `null`）。
+数字输入框：内置加减步进按钮与数值边界，值以 `number | null` 受控（空值归一为 `null`）。
 
 ## 演示
 
@@ -24,17 +24,14 @@ npx tu-design add number-input
 | `invalid`       | `boolean`                  | 校验失败态（`data-invalid` + destructive 样式） |
 | `class`         | `string`                   | 追加/覆盖样式（经 `cn` 合并）                   |
 
-## 组件结构
+## 插槽
 
-```vue
-<TNumberInput>
-  <TNumberInputDecrement>−</TNumberInputDecrement>
-  <TNumberInputInput />
-  <TNumberInputIncrement>+</TNumberInputIncrement>
-</TNumberInput>
-```
+| 插槽        | 作用域 | 说明                            |
+| ----------- | ------ | ------------------------------- |
+| `decrement` | —      | 减号按钮内容（默认内置 − 图标） |
+| `increment` | —      | 加号按钮内容（默认内置 + 图标） |
 
-家族子件必须在 `TNumberInput` 内使用（开发期缺失上下文会告警并跳过渲染）。
+除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部真实 `input`，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 用法
 
@@ -46,17 +43,13 @@ const value = ref<number | null>(42);
 </script>
 
 <template>
-  <TNumberInput v-model="value" :min="0" :max="100" :step="1">
-    <TNumberInputDecrement>−</TNumberInputDecrement>
-    <TNumberInputInput />
-    <TNumberInputIncrement>+</TNumberInputIncrement>
-  </TNumberInput>
+  <TNumberInput v-model="value" :min="0" :max="100" :step="1" />
 </template>
 ```
 
 ## 与表单集成
 
-`v-model` 直接对接 `TFormField` 作用域插槽：
+经 `TFormControl` 包装对接 `TFormField`（`id` 自动落到内部 input）：
 
 ```vue
 <TFormField name="age" v-slot="{ field }">
@@ -69,11 +62,7 @@ const value = ref<number | null>(42);
         :max="120"
         @update:model-value="field.handleChange"
         @blur="field.handleBlur"
-      >
-        <TNumberInputDecrement>−</TNumberInputDecrement>
-        <TNumberInputInput />
-        <TNumberInputIncrement>+</TNumberInputIncrement>
-      </TNumberInput>
+      />
     </TFormControl>
     <TFormMessage />
   </TFormItem>

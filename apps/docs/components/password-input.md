@@ -1,6 +1,6 @@
 # PasswordInput
 
-密码输入框：内置明文/掩码切换（Eye/EyeOff 图标），默认 `autocomplete="current-password"`。
+密码输入框：内置明文/掩码切换按钮（Eye/EyeOff 图标，带 `aria-label`/`aria-pressed` 语义），默认 `autocomplete="current-password"`。
 
 ## 演示
 
@@ -19,21 +19,18 @@ npx tu-design add password-input
 | `v-model`         | `string`                               | 密码值                                          |
 | `v-model:visible` | `boolean`                              | 明文显示状态（默认掩码）                        |
 | `autoComplete`    | `"current-password" \| "new-password"` | 默认 `"current-password"`                       |
-| `disabled`        | `boolean`                              | 禁用态（`data-disabled`）                       |
+| `placeholder`     | `string`                               | 输入框占位符                                    |
+| `disabled`        | `boolean`                              | 禁用态（输入框与切换按钮同时禁用）              |
 | `invalid`         | `boolean`                              | 校验失败态（`data-invalid` + destructive 样式） |
 | `class`           | `string`                               | 追加/覆盖样式（经 `cn` 合并）                   |
 
-## 组件结构
+## 插槽
 
-```vue
-<TPasswordInput>
-  <TPasswordInputInput />
-  <TPasswordInputVisibilityTrigger />
-</TPasswordInput>
-```
+| 插槽              | 作用域        | 说明                                            |
+| ----------------- | ------------- | ----------------------------------------------- |
+| `visibility-icon` | `{ visible }` | 切换按钮图标（可见时显示 EyeOff，默认显示 Eye） |
 
-- `TPasswordInputVisibilityTrigger`：右侧绝对定位按钮，可见时显示 EyeOff（点击隐藏）、默认显示 Eye（点击查看）；默认插槽可替换图标。
-- 家族子件必须在 `TPasswordInput` 内使用（开发期缺失上下文会告警并跳过渲染）。
+除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部 `input`，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 用法
 
@@ -46,14 +43,18 @@ const visible = ref(false);
 </script>
 
 <template>
-  <TPasswordInput v-model="password" v-model:visible="visible">
-    <TPasswordInputInput placeholder="请输入密码" />
-    <TPasswordInputVisibilityTrigger />
-  </TPasswordInput>
+  <TPasswordInput
+    v-model="password"
+    v-model:visible="visible"
+    placeholder="请输入密码"
+    auto-complete="new-password"
+  />
 </template>
 ```
 
 ## 与表单集成
+
+经 `TFormControl` 包装对接 `TFormField`：
 
 ```vue
 <TFormField name="password" v-slot="{ field }">
@@ -64,10 +65,7 @@ const visible = ref(false);
         :model-value="field.state.value"
         @update:model-value="field.handleChange"
         @blur="field.handleBlur"
-      >
-        <TPasswordInputInput />
-        <TPasswordInputVisibilityTrigger />
-      </TPasswordInput>
+      />
     </TFormControl>
     <TFormMessage />
   </TFormItem>

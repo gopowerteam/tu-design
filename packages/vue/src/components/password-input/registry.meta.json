@@ -1,5 +1,5 @@
 {
-  "description": "密码输入框：基于 Ark UI PasswordInput 原语，内置可见性切换（Eye/EyeOff）与 autoComplete 语义；值链路为原生 input 桥接。",
+  "description": "密码输入框：内置明文/掩码切换按钮（Eye/EyeOff，带 aria 语义），值与可见性均支持 v-model 受控。",
   "registryDependencies": ["utils"],
-  "dependencies": { "@ark-ui/vue": "catalog:" }
+  "dependencies": {}
 }

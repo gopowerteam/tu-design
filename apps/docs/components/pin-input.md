@@ -1,6 +1,6 @@
 # PinInput
 
-多格验证码输入：自动跳格、粘贴分发、填满触发 `complete`，适用于 OTP/短信验证码。
+多格验证码输入：`length` 指定格数，自动跳格、粘贴分发、填满触发 `complete`，适用于 OTP/短信验证码。
 
 ## 演示
 
@@ -17,6 +17,7 @@ npx tu-design add pin-input
 | 项               | 类型                          | 说明                                            |
 | ---------------- | ----------------------------- | ----------------------------------------------- |
 | `v-model`        | `string[]`                    | 每格一个元素的数组                              |
+| `length`         | `number`                      | 格数，默认 `4`                                  |
 | `type`           | `"numeric" \| "alphanumeric"` | 字符类型（`numeric` 时移动端弹数字键盘）        |
 | `otp`            | `boolean`                     | OTP 语义（`autocomplete="one-time-code"`）      |
 | `mask`           | `boolean`                     | 掩码显示（密码形态）                            |
@@ -33,17 +34,13 @@ npx tu-design add pin-input
 | ---------- | ------------------- | ------------------ |
 | `complete` | `(value: string[])` | 全部格子填满时触发 |
 
-## 组件结构
+## 插槽
 
-```vue
-<TPinInput>
-  <TPinInputInput v-for="(_, i) in 4" :key="i" :index="i" />
-</TPinInput>
-```
+| 插槽        | 作用域 | 说明                               |
+| ----------- | ------ | ---------------------------------- |
+| `separator` | —      | 格间分隔内容，渲染 `length - 1` 次 |
 
-- **格数由 `TPinInputInput` 数量决定**，每个子件必须传 `index`（0 起的格序号）。
-- 家族子件必须在 `TPinInput` 内使用（开发期缺失上下文会告警并跳过渲染）。
-- 需要分隔符时直接在插槽里插普通元素（如 `<span class="text-muted-foreground">–</span>`）。
+除声明 props 外，`id`、`aria-*` 等 attrs 会透传到**首格** input，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 用法
 
@@ -52,12 +49,14 @@ npx tu-design add pin-input
 import { ref } from "vue";
 
 const value = ref<string[]>(["", "", "", ""]);
+
+function onComplete(v: string[]) {
+  console.log("验证码填写完成", v);
+}
 </script>
 
 <template>
-  <TPinInput v-model="value" type="numeric" otp @complete="onComplete">
-    <TPinInputInput v-for="(_, i) in value" :key="i" :index="i" />
-  </TPinInput>
+  <TPinInput v-model="value" type="numeric" otp :length="4" @complete="onComplete" />
 </template>
 ```
 
@@ -73,11 +72,10 @@ const value = ref<string[]>(["", "", "", ""]);
       <TPinInput
         :model-value="field.state.value"
         type="numeric"
+        :length="4"
         @update:model-value="field.handleChange"
         @complete="onComplete"
-      >
-        <TPinInputInput v-for="(_, i) in field.state.value" :key="i" :index="i" />
-      </TPinInput>
+      />
     </TFormControl>
     <TFormMessage />
   </TFormItem>

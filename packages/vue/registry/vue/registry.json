@@ -66,19 +66,19 @@
       "name": "number-input",
       "title": "NumberInput",
       "type": "registry:ui",
-      "description": "数字输入框：基于 Ark UI NumberInput 原语，含步进按钮与数值边界，值以 number|null 受控（空值归一 null）。"
+      "description": "数字输入框：内置加减步进按钮与数值边界，值以 number|null 受控（空值归一 null），支持 Intl 数字格式化。"
     },
     {
       "name": "password-input",
       "title": "PasswordInput",
       "type": "registry:ui",
-      "description": "密码输入框：基于 Ark UI PasswordInput 原语，内置可见性切换（Eye/EyeOff）与 autoComplete 语义；值链路为原生 input 桥接。"
+      "description": "密码输入框：内置明文/掩码切换按钮（Eye/EyeOff，带 aria 语义），值与可见性均支持 v-model 受控。"
     },
     {
       "name": "pin-input",
       "title": "PinInput",
       "type": "registry:ui",
-      "description": "多格验证码输入：基于 Ark UI PinInput 原语，支持 otp/mask/字符类型与填满回调，格数由 Input 子件数量决定（需传 index）。"
+      "description": "多格验证码输入：length 指定格数，支持 otp/mask/字符类型、焦点自动跳格与填满回调，可选分隔符插槽。"
     },
     {
       "name": "popover",

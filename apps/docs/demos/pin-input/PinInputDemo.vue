@@ -10,9 +10,7 @@ function onComplete(v: string[]) {
 
 <template>
   <div class="space-y-2">
-    <TPinInput v-model="value" type="numeric" otp @complete="onComplete">
-      <TPinInputInput v-for="(_, i) in value" :key="i" :index="i" />
-    </TPinInput>
+    <TPinInput v-model="value" type="numeric" otp :length="4" @complete="onComplete" />
     <p class="text-sm text-muted-foreground">
       已填 {{ value.filter(Boolean).length }} / {{ value.length }}
     </p>

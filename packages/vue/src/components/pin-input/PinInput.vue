@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, provide, ref } from "vue";
+import { computed, ref } from "vue";
 import { PinInput as ArkPinInput } from "@ark-ui/vue/pin-input";
 import { cn } from "@/lib/utils";
-import { PIN_INPUT_KEY } from "./context";
 
 const props = defineProps({
   /** 受控值：每格一个元素的数组；undefined 走内部非受控 */
@@ -11,6 +10,8 @@ const props = defineProps({
     type: Array as PropType<string[] | undefined>,
     default: undefined,
   },
+  /** 格数（默认 4） */
+  length: { type: Number, default: 4 },
   /** 单格字符类型 */
   type: { type: String as PropType<"numeric" | "alphanumeric" | undefined>, default: undefined },
   // default: undefined 禁用 Boolean casting（Checkbox/Dialog 同款约定）
@@ -29,7 +30,8 @@ const emit = defineEmits<{
   complete: [value: string[]];
 }>();
 
-provide(PIN_INPUT_KEY, true);
+// attrs（id/aria-*）转发给首格 input，保证 TLabel/TFormControl 关联
+defineOptions({ inheritAttrs: false });
 
 // 对 Ark Root 恒走受控模式，非受控语义由内部 ref 实现（Checkbox 同款）
 const internalValue = ref<string[]>([]);
@@ -62,6 +64,13 @@ function handleValueComplete(details: { value: string[] }) {
     @value-change="handleValueChange"
     @value-complete="handleValueComplete"
   >
-    <slot />
+    <template v-for="i in props.length" :key="i">
+      <ArkPinInput.Input
+        v-bind="i === 1 ? $attrs : undefined"
+        :index="i - 1"
+        :class="'border-input bg-transparent h-9 w-9 rounded-md border text-center text-sm shadow-sm transition-[color,box-shadow] outline-none data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50'"
+      />
+      <slot v-if="i < props.length" name="separator" />
+    </template>
   </ArkPinInput.Root>
 </template>

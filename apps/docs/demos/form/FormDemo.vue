@@ -42,11 +42,7 @@
             :max="120"
             @update:model-value="field.handleChange"
             @blur="field.handleBlur"
-          >
-            <TNumberInputDecrement>−</TNumberInputDecrement>
-            <TNumberInputInput />
-            <TNumberInputIncrement>+</TNumberInputIncrement>
-          </TNumberInput>
+          />
         </TFormControl>
         <TFormMessage />
       </TFormItem>

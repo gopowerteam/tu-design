@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, provide, ref } from "vue";
+import { computed, ref } from "vue";
 import { NumberInput as ArkNumberInput } from "@ark-ui/vue/number-input";
 import { cn } from "@/lib/utils";
-import { NUMBER_INPUT_KEY } from "./context";
 import { numberOrNull } from "./utils";
 
 const props = defineProps({
@@ -21,7 +20,8 @@ const props = defineProps({
 
 const emit = defineEmits<{ "update:modelValue": [value: number | null] }>();
 
-provide(NUMBER_INPUT_KEY, true);
+// attrs（id/aria-*）转发给内部真实 input，保证 TLabel/TFormControl 关联
+defineOptions({ inheritAttrs: false });
 
 // 对 Ark Root 恒走受控模式，非受控语义由内部 ref 实现（Checkbox 同款）
 const internalValue = ref<number | null>(null);
@@ -51,9 +51,54 @@ function handleValueChange(details: { value: string; valueAsNumber: number }) {
     :format-options="props.formatOptions"
     :disabled="props.disabled"
     :invalid="props.invalid"
-    :class="cn('flex items-stretch', props.class)"
+    :class="
+      cn(
+        'border-input flex h-9 items-stretch overflow-hidden rounded-md border shadow-sm transition-[color,box-shadow] outline-none data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]',
+        props.class,
+      )
+    "
     @value-change="handleValueChange"
   >
-    <slot />
+    <ArkNumberInput.DecrementTrigger
+      :class="'bg-muted/50 hover:bg-accent flex w-9 shrink-0 items-center justify-center border-r text-muted-foreground text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50'"
+    >
+      <slot name="decrement">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-4"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14" />
+        </svg>
+      </slot>
+    </ArkNumberInput.DecrementTrigger>
+    <ArkNumberInput.Input
+      v-bind="$attrs"
+      :class="'bg-transparent w-12 px-1 text-center text-sm outline-none disabled:cursor-not-allowed'"
+    />
+    <ArkNumberInput.IncrementTrigger
+      :class="'bg-muted/50 hover:bg-accent flex w-9 shrink-0 items-center justify-center border-l text-muted-foreground text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50'"
+    >
+      <slot name="increment">
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-4"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14" />
+          <path d="M12 5v14" />
+        </svg>
+      </slot>
+    </ArkNumberInput.IncrementTrigger>
   </ArkNumberInput.Root>
 </template>
