@@ -2,8 +2,6 @@
 
 表单状态与校验家族：基于 **TanStack Form**（`@tanstack/vue-form`）管理字段状态，配合 **Valibot**（Standard Schema）声明式校验，`FormLabel/FormControl/FormMessage` 经 provide/inject 自动接线 `id`、`aria-invalid`、`aria-describedby`，无需手动管理无障碍属性。
 
-> 0.3.0 起表单体系统一为 Form 家族；原 Field（Ark）家族已移除，迁移对照见文末。
-
 ## 演示
 
 <DemoPreview file="form/FormDemo.vue" />
@@ -73,16 +71,3 @@ const form = useForm({
 | `TFormDescription` | 辅助说明，`aria-describedby` 指向它；卸载自动收缩                                                                  |
 | `TFormMessage`     | 错误提示。props：`message?`（静态覆盖）。默认渲染首个校验错误的文案；仅在有错误或传 `message` 时渲染               |
 | `TFormSubscribe`   | 提交状态订阅。作用域插槽 `{ canSubmit, isSubmitting }`                                                             |
-
-## 迁移对照（Field → Form）
-
-| 退役组件          | 替代方案                                 |
-| ----------------- | ---------------------------------------- |
-| `Field`           | `TFormField`（状态层换为 TanStack Form） |
-| `FieldLabel`      | `TFormLabel`                             |
-| `FieldHelperText` | `TFormDescription`                       |
-| `FieldErrorText`  | `TFormMessage`                           |
-| `FieldInput`      | `TFormControl` + 任意控件（如 `TInput`） |
-| `FieldTextarea`   | `TFormControl` + `TTextarea`             |
-
-主要差异：校验从 Ark 内建改为 Standard Schema（Valibot/zod 等）；字段值经 `field.state.value` 受控、`field.handleChange` 回写；无障碍接线由 `FormControl` 完成。
