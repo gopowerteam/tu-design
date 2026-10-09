@@ -30,8 +30,8 @@ import { Input } from "@/components/ui/input";
 
 <template>
   <div class="flex flex-col gap-2">
-    <Label for="email">邮箱</Label>
-    <Input id="email" type="email" placeholder="you@example.com" />
+    <TLabel for="email">邮箱</TLabel>
+    <TInput id="email" type="email" placeholder="you@example.com" />
   </div>
 </template>
 ```

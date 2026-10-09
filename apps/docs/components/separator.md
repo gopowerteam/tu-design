@@ -33,7 +33,7 @@ import { Separator } from "@/components/ui/separator";
 <template>
   <div class="flex flex-col gap-4">
     <span>上方内容</span>
-    <Separator />
+    <TSeparator />
     <span>下方内容</span>
   </div>
 </template>

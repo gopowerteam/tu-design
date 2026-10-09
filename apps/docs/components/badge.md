@@ -27,9 +27,9 @@ import { Badge } from "@/components/ui/badge";
 </script>
 
 <template>
-  <Badge>Default</Badge>
-  <Badge variant="secondary">Secondary</Badge>
-  <Badge variant="destructive">Destructive</Badge>
-  <Badge variant="outline">Outline</Badge>
+  <TBadge>Default</TBadge>
+  <TBadge variant="secondary">Secondary</TBadge>
+  <TBadge variant="destructive">Destructive</TBadge>
+  <TBadge variant="outline">Outline</TBadge>
 </template>
 ```

@@ -34,7 +34,7 @@ import { Avatar } from "@/components/ui/avatar";
 </script>
 
 <template>
-  <Avatar src="/avatar.png" alt="用户头像">ZC</Avatar>
+  <TAvatar src="/avatar.png" alt="用户头像">ZC</TAvatar>
 </template>
 ```
 

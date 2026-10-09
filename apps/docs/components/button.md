@@ -36,9 +36,9 @@ import { Button } from "@/components/ui/button";
 </script>
 
 <template>
-  <Button size="sm">Small</Button>
-  <Button size="lg">Large</Button>
-  <Button size="icon">AI</Button>
+  <TButton size="sm">Small</TButton>
+  <TButton size="lg">Large</TButton>
+  <TButton size="icon">AI</TButton>
 </template>
 ```
 
@@ -46,7 +46,7 @@ import { Button } from "@/components/ui/button";
 
 ```vue
 <template>
-  <Button as="a" variant="link" href="https://example.com">打开链接</Button>
+  <TButton as="a" variant="link" href="https://example.com">打开链接</TButton>
 </template>
 ```
 
@@ -58,8 +58,8 @@ import { Button } from "@/components/ui/button";
 
 ```vue
 <template>
-  <Button as-child>
+  <TButton as-child>
     <a href="https://example.com">打开链接</a>
-  </Button>
+  </TButton>
 </template>
 ```

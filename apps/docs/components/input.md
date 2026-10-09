@@ -33,7 +33,7 @@ const text = ref("");
 </script>
 
 <template>
-  <Input v-model="text" placeholder="请输入…" />
-  <Input type="email" disabled placeholder="禁用状态" />
+  <TInput v-model="text" placeholder="请输入…" />
+  <TInput type="email" disabled placeholder="禁用状态" />
 </template>
 ```

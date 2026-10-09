@@ -41,15 +41,15 @@ import { Button } from "@/components/ui/button";
 </script>
 
 <template>
-  <Card class="w-80">
+  <TCard class="w-80">
     <CardHeader>
       <CardTitle>创建项目</CardTitle>
       <CardDescription>一键部署你的应用。</CardDescription>
     </CardHeader>
     <CardContent>这里放表单或内容。</CardContent>
     <CardFooter>
-      <Button>确认创建</Button>
+      <TButton>确认创建</TButton>
     </CardFooter>
-  </Card>
+  </TCard>
 </template>
 ```

@@ -27,7 +27,7 @@ export default {
 ```vue
 <template>
   <TButton>确认</TButton>
-  <t-button variant="outline">取消</t-button>
+  <TButton variant="outline">取消</TButton>
   <TCard class="w-80">
     <TCardHeader>
       <TCardTitle>创建项目</TCardTitle>
