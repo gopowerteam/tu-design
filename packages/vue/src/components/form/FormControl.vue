@@ -12,11 +12,16 @@ export default defineComponent({
     class: { type: String, default: undefined },
   },
   setup(props, { slots }) {
-    const fieldCtx = inject(FIELD_KEY)!;
-    const itemCtx = inject(FORM_ITEM_KEY)!;
+    const fieldCtx = inject(FIELD_KEY, undefined);
+    const itemCtx = inject(FORM_ITEM_KEY, undefined);
 
-    const isInvalid = computed(() => (fieldCtx.field.value?.state.meta.errors.length ?? 0) > 0);
+    if (import.meta.env.DEV && (!fieldCtx || !itemCtx)) {
+      console.warn("[tu-design] <FormControl> 必须在 <FormField> + <FormItem> 内使用");
+    }
+
+    const isInvalid = computed(() => (fieldCtx?.field.value?.state.meta.errors.length ?? 0) > 0);
     const describedBy = computed(() => {
+      if (!itemCtx) return undefined;
       const ids = [
         itemCtx.hasDescription.value && itemCtx.descriptionId,
         itemCtx.hasMessage.value && itemCtx.isInvalid.value && itemCtx.messageId,
@@ -32,7 +37,7 @@ export default defineComponent({
       const first = vnodes[0];
       if (!first) return null;
       return cloneVNode(first, {
-        id: itemCtx.controlId,
+        id: itemCtx?.controlId,
         "aria-invalid": isInvalid.value || undefined,
         "aria-describedby": describedBy.value,
         class: props.class,

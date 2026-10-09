@@ -1,31 +1,35 @@
 <template>
   <TForm :form="form" class="w-80">
     <TFormField name="email" v-slot="{ field }">
-      <TFormLabel>邮箱</TFormLabel>
-      <TFormControl>
-        <TInput
-          :model-value="field.state.value"
-          placeholder="you@example.com"
-          @update:model-value="field.handleChange"
-          @blur="field.handleBlur"
-        />
-      </TFormControl>
-      <TFormDescription>我们不会公开你的邮箱</TFormDescription>
-      <TFormMessage />
+      <TFormItem>
+        <TFormLabel>邮箱</TFormLabel>
+        <TFormControl>
+          <TInput
+            :model-value="field.state.value"
+            placeholder="you@example.com"
+            @update:model-value="field.handleChange"
+            @blur="field.handleBlur"
+          />
+        </TFormControl>
+        <TFormDescription>我们不会公开你的邮箱</TFormDescription>
+        <TFormMessage />
+      </TFormItem>
     </TFormField>
 
     <TFormField name="password" v-slot="{ field }">
-      <TFormLabel>密码</TFormLabel>
-      <TFormControl>
-        <TInput
-          :model-value="field.state.value"
-          type="password"
-          placeholder="至少 8 位"
-          @update:model-value="field.handleChange"
-          @blur="field.handleBlur"
-        />
-      </TFormControl>
-      <TFormMessage />
+      <TFormItem>
+        <TFormLabel>密码</TFormLabel>
+        <TFormControl>
+          <TInput
+            :model-value="field.state.value"
+            type="password"
+            placeholder="至少 8 位"
+            @update:model-value="field.handleChange"
+            @blur="field.handleBlur"
+          />
+        </TFormControl>
+        <TFormMessage />
+      </TFormItem>
     </TFormField>
 
     <TFormSubscribe v-slot="{ canSubmit, isSubmitting }">
