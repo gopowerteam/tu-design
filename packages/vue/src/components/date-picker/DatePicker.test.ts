@@ -164,6 +164,37 @@ describe("DatePicker", () => {
     w.unmount();
   });
 
+  it("非受控：点击输入框也打开弹层", async () => {
+    const w = mount(DatePicker, { attachTo: document.body });
+    // zag 的 Content 恒挂载（closed 时 hidden），以 data-state 断言开合
+    const content = () => document.body.querySelector('[data-part="content"]');
+    expect(content()?.getAttribute("data-state")).toBe("closed");
+    await w.find("input").trigger("click");
+    await vi.waitFor(() => expect(content()?.getAttribute("data-state")).toBe("open"));
+    w.unmount();
+  });
+
+  it("readOnly 时点击输入框不打开弹层", async () => {
+    const w = mount(DatePicker, { props: { readOnly: true }, attachTo: document.body });
+    await w.find("input").trigger("click");
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(document.body.querySelector('[data-part="content"]')?.getAttribute("data-state")).toBe(
+      "closed",
+    );
+    w.unmount();
+  });
+
+  it("日历表格走原生 table 布局：table-fixed 均分列、行不 flex 化", async () => {
+    const w = await openPicker();
+    const table = document.body.querySelector('[data-scope="date-picker"] table');
+    expect(table?.className).toContain("table-fixed");
+    expect(table?.className).toContain("border-collapse");
+    document.body.querySelectorAll('[data-scope="date-picker"] tr').forEach((tr) => {
+      expect(tr.className).not.toContain("flex");
+    });
+    w.unmount();
+  });
+
   it("disabled 禁用输入框与触发按钮", () => {
     const w = mount(DatePicker, { props: { disabled: true }, attachTo: document.body });
     expect(w.find("input").attributes("disabled")).toBeDefined();

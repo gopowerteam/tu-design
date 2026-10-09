@@ -67,6 +67,12 @@ function handleOpenUpdate(next: boolean) {
   emit("update:open", next);
 }
 
+// 点击输入框即开弹层（zag 默认仅 Trigger 开；显式驱动保证各环境行为一致）
+function openFromInput() {
+  if (props.disabled || props.readOnly || isOpen.value) return;
+  handleOpenUpdate(true);
+}
+
 const controlCls =
   "border-input flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]";
 const iconBtnCls =
@@ -74,7 +80,9 @@ const iconBtnCls =
 const navBtnCls =
   "text-muted-foreground inline-flex size-7 items-center justify-center rounded-md outline-none hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
 const cellCls =
-  "flex size-8 items-center justify-center rounded-md text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
+  "flex h-8 items-center justify-center rounded-md text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
+// table-fixed：7 列日视图 / 4 列月年视图均分列宽，表头与内容同走原生 table 布局
+const tableCls = "w-full table-fixed border-collapse";
 </script>
 
 <template>
@@ -103,6 +111,7 @@ const cellCls =
         :placeholder="props.placeholder"
         :aria-invalid="props.invalid || undefined"
         class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm outline-none"
+        @click="openFromInput"
       />
       <ArkDatePicker.ClearTrigger :class="iconBtnCls">
         <svg
@@ -192,31 +201,27 @@ const cellCls =
 
         <ArkDatePicker.View :view="'day'">
           <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table>
+            <ArkDatePicker.Table :class="tableCls">
               <ArkDatePicker.TableHead>
                 <ArkDatePicker.TableRow>
                   <ArkDatePicker.TableHeader
                     v-for="(weekDay, id) in context.weekDays"
                     :key="id"
-                    :class="'text-muted-foreground w-9 text-center text-xs font-normal'"
+                    :class="'text-muted-foreground h-8 text-center text-xs font-normal'"
                   >
                     {{ weekDay.short }}
                   </ArkDatePicker.TableHeader>
                 </ArkDatePicker.TableRow>
               </ArkDatePicker.TableHead>
               <ArkDatePicker.TableBody>
-                <ArkDatePicker.TableRow
-                  v-for="(week, id) in context.weeks"
-                  :key="id"
-                  :class="'mt-1 flex w-full'"
-                >
+                <ArkDatePicker.TableRow v-for="(week, id) in context.weeks" :key="id">
                   <ArkDatePicker.TableCell
                     v-for="day in week"
                     :key="day.toString()"
                     :value="day"
-                    class="p-0"
+                    class="p-0 text-center"
                   >
-                    <ArkDatePicker.TableCellTrigger :class="cellCls">
+                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-8')">
                       {{ day.day }}
                     </ArkDatePicker.TableCellTrigger>
                   </ArkDatePicker.TableCell>
@@ -228,18 +233,17 @@ const cellCls =
 
         <ArkDatePicker.View :view="'month'">
           <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table>
+            <ArkDatePicker.Table :class="tableCls">
               <ArkDatePicker.TableBody>
                 <ArkDatePicker.TableRow
                   v-for="(monthsRow, id) in context.getMonthsGrid({ columns: 4, format: 'short' })"
                   :key="id"
-                  :class="'mt-1 flex w-full'"
                 >
                   <ArkDatePicker.TableCell
                     v-for="month in monthsRow"
                     :key="month.value.toString()"
                     :value="month.value"
-                    class="flex-1 p-0"
+                    class="p-0 text-center"
                   >
                     <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
                       {{ month.label }}
@@ -253,18 +257,17 @@ const cellCls =
 
         <ArkDatePicker.View :view="'year'">
           <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table>
+            <ArkDatePicker.Table :class="tableCls">
               <ArkDatePicker.TableBody>
                 <ArkDatePicker.TableRow
                   v-for="(yearsRow, id) in context.getYearsGrid({ columns: 4 })"
                   :key="id"
-                  :class="'mt-1 flex w-full'"
                 >
                   <ArkDatePicker.TableCell
                     v-for="year in yearsRow"
                     :key="year.value.toString()"
                     :value="year.value"
-                    class="flex-1 p-0"
+                    class="p-0 text-center"
                   >
                     <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
                       {{ year.label }}
