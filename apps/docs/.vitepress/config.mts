@@ -113,6 +113,7 @@ export default defineConfig({
             { text: "Form", link: "/components/form" },
             { text: "Checkbox", link: "/components/checkbox" },
             { text: "CurrencyInput", link: "/components/currency-input" },
+            { text: "DatePicker", link: "/components/date-picker" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
             { text: "NumberInput", link: "/components/number-input" },
