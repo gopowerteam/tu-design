@@ -59,6 +59,45 @@ const form = useForm({
 </template>
 ```
 
+## 校验时机与写法
+
+校验器经 `validators` 对象声明，**键决定触发时机**；字段级（`TFormField`）与表单级（`useForm`）可混用：
+
+| 键         | 触发时机                 | 典型用途                   |
+| ---------- | ------------------------ | -------------------------- |
+| `onChange` | 值每次变化（键入即校验） | 字段级即时反馈             |
+| `onBlur`   | 字段失焦                 | 克制一些的即时校验         |
+| `onSubmit` | 表单提交时               | 表单级兜底校验（常用默认） |
+| `onMount`  | 字段挂载                 | 回填后的预校验等           |
+
+未声明的键不在该时机校验。提交时 `handleSubmit` 会先跑全部字段级校验、再跑表单级校验，任一失败都不会调用 `onSubmit`。
+
+### 字段级两种写法
+
+校验器的值可为 **Standard Schema**（valibot / zod / arktype）或**函数**（返回错误文案或 `undefined`）。换用 zod 等其他校验器需在项目内自行安装，schema 可直接互换：
+
+```vue
+<TFormField
+  name="age"
+  v-slot="{ field }"
+  :validators="{
+    onChange: v.pipe(v.number(), v.minValue(13, '必须年满 13 岁')),
+    onBlur: ({ value }) => (value < 0 ? '不能为负数' : undefined),
+  }"
+>
+```
+
+### 跨字段校验（密码确认）
+
+函数式校验器经 `fieldApi.form` 读取整表值：
+
+```ts
+validators: {
+  onChange: ({ value, fieldApi }) =>
+    value === fieldApi.form.state.values.password ? undefined : "两次输入不一致",
+}
+```
+
 ## 组件与 Props
 
 ### TForm
@@ -163,3 +202,89 @@ const form = useForm({
 ```
 
 作用域插槽 default：`{ canSubmit, isSubmitting }`。
+
+## 场景化示例
+
+### 校验时机对比
+
+用户名失焦触发字段级 `onBlur` 校验，提交时由表单级 `onSubmit` schema 兜底——两处错误都会经 `TFormMessage` 渲染：
+
+<DemoPreview file="form/FormValidationDemo.vue" />
+
+要点：`validators` 键不同互不影响；点击「提交」不满足条件时，先见失焦错误，提交后追加表单级错误。
+
+### 异步提交
+
+`onSubmit` 返回 Promise 期间 `isSubmitting` 为真，`canSubmit` 同时转假禁用按钮，天然防重复提交：
+
+<DemoPreview file="form/FormAsyncSubmitDemo.vue" />
+
+### 编辑回填与重置
+
+异步取数后 `form.setFieldValue()` 逐字段回填；`form.reset()` 恢复到 `defaultValues`：
+
+<DemoPreview file="form/FormBackfillDemo.vue" />
+
+要点：回填后可声明 `onMount` 校验器做预校验；重置按钮直接调 `form.reset()`，无需自行清空。
+
+## FAQ
+
+### 如何手动设置 / 清除字段错误
+
+`field.setErrorMap()` 按触发时机写入错误，`TFormMessage` 照常渲染；传 `undefined` 即清除：
+
+```ts
+// 在 TFormField 作用域插槽拿到 field 后（如异步查重的回调里）
+field.setErrorMap({ onChange: "该用户名已被占用" }); // 设置
+field.setErrorMap({ onChange: undefined }); // 清除
+```
+
+### 字段联动（一个字段变化更新另一个）
+
+用 `form.useStore()` 订阅表单状态（返回 `Readonly<Ref>`），配合 `form.setFieldValue()` 写入：
+
+```vue
+<script setup lang="ts">
+import { watch } from "vue";
+import { useForm } from "@tanstack/vue-form";
+
+const form = useForm({
+  defaultValues: { price: 0, count: 1, total: 0 },
+  onSubmit: async ({ value }) => console.log(value),
+});
+
+const state = form.useStore();
+watch(
+  () => [state.value.values.price, state.value.values.count] as const,
+  ([price, count]) => form.setFieldValue("total", price * count),
+);
+</script>
+```
+
+### 动态增删字段（数组字段）
+
+`TFormField` 声明 `mode="array"` 后字段值为数组，`field` 上有 `pushValue` / `insertValue` / `removeValue` / `swapValues` / `moveValue` 行操作方法；行内子字段用 `` `contacts[${i}].phone` `` 形式的嵌套 `TFormField`：
+
+```vue
+<TFormField name="contacts" v-slot="{ field }" mode="array">
+  <div v-for="(_, i) in field.state.value" :key="i">
+    <TFormField :name="`contacts[${i}].phone`" v-slot="{ field: row }">
+      <TFormItem>
+        <TFormLabel>联系人 {{ i + 1 }} 电话</TFormLabel>
+        <TFormControl>
+          <TInput
+            :model-value="row.state.value"
+            @update:model-value="row.handleChange"
+            @blur="row.handleBlur"
+          />
+        </TFormControl>
+        <TFormMessage />
+      </TFormItem>
+    </TFormField>
+    <TButton variant="ghost" @click="field.removeValue(i)">删除</TButton>
+  </div>
+  <TButton variant="outline" @click="field.pushValue({ phone: '' })">添加联系人</TButton>
+</TFormField>
+```
+
+增删、移动行时，TanStack 会正确移位每行的校验与 touched 状态——删掉第 2 行不会让第 3 行继承它的错误。
