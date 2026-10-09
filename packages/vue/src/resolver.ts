@@ -18,6 +18,7 @@ export const COMPONENT_NAMES = [
   "CardTitle",
   "Checkbox",
   "CurrencyInput",
+  "DatePicker",
   "Dialog",
   "DialogClose",
   "DialogContent",
