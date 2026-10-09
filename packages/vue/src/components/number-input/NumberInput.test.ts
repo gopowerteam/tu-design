@@ -89,6 +89,14 @@ describe("NumberInput", () => {
     w.unmount();
   });
 
+  it("输入区 flex-1 填满两按钮之间（布局回归保护）", () => {
+    const w = mount(NumberInput, { props: { modelValue: 1 }, attachTo: document.body });
+    const cls = inputEl()!.className;
+    expect(cls).toContain("flex-1");
+    expect(cls).not.toContain("w-12");
+    w.unmount();
+  });
+
   it("numberOrNull：空串/NaN 归一为 null，正常值透传", () => {
     expect(numberOrNull({ value: "", valueAsNumber: Number.NaN })).toBe(null);
     expect(numberOrNull({ value: "abc", valueAsNumber: Number.NaN })).toBe(null);

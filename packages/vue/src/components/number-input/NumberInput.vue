@@ -79,7 +79,7 @@ function handleValueChange(details: { value: string; valueAsNumber: number }) {
     </ArkNumberInput.DecrementTrigger>
     <ArkNumberInput.Input
       v-bind="$attrs"
-      :class="'bg-transparent w-12 px-1 text-center text-sm outline-none disabled:cursor-not-allowed'"
+      :class="'bg-transparent flex-1 min-w-0 px-1 text-center text-sm outline-none disabled:cursor-not-allowed'"
     />
     <ArkNumberInput.IncrementTrigger
       :class="'bg-muted/50 hover:bg-accent flex w-9 shrink-0 items-center justify-center border-l text-muted-foreground text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50'"
