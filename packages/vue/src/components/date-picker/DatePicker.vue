@@ -221,7 +221,7 @@ const tableCls = "w-full table-fixed border-collapse";
                     :value="day"
                     class="p-0! text-center"
                   >
-                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-8')">
+                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
                       {{ day.day }}
                     </ArkDatePicker.TableCellTrigger>
                   </ArkDatePicker.TableCell>

@@ -200,6 +200,17 @@ describe("DatePicker", () => {
     w.unmount();
   });
 
+  it("格子触发器撑满整格（w-full）：选中/hover 背景无露缝", async () => {
+    const w = await openPicker();
+    document.body
+      .querySelectorAll('[data-scope="date-picker"] [data-part="table-cell-trigger"]')
+      .forEach((el) => {
+        expect(el.className).toContain("w-full");
+        expect(el.className).not.toContain("w-8");
+      });
+    w.unmount();
+  });
+
   it("表头/格子带宿主样式防御：important 重置 padding、表头不折行（VitePress .vp-doc th 污染回归锁）", async () => {
     const w = await openPicker();
     const th = document.body.querySelector('[data-scope="date-picker"] th');
