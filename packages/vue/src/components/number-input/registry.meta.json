@@ -1,0 +1,5 @@
+{
+  "description": "数字输入框：基于 Ark UI NumberInput 原语，含步进按钮与数值边界，值以 number|null 受控（空值归一 null）。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

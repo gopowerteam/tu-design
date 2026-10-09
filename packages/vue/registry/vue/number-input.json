@@ -1,0 +1,52 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "number-input",
+  "type": "registry:ui",
+  "description": "数字输入框：基于 Ark UI NumberInput 原语，含步进按钮与数值边界，值以 number|null 受控（空值归一 null）。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "number-input/NumberInput.vue",
+      "type": "registry:component",
+      "target": "components/ui/number-input/NumberInput.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, provide, ref } from \"vue\";\nimport { NumberInput as ArkNumberInput } from \"@ark-ui/vue/number-input\";\nimport { cn } from \"@/lib/utils\";\nimport { NUMBER_INPUT_KEY } from \"./context\";\nimport { numberOrNull } from \"./utils\";\n\nconst props = defineProps({\n  /** 受控值：number 或 null（空）；undefined 走内部非受控 */\n  modelValue: { type: Number as PropType<number | null | undefined>, default: undefined },\n  min: { type: Number, default: undefined },\n  max: { type: Number, default: undefined },\n  step: { type: Number, default: undefined },\n  formatOptions: { type: Object as PropType<Intl.NumberFormatOptions>, default: undefined },\n  // default: undefined 禁用 Boolean casting（Checkbox/Dialog 同款约定）\n  disabled: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  invalid: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  class: { type: String, default: undefined },\n});\n\nconst emit = defineEmits<{ \"update:modelValue\": [value: number | null] }>();\n\nprovide(NUMBER_INPUT_KEY, true);\n\n// 对 Ark Root 恒走受控模式，非受控语义由内部 ref 实现（Checkbox 同款）\nconst internalValue = ref<number | null>(null);\nconst current = computed(() =>\n  props.modelValue === undefined ? internalValue.value : props.modelValue,\n);\n\n/** number → Ark 受控 string（null/NaN → 空串） */\nconst arkValue = computed(() =>\n  current.value == null || Number.isNaN(current.value) ? \"\" : String(current.value),\n);\n\n/** Ark details（value: string / valueAsNumber: number）→ number|null（空串/NaN 归一 null） */\nfunction handleValueChange(details: { value: string; valueAsNumber: number }) {\n  const next = numberOrNull(details);\n  internalValue.value = next;\n  emit(\"update:modelValue\", next);\n}\n</script>\n\n<template>\n  <ArkNumberInput.Root\n    :model-value=\"arkValue\"\n    :min=\"props.min\"\n    :max=\"props.max\"\n    :step=\"props.step\"\n    :format-options=\"props.formatOptions\"\n    :disabled=\"props.disabled\"\n    :invalid=\"props.invalid\"\n    :class=\"cn('flex items-stretch', props.class)\"\n    @value-change=\"handleValueChange\"\n  >\n    <slot />\n  </ArkNumberInput.Root>\n</template>\n"
+    },
+    {
+      "path": "number-input/NumberInputDecrement.vue",
+      "type": "registry:component",
+      "target": "components/ui/number-input/NumberInputDecrement.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject } from \"vue\";\nimport { NumberInput as ArkNumberInput } from \"@ark-ui/vue/number-input\";\nimport { cn } from \"@/lib/utils\";\nimport { NUMBER_INPUT_KEY } from \"./context\";\n\nconst props = defineProps({ class: { type: String, default: undefined } });\n\nconst hasRoot = inject(NUMBER_INPUT_KEY, false);\nif (!hasRoot) {\n  console.warn(\"[tu-design] <NumberInputDecrement> 必须在 <NumberInput> 内使用\");\n}\n</script>\n\n<template>\n  <ArkNumberInput.DecrementTrigger\n    v-if=\"hasRoot\"\n    :class=\"\n      cn(\n        'border-input bg-muted/50 hover:bg-accent flex w-9 items-center justify-center border text-sm first:rounded-l-md disabled:cursor-not-allowed disabled:opacity-50',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </ArkNumberInput.DecrementTrigger>\n</template>\n"
+    },
+    {
+      "path": "number-input/NumberInputIncrement.vue",
+      "type": "registry:component",
+      "target": "components/ui/number-input/NumberInputIncrement.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject } from \"vue\";\nimport { NumberInput as ArkNumberInput } from \"@ark-ui/vue/number-input\";\nimport { cn } from \"@/lib/utils\";\nimport { NUMBER_INPUT_KEY } from \"./context\";\n\nconst props = defineProps({ class: { type: String, default: undefined } });\n\nconst hasRoot = inject(NUMBER_INPUT_KEY, false);\nif (!hasRoot) {\n  console.warn(\"[tu-design] <NumberInputIncrement> 必须在 <NumberInput> 内使用\");\n}\n</script>\n\n<template>\n  <ArkNumberInput.IncrementTrigger\n    v-if=\"hasRoot\"\n    :class=\"\n      cn(\n        'border-input bg-muted/50 hover:bg-accent flex w-9 items-center justify-center border text-sm last:rounded-r-md disabled:cursor-not-allowed disabled:opacity-50',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </ArkNumberInput.IncrementTrigger>\n</template>\n"
+    },
+    {
+      "path": "number-input/NumberInputInput.vue",
+      "type": "registry:component",
+      "target": "components/ui/number-input/NumberInputInput.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject } from \"vue\";\nimport { NumberInput as ArkNumberInput } from \"@ark-ui/vue/number-input\";\nimport { cn } from \"@/lib/utils\";\nimport { NUMBER_INPUT_KEY } from \"./context\";\n\nconst props = defineProps({ class: { type: String, default: undefined } });\n\nconst hasRoot = inject(NUMBER_INPUT_KEY, false);\nif (!hasRoot) {\n  console.warn(\"[tu-design] <NumberInputInput> 必须在 <NumberInput> 内使用\");\n}\n</script>\n\n<template>\n  <ArkNumberInput.Input\n    v-if=\"hasRoot\"\n    :class=\"\n      cn(\n        'border-input bg-transparent h-9 w-12 border-y px-1 text-center text-sm shadow-sm transition-[color,box-shadow] outline-none data-invalid:border-destructive disabled:cursor-not-allowed disabled:opacity-50',\n        props.class,\n      )\n    \"\n  />\n</template>\n"
+    },
+    {
+      "path": "number-input/context.ts",
+      "type": "registry:component",
+      "target": "components/ui/number-input/context.ts",
+      "content": "import type { InjectionKey } from \"vue\";\n\n/** NumberInput Root 上下文：仅用于子组件的开发期 guard 探测（Form 家族同款模式） */\nexport const NUMBER_INPUT_KEY: InjectionKey<true> = Symbol(\"tu-number-input\");\n"
+    },
+    {
+      "path": "number-input/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/number-input/index.ts",
+      "content": "export { default as NumberInput } from \"./NumberInput.vue\";\nexport { default as NumberInputInput } from \"./NumberInputInput.vue\";\nexport { default as NumberInputDecrement } from \"./NumberInputDecrement.vue\";\nexport { default as NumberInputIncrement } from \"./NumberInputIncrement.vue\";\nexport { numberOrNull } from \"./utils\";\n"
+    },
+    {
+      "path": "number-input/utils.ts",
+      "type": "registry:component",
+      "target": "components/ui/number-input/utils.ts",
+      "content": "/** Ark ValueChangeDetails → number|null（空串/NaN 归一 null，numberOrNull 为可单测的纯函数） */\nexport function numberOrNull(details: { value: string; valueAsNumber: number }): number | null {\n  return details.value === \"\" || Number.isNaN(details.valueAsNumber) ? null : details.valueAsNumber;\n}\n"
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "description": "多格验证码输入：基于 Ark UI PinInput 原语，支持 otp/mask/字符类型与填满回调，格数由 Input 子件数量决定（需传 index）。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

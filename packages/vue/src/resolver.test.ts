@@ -31,6 +31,9 @@ describe("TuDesignResolver", () => {
       "buttonVariants",
       "COMPONENT_NAMES",
       "TuDesignResolver",
+      "numberOrNull",
+      "PASSWORD_INPUT_KEY",
+      "PIN_INPUT_KEY",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());
