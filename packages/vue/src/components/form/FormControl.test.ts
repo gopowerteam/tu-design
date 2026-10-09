@@ -31,7 +31,10 @@ const MsgPresence = defineComponent({
 });
 
 /** Form > FormField > FormItem > children(field) */
-function makeHost(options: { validators?: object; children: (field: any) => any }) {
+function makeHost(options: {
+  validators?: Record<string, unknown>;
+  children: (field: any) => any;
+}) {
   const Host = defineComponent({
     setup() {
       const form = useForm({ defaultValues: { email: "" } });

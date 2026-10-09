@@ -1,0 +1,70 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "form",
+  "type": "registry:ui",
+  "description": "表单状态与校验：基于 TanStack Form，配合 Valibot（Standard Schema）声明式校验，aria 自动接线。",
+  "registryDependencies": ["utils", "input", "button", "label"],
+  "dependencies": ["@tanstack/vue-form@^1.33.5", "valibot@^1.5.0"],
+  "files": [
+    {
+      "path": "form/Form.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/Form.vue",
+      "content": "<script setup lang=\"ts\">\nimport { provide } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { FORM_KEY, type FormInstance } from \"./context\";\n\nconst props = defineProps<{\n  /** useForm() 返回的实例 */\n  form: FormInstance;\n  class?: string;\n}>();\n\nprovide(FORM_KEY, props.form);\n</script>\n\n<template>\n  <form\n    novalidate\n    :class=\"cn('flex flex-col gap-4', props.class)\"\n    @submit.prevent=\"props.form.handleSubmit()\"\n  >\n    <slot />\n  </form>\n</template>\n"
+    },
+    {
+      "path": "form/FormControl.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormControl.vue",
+      "content": "<script lang=\"ts\">\nimport { cloneVNode, computed, defineComponent, inject } from \"vue\";\nimport { FIELD_KEY, FORM_ITEM_KEY } from \"./context\";\n\n/**\n * 把 id / aria-invalid / aria-describedby 合并到唯一子元素（cloneVNode）。\n * aria 全同步计算：description/message 的 presence 由 FormItem 的 refs 提供。\n */\nexport default defineComponent({\n  name: \"TuFormControl\",\n  props: {\n    class: { type: String, default: undefined },\n  },\n  setup(props, { slots }) {\n    const fieldCtx = inject(FIELD_KEY)!;\n    const itemCtx = inject(FORM_ITEM_KEY)!;\n\n    const isInvalid = computed(() => (fieldCtx.field.value?.state.meta.errors.length ?? 0) > 0);\n    const describedBy = computed(() => {\n      const ids = [\n        itemCtx.hasDescription.value && itemCtx.descriptionId,\n        itemCtx.hasMessage.value && itemCtx.isInvalid.value && itemCtx.messageId,\n      ].filter(Boolean);\n      return ids.length > 0 ? ids.join(\" \") : undefined;\n    });\n\n    return () => {\n      const vnodes = slots.default?.() ?? [];\n      if (import.meta.env.DEV && vnodes.length !== 1) {\n        console.warn(\"[tu-design] <FormControl> 需要且仅需要一个子元素\");\n      }\n      const first = vnodes[0];\n      if (!first) return null;\n      return cloneVNode(first, {\n        id: fieldCtx.name,\n        \"aria-invalid\": isInvalid.value || undefined,\n        \"aria-describedby\": describedBy.value,\n        class: props.class,\n      });\n    };\n  },\n});\n</script>\n"
+    },
+    {
+      "path": "form/FormDescription.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormDescription.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject, onMounted, onUnmounted } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { FORM_ITEM_KEY } from \"./context\";\n\nconst itemCtx = inject(FORM_ITEM_KEY)!;\nconst props = defineProps<{ class?: string }>();\n\nonMounted(() => (itemCtx.hasDescription.value = true));\nonUnmounted(() => (itemCtx.hasDescription.value = false));\n</script>\n\n<template>\n  <p :id=\"itemCtx.descriptionId\" :class=\"cn('text-muted-foreground text-sm', props.class)\">\n    <slot />\n  </p>\n</template>\n"
+    },
+    {
+      "path": "form/FormField.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormField.vue",
+      "content": "<script lang=\"ts\">\nimport type { AnyFieldApi } from \"@tanstack/vue-form\";\nimport type { PropType } from \"vue\";\nimport { defineComponent, h, inject, provide, shallowRef } from \"vue\";\nimport { FIELD_KEY, FORM_KEY } from \"./context\";\n\n/**\n * 渲染 TanStack `form.Field` 并经 provide 下发 field 上下文。\n * field 实例只能在 form.Field 的插槽执行期取得（时序早于子组件 setup），\n * 故用 defineComponent + render function 在插槽回调中写入 ShallowRef。\n */\nexport default defineComponent({\n  name: \"TuFormField\",\n  props: {\n    /** 字段名（TanStack 深层 key 的运行时形态） */\n    name: { type: String, required: true },\n    /** 校验器配置，原样透传（值可为函数或 Standard Schema，如 valibot） */\n    validators: { type: Object as PropType<Record<string, unknown>>, default: undefined },\n  },\n  setup(props, { slots }) {\n    const form = inject(FORM_KEY);\n    if (!form && import.meta.env.DEV) {\n      console.warn(\"[tu-design] <FormField> 必须在 <Form> 内使用\");\n    }\n\n    const fieldRef = shallowRef<AnyFieldApi>();\n    provide(FIELD_KEY, { field: fieldRef, name: props.name });\n\n    if (!form) {\n      // 优雅降级：field 上下文缺席（FIELD_KEY.field 为 undefined），子组件需自行容忍\n      return () => slots.default?.({ field: undefined as unknown as AnyFieldApi });\n    }\n\n    return () =>\n      h(form.Field as never, { name: props.name, validators: props.validators } as never, {\n        default: (slotProps: { field: AnyFieldApi }) => {\n          fieldRef.value = slotProps.field;\n          return slots.default?.(slotProps);\n        },\n      });\n  },\n});\n</script>\n"
+    },
+    {
+      "path": "form/FormItem.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormItem.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, inject, provide, ref } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { FIELD_KEY, FORM_ITEM_KEY, type FormItemContext } from \"./context\";\n\nconst fieldCtx = inject(FIELD_KEY)!;\n\nconst name = fieldCtx.name;\nconst descriptionId = `${name}-form-item-description`;\nconst messageId = `${name}-form-item-message`;\nconst hasDescription = ref(false);\nconst hasMessage = ref(false);\nconst isInvalid = computed(() => (fieldCtx.field.value?.state.meta.errors.length ?? 0) > 0);\n\nprovide(FORM_ITEM_KEY, {\n  name,\n  descriptionId,\n  messageId,\n  hasDescription,\n  hasMessage,\n  isInvalid,\n} satisfies FormItemContext);\n</script>\n\n<template>\n  <div :class=\"cn('group flex flex-col gap-1.5')\" :data-invalid=\"isInvalid ? '' : undefined\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "form/FormLabel.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormLabel.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, inject } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { FIELD_KEY } from \"./context\";\n\nconst fieldCtx = inject(FIELD_KEY)!;\nconst props = defineProps<{ class?: string }>();\n\nconst isInvalid = computed(() => (fieldCtx.field.value?.state.meta.errors.length ?? 0) > 0);\n</script>\n\n<template>\n  <label\n    :for=\"fieldCtx.name\"\n    :data-invalid=\"isInvalid ? '' : undefined\"\n    :class=\"cn('text-sm font-medium leading-none data-invalid:text-destructive', props.class)\"\n  >\n    <slot />\n  </label>\n</template>\n"
+    },
+    {
+      "path": "form/FormMessage.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormMessage.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, inject, onMounted, onUnmounted } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { FIELD_KEY, FORM_ITEM_KEY } from \"./context\";\n\nconst fieldCtx = inject(FIELD_KEY)!;\nconst itemCtx = inject(FORM_ITEM_KEY)!;\n\nconst props = defineProps<{\n  /** 静态提示文案：传入后即使无校验错误也渲染（不走 aria-errormessage） */\n  message?: string;\n  class?: string;\n}>();\n\nconst errorText = computed(() => {\n  if (props.message) return props.message;\n  const raw = fieldCtx.field.value?.state.meta.errors[0];\n  if (raw === undefined) return undefined;\n  return typeof raw === \"string\" ? raw : raw?.message;\n});\n\nonMounted(() => (itemCtx.hasMessage.value = true));\nonUnmounted(() => (itemCtx.hasMessage.value = false));\n</script>\n\n<template>\n  <p v-if=\"errorText\" :id=\"itemCtx.messageId\" :class=\"cn('text-destructive text-sm', props.class)\">\n    {{ errorText }}\n  </p>\n</template>\n"
+    },
+    {
+      "path": "form/FormSubscribe.vue",
+      "type": "registry:component",
+      "target": "components/ui/form/FormSubscribe.vue",
+      "content": "<script setup lang=\"ts\">\nimport { inject } from \"vue\";\nimport { FORM_KEY } from \"./context\";\n\nconst form = inject(FORM_KEY)!;\n</script>\n\n<template>\n  <component :is=\"form.Subscribe\">\n    <template #default=\"state\">\n      <slot :can-submit=\"state.canSubmit\" :is-submitting=\"state.isSubmitting\" />\n    </template>\n  </component>\n</template>\n"
+    },
+    {
+      "path": "form/context.ts",
+      "type": "registry:component",
+      "target": "components/ui/form/context.ts",
+      "content": "import type { AnyFieldApi, FormApi, VueFormApi } from \"@tanstack/vue-form\";\nimport type { ComputedRef, InjectionKey, Ref, ShallowRef } from \"vue\";\n\n/** useForm() 返回实例的宽松形态（provide/inject 边界会擦除泛型，any 化是契约） */\n/* prettier-ignore */\nexport type FormInstance =\n  FormApi<any, any, any, any, any, any, any, any, any, any, any, any> &\n  VueFormApi<any, any, any, any, any, any, any, any, any, any, any, any>;\n\n/** FormField 内部经 form.Field 插槽才能拿到 field 实例，用 ShallowRef 承载 provide 时序 */\nexport interface FieldContext {\n  field: ShallowRef<AnyFieldApi | undefined>;\n  name: string;\n}\n\n/** FormItem 提供给 FormLabel/FormControl/FormDescription/FormMessage 的静态 id 与 presence 上下文 */\nexport interface FormItemContext {\n  name: string;\n  descriptionId: string;\n  messageId: string;\n  hasDescription: Ref<boolean>;\n  hasMessage: Ref<boolean>;\n  isInvalid: ComputedRef<boolean>;\n}\n\nexport const FORM_KEY: InjectionKey<FormInstance> = Symbol(\"tu-form\");\nexport const FIELD_KEY: InjectionKey<FieldContext> = Symbol(\"tu-form-field\");\nexport const FORM_ITEM_KEY: InjectionKey<FormItemContext> = Symbol(\"tu-form-item\");\n"
+    },
+    {
+      "path": "form/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/form/index.ts",
+      "content": "export { default as Form } from \"./Form.vue\";\nexport { default as FormControl } from \"./FormControl.vue\";\nexport { default as FormDescription } from \"./FormDescription.vue\";\nexport { default as FormField } from \"./FormField.vue\";\nexport { default as FormItem } from \"./FormItem.vue\";\nexport { default as FormLabel } from \"./FormLabel.vue\";\nexport { default as FormMessage } from \"./FormMessage.vue\";\nexport { default as FormSubscribe } from \"./FormSubscribe.vue\";\n"
+    }
+  ]
+}

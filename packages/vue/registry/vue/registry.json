@@ -51,6 +51,12 @@
       "description": "表单字段容器：Label/HelperText/ErrorText/输入控件经 Ark UI Field 上下文自动接线 id、aria-invalid 与 aria-describedby/aria-errormessage。"
     },
     {
+      "name": "form",
+      "title": "Form",
+      "type": "registry:ui",
+      "description": "表单状态与校验：基于 TanStack Form，配合 Valibot（Standard Schema）声明式校验，aria 自动接线。"
+    },
+    {
       "name": "input",
       "title": "Input",
       "type": "registry:ui",

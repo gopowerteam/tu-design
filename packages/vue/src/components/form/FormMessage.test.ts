@@ -26,7 +26,7 @@ const SCHEMA_RULES = { onChange: v.pipe(v.string(), v.minLength(5, "至少 5 个
 
 /** Form > FormField(rules) > FormItem > [Label, FormControl>input, Description?, Message?] */
 function makeHost(options: {
-  validators?: object;
+  validators?: Record<string, unknown>;
   withDescription?: boolean;
   withMessage?: boolean;
   message?: string;

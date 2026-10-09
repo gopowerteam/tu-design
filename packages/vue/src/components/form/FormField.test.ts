@@ -20,7 +20,7 @@ const Probe = defineComponent({
 });
 
 /** 构造 Form > FormField(validators) > slot(input [FormItem(Probe)]) 宿主；form 在 setup 内创建 */
-function makeHost(options: { validators?: object; withItem?: boolean } = {}) {
+function makeHost(options: { validators?: Record<string, unknown>; withItem?: boolean } = {}) {
   const captured: { field?: any } = {};
   const Host = defineComponent({
     setup() {
