@@ -111,6 +111,7 @@ export default defineConfig({
           text: "表单组件",
           items: [
             { text: "Checkbox", link: "/components/checkbox" },
+            { text: "CurrencyInput", link: "/components/currency-input" },
             { text: "Form", link: "/components/form" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
