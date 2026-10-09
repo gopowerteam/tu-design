@@ -16,6 +16,8 @@ export interface FieldContext {
 /** FormItem 提供给 FormLabel/FormControl/FormDescription/FormMessage 的静态 id 与 presence 上下文 */
 export interface FormItemContext {
   name: string;
+  /** 实例级唯一控件 id（useId 前缀 + 字段名），label/控件/aria 均由它派生 */
+  controlId: string;
   descriptionId: string;
   messageId: string;
   hasDescription: Ref<boolean>;

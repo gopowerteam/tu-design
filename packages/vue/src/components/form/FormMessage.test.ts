@@ -72,11 +72,13 @@ function makeHost(options: {
 describe("FormDescription", () => {
   it("渲染 p 与 id，并翻转 hasDescription", async () => {
     const { w } = makeHost({ withDescription: true });
-    const desc = w.find("p#email-form-item-description");
+    const desc = w.find('p[id$="email-form-item-description"]');
     expect(desc.exists()).toBe(true);
     expect(desc.text()).toBe("我们不会公开邮箱");
     await vi.waitFor(() =>
-      expect(w.find("input").attributes("aria-describedby")).toBe("email-form-item-description"),
+      expect(w.find("input").attributes("aria-describedby")).toContain(
+        "email-form-item-description",
+      ),
     );
     w.unmount();
   });
@@ -84,12 +86,14 @@ describe("FormDescription", () => {
   it("卸载后 hasDescription 复位，describedby 收缩", async () => {
     const { w, showDescription } = makeHost({ withDescription: true });
     await vi.waitFor(() =>
-      expect(w.find("input").attributes("aria-describedby")).toBe("email-form-item-description"),
+      expect(w.find("input").attributes("aria-describedby")).toContain(
+        "email-form-item-description",
+      ),
     );
 
     showDescription.value = false;
     await vi.waitFor(() => expect(w.find("input").attributes("aria-describedby")).toBeUndefined());
-    expect(w.find("p#email-form-item-description").exists()).toBe(false);
+    expect(w.find('p[id$="email-form-item-description"]').exists()).toBe(false);
     w.unmount();
   });
 });
@@ -97,8 +101,19 @@ describe("FormDescription", () => {
 describe("FormMessage", () => {
   it("无错误不渲染，hasMessage 为 false", () => {
     const { w } = makeHost({});
-    expect(w.find("p#email-form-item-message").exists()).toBe(false);
+    expect(w.find('p[id$="email-form-item-message"]').exists()).toBe(false);
     expect(w.find("input").attributes("aria-describedby")).toBeUndefined();
+    w.unmount();
+  });
+
+  it("control id 实例级唯一且 label 一致（同页多 Form 不冲突）", () => {
+    const { w } = makeHost({});
+    const input = w.find("input");
+    const label = w.find("label");
+    // 裸 name 会与页面其他表单的同名字段冲突
+    expect(input.attributes("id")).not.toBe("email");
+    expect(String(input.attributes("id")).endsWith("email")).toBe(true);
+    expect(label.attributes("for")).toBe(input.attributes("id"));
     w.unmount();
   });
 
@@ -106,12 +121,12 @@ describe("FormMessage", () => {
     const { w } = makeHost({ validators: FN_RULES, withMessage: true });
     await w.find("input").setValue("abc");
     await vi.waitFor(() => {
-      const msg = w.find("p#email-form-item-message");
+      const msg = w.find('p[id$="email-form-item-message"]');
       expect(msg.exists()).toBe(true);
       expect(msg.text()).toBe("至少 5 个字符");
       const input = w.find("input");
       expect(input.attributes("aria-invalid")).toBe("true");
-      expect(input.attributes("aria-describedby")).toBe("email-form-item-message");
+      expect(input.attributes("aria-describedby")).toContain("email-form-item-message");
     });
     w.unmount();
   });
@@ -120,7 +135,7 @@ describe("FormMessage", () => {
     const { w } = makeHost({ validators: SCHEMA_RULES, withMessage: true });
     await w.find("input").setValue("abc");
     await vi.waitFor(() => {
-      const msg = w.find("p#email-form-item-message");
+      const msg = w.find('p[id$="email-form-item-message"]');
       expect(msg.exists()).toBe(true);
       expect(msg.text()).toBe("至少 5 个字符");
       expect(msg.text()).not.toContain("[object");
@@ -130,7 +145,7 @@ describe("FormMessage", () => {
 
   it("message prop 覆盖且无错误也渲染", () => {
     const { w } = makeHost({ message: "固定提示" });
-    const msg = w.find("p#email-form-item-message");
+    const msg = w.find('p[id$="email-form-item-message"]');
     expect(msg.exists()).toBe(true);
     expect(msg.text()).toBe("固定提示");
     // 非校验错误场景：不接线 aria-describedby

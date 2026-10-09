@@ -83,11 +83,13 @@ describe("FormField", () => {
 });
 
 describe("FormItem", () => {
-  it("提供静态 id 上下文", () => {
+  it("提供静态 id 上下文（实例级唯一，以字段名结尾）", () => {
     const { w } = makeHost({ withItem: true });
     const probe = w.find("#probe");
-    expect(probe.attributes("data-desc")).toBe("email-form-item-description");
-    expect(probe.attributes("data-msg")).toBe("email-form-item-message");
+    expect(String(probe.attributes("data-desc")).endsWith("email-form-item-description")).toBe(
+      true,
+    );
+    expect(String(probe.attributes("data-msg")).endsWith("email-form-item-message")).toBe(true);
     w.unmount();
   });
 

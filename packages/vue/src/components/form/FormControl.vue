@@ -32,7 +32,7 @@ export default defineComponent({
       const first = vnodes[0];
       if (!first) return null;
       return cloneVNode(first, {
-        id: fieldCtx.name,
+        id: itemCtx.controlId,
         "aria-invalid": isInvalid.value || undefined,
         "aria-describedby": describedBy.value,
         class: props.class,

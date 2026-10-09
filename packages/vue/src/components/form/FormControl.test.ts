@@ -74,7 +74,7 @@ describe("FormLabel", () => {
       ],
     });
     const label = w.find("label");
-    expect(label.attributes("for")).toBe("email");
+    expect(String(label.attributes("for")).endsWith("email")).toBe(true);
     expect(label.element.hasAttribute("data-invalid")).toBe(false);
 
     await w.find("input").setValue("abc");
@@ -87,7 +87,7 @@ describe("FormControl", () => {
   it("子元素获得 id，无错误时无 aria-invalid/describedby", () => {
     const w = makeHost({ children: () => [h(FormControl, () => h("input"))] });
     const input = w.find("input");
-    expect(input.attributes("id")).toBe("email");
+    expect(String(input.attributes("id")).endsWith("email")).toBe(true);
     expect(input.attributes("aria-invalid")).toBeUndefined();
     expect(input.attributes("aria-describedby")).toBeUndefined();
     w.unmount();
@@ -98,7 +98,9 @@ describe("FormControl", () => {
       children: () => [h(DescPresence), h(FormControl, () => h("input"))],
     });
     await vi.waitFor(() =>
-      expect(w.find("input").attributes("aria-describedby")).toBe("email-form-item-description"),
+      expect(w.find("input").attributes("aria-describedby")).toContain(
+        "email-form-item-description",
+      ),
     );
     w.unmount();
   });
