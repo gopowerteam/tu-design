@@ -20,11 +20,19 @@ const Probe = defineComponent({
 });
 
 /** 构造 Form > FormField(validators) > slot(input [FormItem(Probe)]) 宿主；form 在 setup 内创建 */
-function makeHost(options: { validators?: Record<string, unknown>; withItem?: boolean } = {}) {
+function makeHost(
+  options: {
+    validators?: Record<string, unknown>;
+    withItem?: boolean;
+    mode?: "value" | "array";
+  } = {},
+) {
   const captured: { field?: any } = {};
   const Host = defineComponent({
     setup() {
-      const form = useForm({ defaultValues: { email: "" } });
+      const form = useForm({
+        defaultValues: options.mode === "array" ? { email: [] as string[] } : { email: "" },
+      });
       return () =>
         h(
           Form,
@@ -33,7 +41,7 @@ function makeHost(options: { validators?: Record<string, unknown>; withItem?: bo
             default: () =>
               h(
                 FormField,
-                { name: "email", validators: options.validators },
+                { name: "email", validators: options.validators, mode: options.mode },
                 {
                   default: ({ field }: any) => {
                     captured.field = field;
@@ -78,6 +86,16 @@ describe("FormField", () => {
     const { w, captured } = makeHost({ validators: EMAIL_RULES });
     await w.find("input").setValue("abc");
     await vi.waitFor(() => expect(captured.field?.state.meta.errors.length).toBeGreaterThan(0));
+    w.unmount();
+  });
+
+  it("mode=array 透传：pushValue/removeValue 操作行值", async () => {
+    const { w, captured } = makeHost({ mode: "array" });
+    expect(captured.field?.state.value).toEqual([]);
+    captured.field.pushValue("a");
+    await vi.waitFor(() => expect(captured.field.state.value).toEqual(["a"]));
+    captured.field.removeValue(0);
+    await vi.waitFor(() => expect(captured.field.state.value).toEqual([]));
     w.unmount();
   });
 });

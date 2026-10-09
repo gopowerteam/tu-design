@@ -16,6 +16,8 @@ export default defineComponent({
     name: { type: String, required: true },
     /** 校验器配置，原样透传（值可为函数或 Standard Schema，如 valibot） */
     validators: { type: Object as PropType<Record<string, unknown>>, default: undefined },
+    /** 字段模式：value 单值（默认）；array 数组字段，解锁 pushValue/removeValue 等行操作 */
+    mode: { type: String as PropType<"value" | "array">, default: "value" },
   },
   setup(props, { slots }) {
     const form = inject(FORM_KEY);
@@ -32,12 +34,16 @@ export default defineComponent({
     }
 
     return () =>
-      h(form.Field as never, { name: props.name, validators: props.validators } as never, {
-        default: (slotProps: { field: AnyFieldApi }) => {
-          fieldRef.value = slotProps.field;
-          return slots.default?.(slotProps);
+      h(
+        form.Field as never,
+        { name: props.name, validators: props.validators, mode: props.mode } as never,
+        {
+          default: (slotProps: { field: AnyFieldApi }) => {
+            fieldRef.value = slotProps.field;
+            return slots.default?.(slotProps);
+          },
         },
-      });
+      );
   },
 });
 </script>
