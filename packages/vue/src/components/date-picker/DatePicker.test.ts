@@ -192,6 +192,23 @@ describe("DatePicker", () => {
     document.body.querySelectorAll('[data-scope="date-picker"] tr').forEach((tr) => {
       expect(tr.className).not.toContain("flex");
     });
+    document.body
+      .querySelectorAll('[data-scope="date-picker"] [data-part="table-cell-trigger"]')
+      .forEach((el) => {
+        expect(el.className).not.toContain("rounded");
+      });
+    w.unmount();
+  });
+
+  it("表头/格子带宿主样式防御：important 重置 padding、表头不折行（VitePress .vp-doc th 污染回归锁）", async () => {
+    const w = await openPicker();
+    const th = document.body.querySelector('[data-scope="date-picker"] th');
+    expect(th?.className).toContain("p-0!");
+    expect(th?.className).toContain("text-xs!");
+    expect(th?.className).toContain("whitespace-nowrap");
+    document.body.querySelectorAll('[data-scope="date-picker"] td').forEach((td) => {
+      expect(td.className).toContain("p-0!");
+    });
     w.unmount();
   });
 

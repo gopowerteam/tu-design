@@ -80,7 +80,7 @@ const iconBtnCls =
 const navBtnCls =
   "text-muted-foreground inline-flex size-7 items-center justify-center rounded-md outline-none hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
 const cellCls =
-  "flex h-8 items-center justify-center rounded-md text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
+  "flex h-8 items-center justify-center text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
 // table-fixed：7 列日视图 / 4 列月年视图均分列宽，表头与内容同走原生 table 布局
 const tableCls = "w-full table-fixed border-collapse";
 </script>
@@ -207,7 +207,7 @@ const tableCls = "w-full table-fixed border-collapse";
                   <ArkDatePicker.TableHeader
                     v-for="(weekDay, id) in context.weekDays"
                     :key="id"
-                    :class="'text-muted-foreground h-8 text-center text-xs font-normal'"
+                    :class="'text-muted-foreground h-8 p-0! text-center align-middle text-xs! font-normal whitespace-nowrap'"
                   >
                     {{ weekDay.short }}
                   </ArkDatePicker.TableHeader>
@@ -219,7 +219,7 @@ const tableCls = "w-full table-fixed border-collapse";
                     v-for="day in week"
                     :key="day.toString()"
                     :value="day"
-                    class="p-0 text-center"
+                    class="p-0! text-center"
                   >
                     <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-8')">
                       {{ day.day }}
@@ -243,7 +243,7 @@ const tableCls = "w-full table-fixed border-collapse";
                     v-for="month in monthsRow"
                     :key="month.value.toString()"
                     :value="month.value"
-                    class="p-0 text-center"
+                    class="p-0! text-center"
                   >
                     <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
                       {{ month.label }}
@@ -267,7 +267,7 @@ const tableCls = "w-full table-fixed border-collapse";
                     v-for="year in yearsRow"
                     :key="year.value.toString()"
                     :value="year.value"
-                    class="p-0 text-center"
+                    class="p-0! text-center"
                   >
                     <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
                       {{ year.label }}
