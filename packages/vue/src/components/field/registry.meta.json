@@ -1,5 +1,0 @@
-{
-  "description": "表单字段容器：Label/HelperText/ErrorText/输入控件经 Ark UI Field 上下文自动接线 id、aria-invalid 与 aria-describedby/aria-errormessage。",
-  "registryDependencies": ["utils"],
-  "dependencies": { "@ark-ui/vue": "catalog:" }
-}
