@@ -61,13 +61,105 @@ const form = useForm({
 
 ## 组件与 Props
 
-| 组件               | 说明                                                                                                               |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `TForm`            | 表单容器。props：`form`（`useForm()` 实例）、`class`。拦截原生 submit 并调用 `form.handleSubmit()`（`novalidate`） |
-| `TFormField`       | 字段作用域。props：`name`、`validators`（Standard Schema 或函数，字段级校验）。作用域插槽 `{ field, state }`       |
-| `TFormItem`        | 字段布局容器，提供 description/message 的静态 id 上下文，错误时带 `data-invalid`                                   |
-| `TFormLabel`       | 字段标签，`for` 自动指向字段，错误时变红                                                                           |
-| `TFormControl`     | 控件包装：合并 `id`、`aria-invalid`、`aria-describedby` 到唯一子元素（多子元素时开发期告警）                       |
-| `TFormDescription` | 辅助说明，`aria-describedby` 指向它；卸载自动收缩                                                                  |
-| `TFormMessage`     | 错误提示。props：`message?`（静态覆盖）。默认渲染首个校验错误的文案；仅在有错误或传 `message` 时渲染               |
-| `TFormSubscribe`   | 提交状态订阅。作用域插槽 `{ canSubmit, isSubmitting }`                                                             |
+### TForm
+
+表单容器：拦截原生 `submit`（`novalidate`）并调用 `form.handleSubmit()`。
+
+```vue
+<TForm :form="form">…</TForm>
+```
+
+| Prop    | 类型                                 | 默认值 | 说明               |
+| ------- | ------------------------------------ | ------ | ------------------ |
+| `form`  | `FormInstance`（`useForm()` 返回值） | —      | 表单实例，**必填** |
+| `class` | `string`                             | —      | 追加/覆盖根样式    |
+
+插槽：default——放置 `TFormField` 与 `TFormSubscribe`。
+
+### TFormField
+
+字段作用域：渲染 TanStack `form.Field` 并向下提供字段上下文。
+
+```vue
+<TFormField name="email" v-slot="{ field }">…</TFormField>
+```
+
+| Prop         | 类型                        | 默认值 | 说明                                                                         |
+| ------------ | --------------------------- | ------ | ---------------------------------------------------------------------------- |
+| `name`       | `string`                    | —      | 字段名，**必填**；控件 `id` 由它派生                                         |
+| `validators` | `Record<string, validator>` | —      | 字段级校验：值为函数或 Standard Schema（如 valibot），按 `onChange` 等键声明 |
+
+作用域插槽 default：`{ field, state }`——`field.state.value` 取值、`field.handleChange` 写值、`field.handleBlur` 失焦、`field.state.meta.errors` 错误列表。
+
+### TFormItem
+
+字段布局容器（无 Props）：为子组件提供 `controlId`、`descriptionId`、`messageId` 上下文；校验错误时根元素带 `data-invalid`。
+
+```vue
+<TFormItem>…</TFormItem>
+```
+
+### TFormLabel
+
+字段标签：`for` 自动指向字段控件，校验错误时变红。
+
+```vue
+<TFormLabel>邮箱</TFormLabel>
+```
+
+| Prop    | 类型     | 默认值 | 说明          |
+| ------- | -------- | ------ | ------------- |
+| `class` | `string` | —      | 追加/覆盖样式 |
+
+### TFormControl
+
+控件包装：把 `id`、`aria-invalid`、`aria-describedby` 合并到唯一子元素（多个子元素时开发期告警）。
+
+```vue
+<TFormControl>
+  <TInput v-model="…" />
+</TFormControl>
+```
+
+| Prop    | 类型     | 默认值 | 说明                |
+| ------- | -------- | ------ | ------------------- |
+| `class` | `string` | —      | 追加/覆盖子元素样式 |
+
+### TFormDescription
+
+辅助说明：挂载即被 `aria-describedby` 关联，卸载自动收缩。
+
+```vue
+<TFormDescription>我们不会公开你的邮箱</TFormDescription>
+```
+
+| Prop    | 类型     | 默认值 | 说明          |
+| ------- | -------- | ------ | ------------- |
+| `class` | `string` | —      | 追加/覆盖样式 |
+
+### TFormMessage
+
+错误提示：默认渲染首个校验错误文案（兼容 `string` 与 `{ message }` 对象两种形态）；仅在有错误或传入 `message` 时渲染。
+
+```vue
+<TFormMessage />
+```
+
+| Prop      | 类型     | 默认值 | 说明                                                           |
+| --------- | -------- | ------ | -------------------------------------------------------------- |
+| `message` | `string` | —      | 静态覆盖文案：传入后即使无错误也渲染（不走 aria-errormessage） |
+| `class`   | `string` | —      | 追加/覆盖样式                                                  |
+
+### TFormSubscribe
+
+提交状态订阅（无 Props），配合 `type="submit"` 按钮使用。
+
+```vue
+<TFormSubscribe v-slot="{ canSubmit, isSubmitting }">
+  <TButton type="submit" :disabled="!canSubmit">
+    {{ isSubmitting ? "提交中…" : "提交" }}
+  </TButton>
+</TFormSubscribe>
+```
+
+作用域插槽 default：`{ canSubmit, isSubmitting }`。
