@@ -32,6 +32,8 @@ describe("TuDesignResolver", () => {
       "COMPONENT_NAMES",
       "TuDesignResolver",
       "numberOrNull",
+      "formatCurrency",
+      "parseCurrency",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());

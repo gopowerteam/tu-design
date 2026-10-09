@@ -1,0 +1,5 @@
+{
+  "description": "金额输入框：内置万/元/角/分单位后缀，labelUnit 输入单位与 valueUnit 存储单位自动换算（整数分最小精度），值以 number|null 受控。",
+  "registryDependencies": ["utils"],
+  "dependencies": {}
+}
