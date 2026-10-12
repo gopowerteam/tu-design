@@ -1,30 +1,12 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { formatIsoDate, parseIsoDate } from "../date-shared/shared";
 import { DatePicker } from "./index";
-import { formatIsoDate, parseIsoDate } from "./utils";
 
 afterEach(() => {
   document.body.innerHTML = "";
   vi.restoreAllMocks();
-});
-
-describe("parseIsoDate / formatIsoDate", () => {
-  it("ISO 串 ↔ DateValue 往返", () => {
-    const d = parseIsoDate("2026-10-09");
-    expect(d).toBeDefined();
-    expect(d!.year).toBe(2026);
-    expect(d!.month).toBe(10);
-    expect(d!.day).toBe(9);
-    expect(formatIsoDate(d!)).toBe("2026-10-09");
-  });
-
-  it("非法/非严格 ISO 返回 undefined", () => {
-    expect(parseIsoDate("")).toBeUndefined();
-    expect(parseIsoDate("abc")).toBeUndefined();
-    expect(parseIsoDate("2026-2-3")).toBeUndefined();
-    expect(parseIsoDate("2026/10/09")).toBeUndefined();
-  });
 });
 
 describe("DatePicker", () => {
@@ -140,10 +122,14 @@ describe("DatePicker", () => {
     w.unmount();
   });
 
-  it("zh-CN 默认周一起始（表头首列为「一」）", async () => {
+  it("zh-CN 默认周一起始，表头单字显示（一/二/三，非周一/周二）", async () => {
     await openPicker({ modelValue: "2026-10-09" });
-    const firstHeader = document.body.querySelector<HTMLElement>("[role='grid'] thead th");
-    expect(firstHeader?.textContent).toContain("一");
+    const headers = [...document.body.querySelectorAll("[role='grid'] thead th")];
+    expect(headers[0]?.textContent?.trim()).toBe("一");
+    for (const th of headers) {
+      expect(th.textContent).not.toContain("周");
+      expect(th.textContent!.length).toBeLessThanOrEqual(1);
+    }
   });
 
   it("受控 open 时 Esc 关闭发出 update:open false", async () => {
@@ -252,6 +238,72 @@ describe("DatePicker", () => {
   it("非法 modelValue 不崩且忽略", () => {
     const w = mount(DatePicker, { props: { modelValue: "abc" }, attachTo: document.body });
     expect((w.find("input").element as HTMLInputElement).value).toBe("");
+    w.unmount();
+  });
+
+  it("键盘 ArrowDown 聚焦输入框可打开弹层并 emit update:open true", async () => {
+    const onOpen = vi.fn();
+    const w = mount(DatePicker, { props: { "onUpdate:open": onOpen }, attachTo: document.body });
+    const content = () => document.body.querySelector('[data-part="content"]');
+    expect(content()?.getAttribute("data-state")).toBe("closed");
+    await w.find("input").trigger("keydown", { key: "ArrowDown" });
+    await vi.waitFor(() => expect(content()?.getAttribute("data-state")).toBe("open"));
+    expect(onOpen).toHaveBeenCalledWith(true);
+    w.unmount();
+  });
+
+  it("手动键入合法日期后 Enter 提交 ISO 值（parse 钩子路径）", async () => {
+    const onUpdate = vi.fn();
+    const w = mount(DatePicker, {
+      props: { modelValue: "2026-10-09", "onUpdate:modelValue": onUpdate },
+      attachTo: document.body,
+    });
+    const input = w.find("input");
+    // 键入须用 locale 分隔符（zh-CN 为 "/"，zag 会剥掉 "-"）；提交值仍为 ISO
+    await input.setValue("2026/10/20");
+    await input.trigger("keydown", { key: "Enter" });
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith("2026-10-20"));
+    w.unmount();
+  });
+
+  it("手动键入非法串被清洗且不产生脏值", async () => {
+    const onUpdate = vi.fn();
+    const w = mount(DatePicker, {
+      props: { modelValue: "2026-10-09", "onUpdate:modelValue": onUpdate },
+      attachTo: document.body,
+    });
+    const input = w.find("input");
+    await input.setValue("abc");
+    // zag INPUT.CHANGE 清洗后同步输入框回显选中值，不等待 blur
+    await vi.waitFor(() => expect((input.element as HTMLInputElement).value).toBe("2026-10-09"));
+    expect(onUpdate).not.toHaveBeenCalledWith("abc");
+    w.unmount();
+  });
+
+  it("max 边界外格子不可选", async () => {
+    const w = await openPicker({ modelValue: "2026-10-09", max: "2026-10-10" });
+    const after = cell("2026-10-15");
+    expect(
+      after.hasAttribute("data-disabled") || after.getAttribute("aria-disabled") === "true",
+    ).toBe(true);
+    w.unmount();
+  });
+
+  it("ViewTrigger 点击切换月视图：12 个月格子、value 为月份数字", async () => {
+    const w = await openPicker({ modelValue: "2026-10-09" });
+    const viewTrigger = document.body.querySelector<HTMLElement>('[data-part="view-trigger"]');
+    expect(viewTrigger, "视图切换按钮应存在").toBeTruthy();
+    viewTrigger!.click();
+    await vi.waitFor(() => {
+      const cells = document.body.querySelectorAll(
+        '[data-part="table-cell-trigger"][data-view="month"]',
+      );
+      if (cells.length !== 12) throw new Error("月视图格子未挂载");
+    });
+    const oct = document.body.querySelector<HTMLElement>(
+      '[data-part="table-cell-trigger"][data-view="month"][data-value="10"]',
+    );
+    expect(oct, "10 月格子应存在（value 为月份数字）").toBeTruthy();
     w.unmount();
   });
 });

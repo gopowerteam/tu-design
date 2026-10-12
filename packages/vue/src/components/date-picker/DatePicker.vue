@@ -4,7 +4,17 @@ import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
 import { computed, ref } from "vue";
 import { cn } from "@/lib/utils";
-import { formatIsoDate, parseIsoDate } from "./utils";
+import {
+  cellCls,
+  controlCls,
+  formatIsoDate,
+  iconBtnCls,
+  navBtnCls,
+  parseIsoDate,
+  tableCls,
+  viewControlCls,
+  viewTriggerCls,
+} from "../date-shared/shared";
 
 const props = defineProps({
   /** 受控值（"yyyy-MM-dd"）；undefined 走内部非受控，null 表示空 */
@@ -67,29 +77,18 @@ function handleOpenUpdate(next: boolean) {
   emit("update:open", next);
 }
 
-// 点击输入框即开弹层（zag 默认仅 Trigger 开；显式驱动保证各环境行为一致）
+// 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；
+// 显式驱动保证各环境行为一致并显式走受控 emit）
 function openFromInput() {
   if (props.disabled || props.readOnly || isOpen.value) return;
   handleOpenUpdate(true);
 }
-
-const controlCls =
-  "border-input flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]";
-const iconBtnCls =
-  "text-muted-foreground/70 hover:text-foreground flex h-full w-8 shrink-0 items-center justify-center outline-none disabled:cursor-not-allowed disabled:opacity-30";
-const navBtnCls =
-  "text-muted-foreground inline-flex size-7 items-center justify-center rounded-md outline-none hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
-const cellCls =
-  "flex h-8 items-center justify-center text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
-// table-fixed：7 列日视图 / 4 列月年视图均分列宽，表头与内容同走原生 table 布局
-const tableCls = "w-full table-fixed border-collapse";
 </script>
 
 <template>
   <ArkDatePicker.Root
     :model-value="rootValue"
     :open="isOpen"
-    :default-open="props.defaultOpen"
     :locale="props.locale"
     :min="minDate"
     :max="maxDate"
@@ -112,6 +111,7 @@ const tableCls = "w-full table-fixed border-collapse";
         :aria-invalid="props.invalid || undefined"
         class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm outline-none"
         @click="openFromInput"
+        @keydown.down.prevent="openFromInput"
       />
       <ArkDatePicker.ClearTrigger :class="iconBtnCls">
         <svg
@@ -153,7 +153,7 @@ const tableCls = "w-full table-fixed border-collapse";
           )
         "
       >
-        <ArkDatePicker.ViewControl :class="'flex items-center justify-between pb-2'">
+        <ArkDatePicker.ViewControl :class="viewControlCls">
           <ArkDatePicker.PrevTrigger :class="navBtnCls">
             <svg
               viewBox="0 0 24 24"
@@ -167,9 +167,7 @@ const tableCls = "w-full table-fixed border-collapse";
               <path d="m15 18-6-6 6-6" />
             </svg>
           </ArkDatePicker.PrevTrigger>
-          <ArkDatePicker.ViewTrigger
-            :class="'hover:bg-accent inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium outline-none'"
-          >
+          <ArkDatePicker.ViewTrigger :class="viewTriggerCls">
             <ArkDatePicker.RangeText />
             <svg
               viewBox="0 0 24 24"
@@ -209,7 +207,7 @@ const tableCls = "w-full table-fixed border-collapse";
                     :key="id"
                     :class="'text-muted-foreground h-8 p-0! text-center align-middle text-xs! font-normal whitespace-nowrap'"
                   >
-                    {{ weekDay.short }}
+                    {{ weekDay.narrow }}
                   </ArkDatePicker.TableHeader>
                 </ArkDatePicker.TableRow>
               </ArkDatePicker.TableHead>

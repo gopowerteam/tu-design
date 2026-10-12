@@ -45,6 +45,18 @@
       "description": "日期选择器：输入框 + 日历弹层（月/年视图切换），支持手动键入/清空/min-max 边界/不可选谓词，值以 \"yyyy-MM-dd\" 字符串受控。"
     },
     {
+      "name": "date-range-picker",
+      "title": "DateRangePicker",
+      "type": "registry:ui",
+      "description": "日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点，值以 [\"yyyy-MM-dd\", \"yyyy-MM-dd\"] 有序元组受控，空值归一 null。"
+    },
+    {
+      "name": "date-shared",
+      "title": "DateShared",
+      "type": "registry:ui",
+      "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）与日历样式常量。"
+    },
+    {
       "name": "dialog",
       "title": "Dialog",
       "type": "registry:ui",

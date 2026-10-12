@@ -114,6 +114,7 @@ export default defineConfig({
             { text: "Checkbox", link: "/components/checkbox" },
             { text: "CurrencyInput", link: "/components/currency-input" },
             { text: "DatePicker", link: "/components/date-picker" },
+            { text: "DateRangePicker", link: "/components/date-range-picker" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
             { text: "NumberInput", link: "/components/number-input" },

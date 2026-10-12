@@ -7,6 +7,9 @@ catalogMode: prefer
 
 catalog:
   "@types/node": ^24
+  dev: ^0.1.5
+  rm: ^0.1.8
+  run: ^2.1.7
   typescript: ^5.9
   vite: npm:@voidzero-dev/vite-plus-core@1.0.0
   vite-plus: 1.0.0
@@ -45,5 +48,6 @@ peerDependencyRules:
     vite: "*"
 allowBuilds:
   esbuild: true
+  inotify: set this to true or false
   # vue-demi 的 postinstall 做 Vue 版本切换；本仓库锁定 Vue 3.5，批准执行
   vue-demi: true

@@ -36,7 +36,7 @@ npx tu-design add date-picker
 
 ## 值与换算
 
-- 输入框手动键入与回显默认走 **ISO 格式**（`yyyy-MM-dd`）：内部以 `format`/`parse` 钩子收敛，不随 locale 漂移。
+- 输入框手动键入与回显默认走 **ISO 格式**（`yyyy-MM-dd`）：内部以 `format`/`parse` 钩子收敛，不随 locale 漂移。键入时须用 locale 分隔符（zag 按其清洗字符，zh-CN 为 `/`，如 `2026/10/09`），提交与 `v-model` 值仍为 ISO。
 - 换算基于 `@internationalized/date` 纯日历解析，无时区参与；非法字符串（如 `"abc"`）被忽略，不产生脏值。
 - 不可选日期（越界 / `isDateUnavailable` 命中）格子呈现禁用态，点击不产生值。
 
@@ -101,4 +101,5 @@ startDate: v.pipe(v.string(), v.isoDate("请选择有效日期")),
 ## 注意事项
 
 - 弹层标题可点击切换月/年视图；`PrevTrigger`/`NextTrigger` 按当前视图步进。
-- 输入框键入格式为 ISO（`2026-10-09`），补零必需。
+- 输入框键入用 locale 分隔符（zh-CN 为 `/`，如 `2026/10/09`），补零必需；`v-model` 值恒为 ISO（`2026-10-09`）。
+- 聚焦输入框后点击或按 `↓` 可打开日历；按 `Enter` 提交键入值。
