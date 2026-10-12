@@ -3,6 +3,7 @@ import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
+import CalendarNav from "./CalendarNav.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -16,11 +17,7 @@ const props = withDefaults(
 
 // —— 卡片视觉常量（打磨单点：视觉调整只改本文件）——
 const cardCls = computed(() => [props.numOfMonths > 1 ? "w-[40rem]" : "w-80", "p-4"]);
-const viewControlCls = "flex items-center justify-between px-1 pb-3";
-const navBtnCls =
-  "text-muted-foreground inline-flex size-8 items-center justify-center rounded-md outline-none hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
-const viewTriggerCls =
-  "hover:bg-accent inline-flex items-center gap-1 rounded-[3px] px-3 py-1.5 text-sm font-semibold text-foreground outline-none transition-colors";
+// 导航条（ViewControl/Prev/Next/ViewTrigger）样式常量已迁 calendar/CalendarNav.vue
 // 日视图双层格子（naive 式「命中大、视觉小」）：
 // trigger = 全格命中区 + range 无缝条带层（primary/10；行首行尾圆角由模板按列位补）
 // dot     = 24px 视觉圆点层，hover/选中/今天/禁用色全落此层（经 group-* 读取 trigger 状态）
@@ -60,52 +57,10 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
 
 <template>
   <div :class="cn(cardCls)">
-    <ArkDatePicker.ViewControl :class="viewControlCls">
-      <ArkDatePicker.PrevTrigger :class="navBtnCls">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="m15 18-6-6 6-6" />
-        </svg>
-      </ArkDatePicker.PrevTrigger>
-      <ArkDatePicker.ViewTrigger v-if="mode === 'day'" :class="viewTriggerCls">
-        <ArkDatePicker.RangeText />
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-3.5 opacity-50"
-        >
-          <path d="m7 15 5 5 5-5" />
-          <path d="m7 9 5-5 5 5" />
-        </svg>
-      </ArkDatePicker.ViewTrigger>
-      <ArkDatePicker.NextTrigger :class="navBtnCls">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="m9 18 6-6-6-6" />
-        </svg>
-      </ArkDatePicker.NextTrigger>
-    </ArkDatePicker.ViewControl>
-
     <template v-if="mode === 'day'">
       <ArkDatePicker.View :view="'day'">
+        <!-- day 视图导航条在 View 内：viewProps=day → GOTO.NEXT=focusNextPage（翻月） -->
+        <CalendarNav view="day" />
         <ArkDatePicker.Context v-slot="context">
           <div class="flex gap-6">
             <ArkDatePicker.Table v-for="i in numOfMonths" :key="i" :class="tableCls">
@@ -155,6 +110,8 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
       </ArkDatePicker.View>
 
       <ArkDatePicker.View :view="'month'">
+        <!-- 切换视图导航条也在 View 内：DatePicker 切月视图后 GOTO.NEXT=focusNextYear（修复 backlog） -->
+        <CalendarNav view="month" />
         <ArkDatePicker.Context v-slot="context">
           <ArkDatePicker.Table :class="tableCls">
             <ArkDatePicker.TableBody>
@@ -180,6 +137,7 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
       </ArkDatePicker.View>
 
       <ArkDatePicker.View :view="'year'">
+        <CalendarNav view="year" />
         <ArkDatePicker.Context v-slot="context">
           <ArkDatePicker.Table :class="tableCls">
             <ArkDatePicker.TableBody>
@@ -206,6 +164,8 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
     </template>
 
     <ArkDatePicker.View v-else-if="mode === 'month'" :view="'month'">
+      <!-- 导航条必须在 View 子树内：Prev/NextTrigger 才能拿到 view="month"（GOTO.NEXT=focusNextYear） -->
+      <CalendarNav view="month" />
       <ArkDatePicker.Context v-slot="context">
         <ArkDatePicker.Table :class="tableCls">
           <ArkDatePicker.TableBody>
@@ -231,6 +191,8 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
     </ArkDatePicker.View>
 
     <ArkDatePicker.View v-else :view="'year'">
+      <!-- 导航条必须在 View 子树内：Prev/NextTrigger 才能拿到 view="year"（GOTO.NEXT=focusNextDecade） -->
+      <CalendarNav view="year" />
       <ArkDatePicker.Context v-slot="context">
         <ArkDatePicker.Table :class="tableCls">
           <ArkDatePicker.TableBody>

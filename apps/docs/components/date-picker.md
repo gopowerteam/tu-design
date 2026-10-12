@@ -88,14 +88,12 @@ startDate: v.pipe(v.string(), v.isoDate("请选择有效日期")),
 
 ## 路线图
 
-日期家族后续变体均以独立组件交付，值类型遵循「string 家族 / ISO 化 / 区间一律 `[start, end]` 元组」约定：
+日期家族后续变体均以独立组件交付，值类型遵循「string 家族 / ISO 化 / 区间一律 `[start, end]` 元组」约定。`MonthPicker` / `YearPicker` 已交付（`minView`/`maxView` 视图锁定实现，见 [TMonthPicker](/components/month-picker) / [TYearPicker](/components/year-picker)）：
 
 | 变体              | 实现路径                           | v-model                    |
 | ----------------- | ---------------------------------- | -------------------------- |
 | `DateRangePicker` | zag 原生 `selectionMode="range"`   | `[string, string] \| null` |
 | `WeekPicker`      | range 模式模拟点一格选整周         | `[string, string] \| null` |
-| `MonthPicker`     | `defaultView="month"`              | `string`（`"2026-10"`）    |
-| `YearPicker`      | `defaultView="year"`               | `string`（`"2026"`）       |
 | `QuarterPicker`   | 自定义格子渲染（12 月映射 4 季度） | 待定                       |
 
 弹层卡片已合并为公开日历组件 [`TCalendar`](/components/calendar)（standalone 独立形态；两组件共用同一卡片内核，视觉打磨单点）。Full 尺寸日历为未来的 `size` 档：同一内核换自适应容器宽（流式布局 + 单元格插槽扩展），与形态维度正交组合，后续专项交付。

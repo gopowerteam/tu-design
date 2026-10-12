@@ -258,4 +258,10 @@ describe("DateRangePicker", () => {
     await openPicker({ modelValue: ["2026-10-03", "2026-10-28"] });
     expect(document.body.querySelectorAll('[data-part="content"]').length).toBe(1);
   });
+
+  it("弹层 Portal 化：Positioner 直挂 body", async () => {
+    await openPicker();
+    const positioner = document.body.querySelector('[data-part="positioner"]');
+    expect(positioner?.parentElement, "Positioner 应直挂 body").toBe(document.body);
+  });
 });

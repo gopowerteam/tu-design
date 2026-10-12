@@ -116,6 +116,8 @@ export default defineConfig({
             { text: "CurrencyInput", link: "/components/currency-input" },
             { text: "DatePicker", link: "/components/date-picker" },
             { text: "DateRangePicker", link: "/components/date-range-picker" },
+            { text: "MonthPicker", link: "/components/month-picker" },
+            { text: "YearPicker", link: "/components/year-picker" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },
             { text: "NumberInput", link: "/components/number-input" },

@@ -93,6 +93,12 @@
       "description": "表单标签。"
     },
     {
+      "name": "month-picker",
+      "title": "MonthPicker",
+      "type": "registry:ui",
+      "description": "月份选择器：输入框 + 锁定月视图的日历弹层，值以 \"yyyy-MM\" 字符串受控，min/max 为月粒度闭区间（内部换算到当月末日）。"
+    },
+    {
       "name": "number-input",
       "title": "NumberInput",
       "type": "registry:ui",
@@ -187,6 +193,12 @@
       "title": "Utils",
       "type": "registry:lib",
       "description": "cn 类名合并工具（clsx + tailwind-merge）。"
+    },
+    {
+      "name": "year-picker",
+      "title": "YearPicker",
+      "type": "registry:ui",
+      "description": "年份选择器：输入框 + 锁定年视图的日历弹层（decade 网格），值以 \"yyyy\" 字符串受控，min/max 为年粒度闭区间。"
     }
   ]
 }

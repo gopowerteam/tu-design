@@ -312,4 +312,60 @@ describe("DatePicker", () => {
     expect(oct, "10 月格子应存在（value 为月份数字）").toBeTruthy();
     w.unmount();
   });
+
+  it("ViewTrigger 切月视图后 next 翻年（View 内 CalendarNav 修复锁）", async () => {
+    const w = await openPicker({ modelValue: "2026-10-15" });
+    // day → month：外置（day 视图）ViewTrigger 上钻（zag VIEW.TOGGLE→setNextView 用 context）
+    document.body.querySelector<HTMLElement>('[data-part="view-trigger"]')!.click();
+    await w.vm.$nextTick();
+    // 注：Ark vue 的 View 容器只有 data-part="view"+hidden，无 data-view → 用 :not([hidden]) 定位可见 View
+    const nextInMonth = document.body.querySelector<HTMLElement>(
+      '[data-part="view"]:not([hidden]) [data-part="next-trigger"]',
+    );
+    expect(nextInMonth, "月视图内应有可见 next 钮").toBeTruthy();
+    nextInMonth!.click();
+    await w.vm.$nextTick();
+    const focused = document.body.querySelector<HTMLElement>(
+      '[data-part="view"]:not([hidden]) [data-part="table-cell-trigger"][data-focus]',
+    );
+    expect(focused?.getAttribute("aria-label"), "翻年后焦点月格应含 2027").toContain("2027");
+    w.unmount();
+  });
+
+  it("ViewTrigger 经月视图上钻年视图后 next 翻年代（GOTO.NEXT=focusNextDecade 修复锁）", async () => {
+    const w = await openPicker({ modelValue: "2026-10-15" });
+    // day → month：外置（day 视图）ViewTrigger
+    document.body.querySelector<HTMLElement>('[data-part="view-trigger"]')!.click();
+    await w.vm.$nextTick();
+    // month → year：month 视图内的 ViewTrigger（ zag setNextView 上钻）
+    document.body
+      .querySelector<HTMLElement>('[data-part="view"]:not([hidden]) [data-part="view-trigger"]')!
+      .click();
+    await w.vm.$nextTick();
+    const nextInYear = document.body.querySelector<HTMLElement>(
+      '[data-part="view"]:not([hidden]) [data-part="next-trigger"]',
+    );
+    expect(nextInYear, "年视图内应有可见 next 钮").toBeTruthy();
+    nextInYear!.click();
+    await w.vm.$nextTick();
+    const y2030 = document.body.querySelector(
+      '[data-part="view"]:not([hidden]) [data-part="table-cell-trigger"][data-value="2030"]',
+    );
+    expect(y2030, "翻年代后 2030 年格应出现").toBeTruthy();
+    w.unmount();
+  });
+
+  it("弹层 Portal 化：Positioner 直挂 body 且祖先链无 group（表单 FormControl.group 隔离）", async () => {
+    const w = await openPicker();
+    const positioner = document.body.querySelector('[data-part="positioner"]');
+    expect(positioner, "Positioner 应存在").toBeTruthy();
+    expect(positioner!.parentElement, "Positioner 应直挂 body").toBe(document.body);
+    // 语义锁：Positioner → body 之间不得有 group class 祖先
+    let el = positioner!.parentElement;
+    while (el && el !== document.body) {
+      expect([...el.classList], `祖先 ${el.tagName} 不得含 group`).not.toContain("group");
+      el = el.parentElement;
+    }
+    w.unmount();
+  });
 });

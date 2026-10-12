@@ -5,6 +5,18 @@
   "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）与日历样式常量。",
   "files": [
     {
+      "path": "date-shared/CalendarIcon.vue",
+      "type": "registry:component",
+      "target": "components/ui/date-shared/CalendarIcon.vue",
+      "content": "<template>\n  <svg\n    viewBox=\"0 0 24 24\"\n    fill=\"none\"\n    stroke=\"currentColor\"\n    stroke-width=\"2\"\n    stroke-linecap=\"round\"\n    stroke-linejoin=\"round\"\n    class=\"size-4\"\n  >\n    <rect width=\"18\" height=\"18\" x=\"3\" y=\"4\" rx=\"2\" />\n    <path d=\"M16 2v4\" />\n    <path d=\"M8 2v4\" />\n    <path d=\"M3 10h18\" />\n  </svg>\n</template>\n"
+    },
+    {
+      "path": "date-shared/ClearIcon.vue",
+      "type": "registry:component",
+      "target": "components/ui/date-shared/ClearIcon.vue",
+      "content": "<template>\n  <svg\n    viewBox=\"0 0 24 24\"\n    fill=\"none\"\n    stroke=\"currentColor\"\n    stroke-width=\"2\"\n    stroke-linecap=\"round\"\n    stroke-linejoin=\"round\"\n    class=\"size-4\"\n  >\n    <path d=\"M18 6 6 18\" />\n    <path d=\"m6 6 12 12\" />\n  </svg>\n</template>\n"
+    },
+    {
       "path": "date-shared/shared.ts",
       "type": "registry:component",
       "target": "components/ui/date-shared/shared.ts",

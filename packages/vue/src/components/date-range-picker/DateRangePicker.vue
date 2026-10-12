@@ -2,9 +2,11 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, provide, ref, watch } from "vue";
+import { computed, provide, ref, shallowRef, watch } from "vue";
 import { cn } from "@/lib/utils";
 import { Calendar as TCalendar } from "../calendar";
+import CalendarIcon from "../date-shared/CalendarIcon.vue";
+import ClearIcon from "../date-shared/ClearIcon.vue";
 import {
   CALENDAR_IN_PICKER,
   controlCls,
@@ -64,7 +66,9 @@ provide(CALENDAR_IN_PICKER, true);
 // range 是两步交互：zag 受控模式下内部值读 prop，父组件回显滞后会吃掉 pending start，
 // 导致第二次点击永远变成新起点。因此恒以内部镜像（zag 原生 0–2 元素 DateValue[]）为准，
 // 外部 modelValue 赋值经 watch 覆盖 mirror；对外 emit 归一为 [ISO, ISO] | null。
-const internalValue = ref<DateValue[]>([]);
+// shallowRef：internalValue 恒整体替换/读取，且规避 ref 深层 unwrap 把 DateValue
+// 类联合展开成结构类型（ZonedDateTime 丢 #private）导致 vue-tsc 不再匹配 DateValue[]
+const internalValue = shallowRef<DateValue[]>([]);
 const rootValue = computed(() => internalValue.value);
 
 function normalize(next: DateValue[]): [string, string] | null {
@@ -171,47 +175,27 @@ function openFromInput() {
         @keydown.down.prevent="openFromInput"
       />
       <ArkDatePicker.ClearTrigger :class="iconBtnCls">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
+        <ClearIcon />
       </ArkDatePicker.ClearTrigger>
       <ArkDatePicker.Trigger :class="iconBtnCls">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <rect width="18" height="18" x="3" y="4" rx="2" />
-          <path d="M16 2v4" />
-          <path d="M8 2v4" />
-          <path d="M3 10h18" />
-        </svg>
+        <CalendarIcon />
       </ArkDatePicker.Trigger>
     </ArkDatePicker.Control>
 
-    <ArkDatePicker.Positioner class="z-50">
-      <ArkDatePicker.Content
-        :class="
-          cn(
-            'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 rounded-md border shadow-md',
-          )
-        "
-      >
-        <TCalendar :num-of-months="props.numOfMonths" />
-      </ArkDatePicker.Content>
-    </ArkDatePicker.Positioner>
+    <!-- 弹层 Teleport 到 body：脱离表单 DOM——隔离外层 FormControl 的 group class
+       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患。 -->
+    <Teleport to="body">
+      <ArkDatePicker.Positioner class="z-50">
+        <ArkDatePicker.Content
+          :class="
+            cn(
+              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 rounded-md border shadow-md',
+            )
+          "
+        >
+          <TCalendar :num-of-months="props.numOfMonths" />
+        </ArkDatePicker.Content>
+      </ArkDatePicker.Positioner>
+    </Teleport>
   </ArkDatePicker.Root>
 </template>

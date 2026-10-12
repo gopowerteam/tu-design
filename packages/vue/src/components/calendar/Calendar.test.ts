@@ -146,8 +146,12 @@ describe("Calendar（standalone）", () => {
       '[data-part="table-cell-trigger"][data-view="month"]',
     );
     expect(cells.length).toBe(12);
-    // 锁定视图时无 ViewTrigger（渲染裁剪）
-    expect(document.body.querySelector('[data-part="view-trigger"]')).toBeNull();
+    // v3：月分支 ViewTrigger 恒渲染（包年份标题），standalone mode 派生锁定 → zag 原生 disabled
+    const viewTrigger = document.body.querySelector<HTMLButtonElement>(
+      '[data-part="view-trigger"]',
+    );
+    expect(viewTrigger, "锁定月视图 ViewTrigger 应存在（作标题）").toBeTruthy();
+    expect(viewTrigger!.disabled, "钳制应来自 zag（原生 disabled）").toBe(true);
     // 月/年视图单层格子沿用小圆角语言
     const monthTrigger = cells[0] as HTMLElement;
     expect(monthTrigger.className).toContain("rounded-[3px]");
@@ -159,6 +163,31 @@ describe("Calendar（standalone）", () => {
     expect(
       document.body.querySelectorAll('[data-part="table-cell-trigger"][data-view="year"]').length,
     ).toBeGreaterThan(0);
+  });
+
+  it("standalone 月卡：next 翻年且年份文本更新（ViewControl 移入 View 修复锁）", async () => {
+    const w = await openCalendar({ mode: "month", modelValue: "2026-03" });
+    // v3：年份标题由 ViewTrigger 承载
+    const yearLabel = () =>
+      document.body
+        .querySelector('[data-part="view-control"] [data-part="view-trigger"]')
+        ?.textContent?.trim();
+    expect(yearLabel(), "月份标题应显示年份").toBe("2026");
+    document.body.querySelector<HTMLElement>('[data-part="next-trigger"]')!.click();
+    await w.vm.$nextTick();
+    expect(yearLabel(), "next 应翻到下一年").toBe("2027");
+    w.unmount();
+  });
+
+  it("standalone 年卡：年代标题存在，next 翻年代（ViewControl 移入 View 修复锁）", async () => {
+    const w = await openCalendar({ mode: "year", modelValue: "2026" });
+    const decadeLabel = () =>
+      document.body.querySelector('[data-part="view-control"] span')?.textContent?.trim();
+    expect(decadeLabel(), "年代标题应显示当前年代").toBe("2020 - 2029");
+    document.body.querySelector<HTMLElement>('[data-part="next-trigger"]')!.click();
+    await w.vm.$nextTick();
+    expect(decadeLabel(), "next 应翻到下一年代").toBe("2030 - 2039");
+    w.unmount();
   });
 
   it("卡片宽度与内边距随 numOfMonths 切换（打磨后规格）", async () => {

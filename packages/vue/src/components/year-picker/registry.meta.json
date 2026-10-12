@@ -1,0 +1,5 @@
+{
+  "description": "年份选择器：输入框 + 锁定年视图的日历弹层（decade 网格），值以 \"yyyy\" 字符串受控，min/max 为年粒度闭区间。",
+  "registryDependencies": ["utils", "date-shared", "calendar"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}
