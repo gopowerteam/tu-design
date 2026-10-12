@@ -2,18 +2,15 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed, provide, ref } from "vue";
 import { cn } from "@/lib/utils";
+import { Calendar as TCalendar } from "../calendar";
 import {
-  cellCls,
+  CALENDAR_IN_PICKER,
   controlCls,
   formatIsoDate,
   iconBtnCls,
-  navBtnCls,
   parseIsoDate,
-  tableCls,
-  viewControlCls,
-  viewTriggerCls,
 } from "../date-shared/shared";
 
 const props = defineProps({
@@ -50,6 +47,9 @@ const emit = defineEmits<{
 
 // attrs（id/aria-*）转发给真实 input，保证 TLabel/TFormControl 关联
 defineOptions({ inheritAttrs: false });
+
+// 弹层内的 TCalendar 探测到宿主标记 → embedded 内嵌形态（纯卡片内核，不自建 Root，值归本 Picker）
+provide(CALENDAR_IN_PICKER, true);
 
 // —— 受控桥接（Select 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——
 const internalValue = ref<string | null>(props.defaultValue ?? null);
@@ -149,133 +149,11 @@ function openFromInput() {
       <ArkDatePicker.Content
         :class="
           cn(
-            'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 w-72 rounded-md border p-3 shadow-md',
+            'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 rounded-md border shadow-md',
           )
         "
       >
-        <ArkDatePicker.ViewControl :class="viewControlCls">
-          <ArkDatePicker.PrevTrigger :class="navBtnCls">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-4"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </ArkDatePicker.PrevTrigger>
-          <ArkDatePicker.ViewTrigger :class="viewTriggerCls">
-            <ArkDatePicker.RangeText />
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-3.5 opacity-50"
-            >
-              <path d="m7 15 5 5 5-5" />
-              <path d="m7 9 5-5 5 5" />
-            </svg>
-          </ArkDatePicker.ViewTrigger>
-          <ArkDatePicker.NextTrigger :class="navBtnCls">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-4"
-            >
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </ArkDatePicker.NextTrigger>
-        </ArkDatePicker.ViewControl>
-
-        <ArkDatePicker.View :view="'day'">
-          <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table :class="tableCls">
-              <ArkDatePicker.TableHead>
-                <ArkDatePicker.TableRow>
-                  <ArkDatePicker.TableHeader
-                    v-for="(weekDay, id) in context.weekDays"
-                    :key="id"
-                    :class="'text-muted-foreground h-8 p-0! text-center align-middle text-xs! font-normal whitespace-nowrap'"
-                  >
-                    {{ weekDay.narrow }}
-                  </ArkDatePicker.TableHeader>
-                </ArkDatePicker.TableRow>
-              </ArkDatePicker.TableHead>
-              <ArkDatePicker.TableBody>
-                <ArkDatePicker.TableRow v-for="(week, id) in context.weeks" :key="id">
-                  <ArkDatePicker.TableCell
-                    v-for="day in week"
-                    :key="day.toString()"
-                    :value="day"
-                    class="p-0! text-center"
-                  >
-                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
-                      {{ day.day }}
-                    </ArkDatePicker.TableCellTrigger>
-                  </ArkDatePicker.TableCell>
-                </ArkDatePicker.TableRow>
-              </ArkDatePicker.TableBody>
-            </ArkDatePicker.Table>
-          </ArkDatePicker.Context>
-        </ArkDatePicker.View>
-
-        <ArkDatePicker.View :view="'month'">
-          <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table :class="tableCls">
-              <ArkDatePicker.TableBody>
-                <ArkDatePicker.TableRow
-                  v-for="(monthsRow, id) in context.getMonthsGrid({ columns: 4, format: 'short' })"
-                  :key="id"
-                >
-                  <ArkDatePicker.TableCell
-                    v-for="month in monthsRow"
-                    :key="month.value.toString()"
-                    :value="month.value"
-                    class="p-0! text-center"
-                  >
-                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
-                      {{ month.label }}
-                    </ArkDatePicker.TableCellTrigger>
-                  </ArkDatePicker.TableCell>
-                </ArkDatePicker.TableRow>
-              </ArkDatePicker.TableBody>
-            </ArkDatePicker.Table>
-          </ArkDatePicker.Context>
-        </ArkDatePicker.View>
-
-        <ArkDatePicker.View :view="'year'">
-          <ArkDatePicker.Context v-slot="context">
-            <ArkDatePicker.Table :class="tableCls">
-              <ArkDatePicker.TableBody>
-                <ArkDatePicker.TableRow
-                  v-for="(yearsRow, id) in context.getYearsGrid({ columns: 4 })"
-                  :key="id"
-                >
-                  <ArkDatePicker.TableCell
-                    v-for="year in yearsRow"
-                    :key="year.value.toString()"
-                    :value="year.value"
-                    class="p-0! text-center"
-                  >
-                    <ArkDatePicker.TableCellTrigger :class="cn(cellCls, 'w-full')">
-                      {{ year.label }}
-                    </ArkDatePicker.TableCellTrigger>
-                  </ArkDatePicker.TableCell>
-                </ArkDatePicker.TableRow>
-              </ArkDatePicker.TableBody>
-            </ArkDatePicker.Table>
-          </ArkDatePicker.Context>
-        </ArkDatePicker.View>
+        <TCalendar />
       </ArkDatePicker.Content>
     </ArkDatePicker.Positioner>
   </ArkDatePicker.Root>

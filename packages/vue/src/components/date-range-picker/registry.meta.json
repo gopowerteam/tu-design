@@ -1,5 +1,5 @@
 {
   "description": "日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点，值以 [\"yyyy-MM-dd\", \"yyyy-MM-dd\"] 有序元组受控，空值归一 null。",
-  "registryDependencies": ["utils", "date-shared"],
+  "registryDependencies": ["utils", "date-shared", "calendar"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

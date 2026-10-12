@@ -1,9 +1,17 @@
 import { type DateValue, parseDate } from "@ark-ui/vue/date-picker";
+import type { InjectionKey } from "vue";
 
 /**
  * 日期家族共享模块：ISO 值域解析（日期/月/年/区间）与日历样式常量。
  * 供 DatePicker / DateRangePicker 及后续变体（Month/Year/WeekPicker）复用。
  */
+
+/**
+ * TCalendar 双形态标记：Picker 在 setup 里 provide(true)，
+ * 弹层内的 TCalendar 检测到宿主即保持「纯卡片内核」（embedded 内嵌形态，不自建 Root）；
+ * 独立使用时 inject 落到 fallback false → 自建 Root（standalone 独立形态，恒开）。
+ */
+export const CALENDAR_IN_PICKER: InjectionKey<boolean> = Symbol("tu-calendar-in-picker");
 
 /** ISO 日期串格式（yyyy-MM-dd）：日期家族公开值域的基础格式 */
 export type IsoDate = string;
@@ -76,18 +84,9 @@ export function parseIsoRange(
   return start.compare(end) <= 0 ? [start, end] : [end, start];
 }
 
-// —— 日期家族共享样式常量（与 TDatePicker 视觉规范一致）——
+// —— 输入框侧共享样式常量（Control 容器与触发钮；卡片视觉见 calendar/CalendarBody）——
 
 export const controlCls =
   "border-input flex h-9 w-full items-center overflow-hidden rounded-md border bg-transparent shadow-xs transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]";
 export const iconBtnCls =
   "text-muted-foreground/70 hover:text-foreground flex h-full w-8 shrink-0 items-center justify-center outline-none disabled:cursor-not-allowed disabled:opacity-30";
-export const navBtnCls =
-  "text-muted-foreground inline-flex size-7 items-center justify-center rounded-md outline-none hover:bg-accent disabled:cursor-not-allowed disabled:opacity-40";
-export const cellCls =
-  "flex h-8 items-center justify-center text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
-// table-fixed：7 列日视图 / 4 列月年视图均分列宽，表头与内容同走原生 table 布局
-export const tableCls = "w-full table-fixed border-collapse";
-export const viewControlCls = "flex items-center justify-between pb-2";
-export const viewTriggerCls =
-  "hover:bg-accent inline-flex items-center gap-1 rounded-md px-2 py-1 text-sm font-medium outline-none";

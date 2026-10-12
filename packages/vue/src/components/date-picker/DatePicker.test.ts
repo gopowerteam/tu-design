@@ -1,7 +1,6 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { formatIsoDate, parseIsoDate } from "../date-shared/shared";
 import { DatePicker } from "./index";
 
 afterEach(() => {
@@ -181,7 +180,14 @@ describe("DatePicker", () => {
     document.body
       .querySelectorAll('[data-scope="date-picker"] [data-part="table-cell-trigger"]')
       .forEach((el) => {
-        expect(el.className).not.toContain("rounded");
+        if (el.getAttribute("data-view") === "day") {
+          // 双层格子：trigger 带命中区 group，视觉圆点层带小圆角
+          expect(el.className).toContain("group");
+          expect(el.firstElementChild?.className).toContain("rounded-[3px]");
+        } else {
+          // 月/年视图单层格子沿用小圆角语言
+          expect(el.className).toContain("rounded-[3px]");
+        }
       });
     w.unmount();
   });

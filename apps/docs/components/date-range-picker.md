@@ -20,7 +20,7 @@ npx tu-design add date-range-picker
 | `defaultValue`      | `[string, string]`             | —                  | 非受控初值                                      |
 | `open`              | `boolean`                      | —                  | 弹层开合受控（配合 `@update:open`）             |
 | `defaultOpen`       | `boolean`                      | `false`            | 弹层初始展开                                    |
-| `placeholder`       | `string`                       | `"请选择日期范围"` | 输入框占位符                                    |
+| `placeholder`       | `string`                       | `"请选择日期范围"` | 输入框占位符（起/止双框同占位）                 |
 | `disabled`          | `boolean`                      | —                  | 禁用态                                          |
 | `invalid`           | `boolean`                      | —                  | 校验失败态（`data-invalid` + destructive 样式） |
 | `readOnly`          | `boolean`                      | —                  | 只读态                                          |
@@ -41,7 +41,7 @@ npx tu-design add date-range-picker
 - 受控用法下**无需在中间态回显**：内部保留选中进度，第二次点击总能完成区间（受控父组件延迟同步不影响交互）。
 - 区间中段格子以浅色底标记（`data-in-range`），两端为主色（`data-selected`）。
 - 边界与 `isDateUnavailable` 命中的格子呈禁用态，点击不产生值。
-- 输入框以**格子点选**为准；键入支持为路线图事项，暂不承诺。
+- 输入框为**起/止双框**（zag 原生 range 结构，中间「→」分隔）：回显时起值入左框、止值入右框；点任一框开弹层，以**格子点选**为准；键入支持为路线图事项，暂不承诺。
 
 `isDateUnavailable` 的参数类型 `DateValue` 来自 `@ark-ui/vue` 的传递依赖：
 
@@ -68,3 +68,4 @@ const range = ref<[string, string] | null>(["2026-10-01", "2026-10-15"]);
 - 弹层标题可点击切换月/年视图；`PrevTrigger`/`NextTrigger` 按当前视图步进。
 - 清除按钮发出 `null`；受控时父组件把 `null` 回传即可复位。
 - `numOfMonths` 改为 `1` 可切换单月范围选择。
+- 相邻月的补位日期仅作区间连续性的视觉提示（灰字），**不可点击选中**（对齐 naive excluded 语义）；range/选中高亮只在日期所属月份的表内出现一次，不会跨表重复。

@@ -102,6 +102,7 @@ export default defineConfig({
             { text: "Avatar", link: "/components/avatar" },
             { text: "Badge", link: "/components/badge" },
             { text: "Button", link: "/components/button" },
+            { text: "Calendar", link: "/components/calendar" },
             { text: "Card", link: "/components/card" },
             { text: "Separator", link: "/components/separator" },
             { text: "Skeleton", link: "/components/skeleton" },

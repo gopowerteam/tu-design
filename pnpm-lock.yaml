@@ -268,6 +268,9 @@ importers:
 
   apps/docs:
     dependencies:
+      '@ark-ui/vue':
+        specifier: 'catalog:'
+        version: 5.39.2(vue@3.5.43(typescript@5.9.3))
       '@tanstack/vue-form':
         specifier: 'catalog:'
         version: 1.33.5(vue@3.5.43(typescript@5.9.3))

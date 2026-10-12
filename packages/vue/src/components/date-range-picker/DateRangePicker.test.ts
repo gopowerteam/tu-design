@@ -27,14 +27,26 @@ describe("DateRangePicker", () => {
     return el!;
   }
 
-  it("渲染输入框、触发按钮与清除按钮", () => {
+  it("渲染输入框、触发按钮与清除按钮（range 原生双框：起/止各一）", () => {
     const w = mount(DateRangePicker, {
       props: { modelValue: ["2026-10-09", "2026-10-15"] },
       attachTo: document.body,
     });
-    expect(w.find("input").exists()).toBe(true);
+    expect(w.findAll("input").length).toBe(2);
     expect(w.find('[data-part="trigger"]').exists()).toBe(true);
     expect(w.find('[data-part="clear-trigger"]').exists()).toBe(true);
+    w.unmount();
+  });
+
+  it("range 回显完整：外部赋值后起/止 input 各显一段（zag syncInputElement 按框分配）", () => {
+    const w = mount(DateRangePicker, {
+      props: { modelValue: ["2026-10-01", "2026-10-10"] },
+      attachTo: document.body,
+    });
+    const inputs = w.findAll("input");
+    expect(inputs.length).toBe(2);
+    expect((inputs[0].element as HTMLInputElement).value).toBe("2026-10-01");
+    expect((inputs[1].element as HTMLInputElement).value).toBe("2026-10-10");
     w.unmount();
   });
 
@@ -163,14 +175,18 @@ describe("DateRangePicker", () => {
     w.unmount();
   });
 
-  it("attrs 透传真实 input（id/aria-label）", () => {
+  it("attrs 透传首框 input（id/aria-label，label 关联语义）；次框不重复", () => {
     const w = mount(DateRangePicker, {
       attrs: { id: "range", "aria-label": "起止日期" },
       attachTo: document.body,
     });
-    const input = w.find("input");
-    expect(input.attributes("id")).toBe("range");
-    expect(input.attributes("aria-label")).toBe("起止日期");
+    const inputs = w.findAll("input");
+    expect(inputs.length).toBe(2);
+    expect(inputs[0].attributes("id")).toBe("range");
+    expect(inputs[0].attributes("aria-label")).toBe("起止日期");
+    // 次框 id 由 ark 自动生成（...:input:1），不透传 attrs
+    expect(inputs[1].attributes("id")).not.toBe("range");
+    expect(inputs[1].attributes("aria-label")).not.toBe("起止日期");
     w.unmount();
   });
 
@@ -189,11 +205,33 @@ describe("DateRangePicker", () => {
     expect(cell("2026-10-10").hasAttribute("data-selected")).toBe(true);
   });
 
-  it("range 样式：区间中段格子带 data-in-range 且样式含 accent 变体", async () => {
-    await openPicker({ modelValue: ["2026-10-01", "2026-10-10"] });
+  it("range 样式：全格 primary/10 无缝条带、端点外侧小圆角、端点选中主色圆点", async () => {
+    await openPicker({ modelValue: ["2026-10-03", "2026-10-28"] });
+    const start = cell("2026-10-03");
     const middle = cell("2026-10-05");
+    const end = cell("2026-10-28");
+    expect(start.hasAttribute("data-in-range")).toBe(true);
     expect(middle.hasAttribute("data-in-range")).toBe(true);
-    expect(middle.className).toContain("data-[in-range]:bg-accent/50");
+    // 条带层在 trigger 全格（naive 对齐：primary @ 10% alpha）；排除本表月份外的补位格
+    expect(middle.className).toContain(
+      "data-[in-range]:not-data-[outside-view]:not-data-[range-start]:not-data-[range-end]:bg-primary/10",
+    );
+    // 端点：外侧小圆角
+    expect(start.className).toContain("data-[range-start]:rounded-l-[3px]");
+    expect(end.className).toContain("data-[range-end]:rounded-r-[3px]");
+    // 视觉层：端点选中 24px 圆点主色；本表月份外补位格不参与（防止端点在双月表重复高亮）
+    const startDot = start.firstElementChild as HTMLElement;
+    expect(startDot.className).toContain("size-6");
+    expect(startDot.className).toContain(
+      "group-data-[selected]:not-group-data-[outside-view]:bg-primary",
+    );
+    // 补位端点存在性（用户 bug 回归锁）：右表首行的 10-28 属于 10 月表 → 带 outside-view，
+    // 同时 zag 按 date 值标 selected/range-end；修复后其 dot 不再渲染选中主色，且不可点击
+    const trailingEnd = document.body.querySelector(
+      '[data-part="table-cell-trigger"][data-outside-view][data-selected][data-range-end]',
+    );
+    expect(trailingEnd).toBeTruthy();
+    expect(trailingEnd!.className).toContain("data-[outside-view]:pointer-events-none");
   });
 
   it("zh-CN 默认周一起始，表头单字显示（一/二/三，非周一/周二）", async () => {
@@ -204,5 +242,20 @@ describe("DateRangePicker", () => {
       expect(th.textContent).not.toContain("周");
       expect(th.textContent!.length).toBeLessThanOrEqual(1);
     }
+  });
+
+  it("第二月当月格可选（zag getUnitDuration 强制置 1 → 可见范围误缩为首月，outsideDaySelectable 对冲）", async () => {
+    await openPicker({ modelValue: ["2026-10-03", "2026-10-28"] });
+    const nov = document.body.querySelector<HTMLElement>(
+      '[data-part="table-cell-trigger"][data-value="2026-11-15"]',
+    );
+    expect(nov).toBeTruthy();
+    expect(nov!.hasAttribute("data-disabled")).toBe(false);
+    expect(nov!.hasAttribute("data-selectable")).toBe(true);
+  });
+
+  it("弹层内无嵌套日历弹层（TCalendar embedded 形态不自建 Root/Content）", async () => {
+    await openPicker({ modelValue: ["2026-10-03", "2026-10-28"] });
+    expect(document.body.querySelectorAll('[data-part="content"]').length).toBe(1);
   });
 });
