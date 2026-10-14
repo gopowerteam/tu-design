@@ -167,3 +167,110 @@ describe("TreeSelect", () => {
     w.unmount();
   });
 });
+
+describe("TreeSelect checkable", () => {
+  it("checkable 点击勾选级联父子（cascade=true 时父勾子全勾）", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({
+      checkable: true,
+      cascade: true,
+      defaultExpandAll: true,
+      "onUpdate:modelValue": onUpdate,
+    });
+    await openPanel(w);
+    nodeOf("c")!.click();
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenLastCalledWith(["c", "d", "e"]));
+    await vi.waitFor(() => {
+      expect(nodeOf("c")!.hasAttribute("data-checked")).toBe(true);
+      expect(nodeOf("d")!.hasAttribute("data-checked")).toBe(true);
+      expect(nodeOf("e")!.hasAttribute("data-checked")).toBe(true);
+    });
+    w.unmount();
+  });
+
+  it("checkStrategy=child 时值仅含叶子", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({
+      checkable: true,
+      cascade: true,
+      checkStrategy: "child",
+      defaultExpandAll: true,
+      "onUpdate:modelValue": onUpdate,
+    });
+    await openPanel(w);
+    nodeOf("c")!.click();
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenLastCalledWith(["d", "e"]));
+    w.unmount();
+  });
+
+  it("部分勾选父级显示半选 data-indeterminate", async () => {
+    const w = mountTreeSelect({
+      checkable: true,
+      cascade: true,
+      defaultExpandAll: true,
+      modelValue: ["d"],
+    });
+    await openPanel(w);
+    await vi.waitFor(() => {
+      expect(nodeOf("a")!.hasAttribute("data-indeterminate")).toBe(true);
+      expect(nodeOf("c")!.hasAttribute("data-indeterminate")).toBe(true);
+      expect(nodeOf("d")!.hasAttribute("data-checked")).toBe(true);
+    });
+    w.unmount();
+  });
+
+  it("再次点击取消勾选", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({
+      checkable: true,
+      cascade: true,
+      defaultExpandAll: true,
+      "onUpdate:modelValue": onUpdate,
+    });
+    await openPanel(w);
+    nodeOf("c")!.click();
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenLastCalledWith(["c", "d", "e"]));
+    nodeOf("c")!.click();
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenLastCalledWith([]));
+    w.unmount();
+  });
+
+  it("checkStrategy 运行时切换后值集合按新 strategy 归一", async () => {
+    const onUpdate = vi.fn();
+    const Host = defineComponent({
+      setup() {
+        const strategy = ref<"all" | "child">("all");
+        onMounted(() => {
+          strategy.value = "child";
+        });
+        return () =>
+          h(TreeSelect, {
+            options: TREE,
+            checkable: true,
+            cascade: true,
+            defaultExpandAll: true,
+            checkStrategy: strategy.value,
+            modelValue: ["c", "d", "e"],
+            "onUpdate:modelValue": onUpdate,
+          });
+      },
+    });
+    const w = mount(Host, { attachTo: document.body });
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith(["d", "e"]));
+    w.unmount();
+  });
+
+  it("checkable 下传入单值 Key 按无选中处理且 dev 警告", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const w = mountTreeSelect({
+      checkable: true,
+      modelValue: "b" as unknown as string[],
+      defaultExpandAll: true,
+    });
+    await openPanel(w);
+    expect(nodeOf("b")!.hasAttribute("data-checked")).toBe(false);
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
+    w.unmount();
+  });
+});

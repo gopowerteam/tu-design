@@ -14,6 +14,12 @@ const props = defineProps({
   expandedKeys: { type: Array as PropType<Key[]>, default: () => [] },
   /** 键盘活动节点（Task 5 启用） */
   activeKey: { type: [String, Number] as PropType<Key | null>, default: null },
+  /** 勾选模式：行首渲染 checkbox，选中语义由 checkedKeys 驱动 */
+  checkable: { type: Boolean, default: false },
+  /** 勾选键集合（级联归一后） */
+  checkedKeys: { type: Array as PropType<Key[]>, default: () => [] },
+  /** 半选键集合 */
+  indeterminateKeys: { type: Array as PropType<Key[]>, default: () => [] },
 });
 
 const emit = defineEmits<{
@@ -34,7 +40,17 @@ function isExpanded(node: TreeNode): boolean {
 }
 
 function isSelected(node: TreeNode): boolean {
-  return props.selectedKeys.includes(node.key);
+  return props.checkable
+    ? props.checkedKeys.includes(node.key)
+    : props.selectedKeys.includes(node.key);
+}
+
+function isChecked(node: TreeNode): boolean {
+  return props.checkedKeys.includes(node.key);
+}
+
+function isIndeterminate(node: TreeNode): boolean {
+  return props.indeterminateKeys.includes(node.key);
 }
 </script>
 
@@ -46,10 +62,13 @@ function isSelected(node: TreeNode): boolean {
       role="treeitem"
       :aria-level="node.level + 1"
       :aria-selected="isSelected(node)"
+      :aria-checked="props.checkable ? isChecked(node) : undefined"
       :aria-expanded="hasChildren(node) ? isExpanded(node) : undefined"
       data-part="tree-node"
       :data-key="node.key"
       :data-selected="isSelected(node) ? '' : undefined"
+      :data-checked="isChecked(node) ? '' : undefined"
+      :data-indeterminate="isIndeterminate(node) ? '' : undefined"
       :data-active="activeKey === node.key ? '' : undefined"
       class="flex cursor-pointer items-center gap-1 rounded-sm py-1.5 pr-2 text-sm outline-none hover:bg-accent data-[active]:bg-accent data-[selected]:bg-accent"
       :style="{ paddingLeft: `${node.level * 16 + 8}px` }"
@@ -65,6 +84,38 @@ function isSelected(node: TreeNode): boolean {
         <ChevronIcon :class="isExpanded(node) ? 'rotate-90' : ''" />
       </span>
       <span v-else class="size-4 shrink-0" aria-hidden="true" />
+      <span
+        v-if="props.checkable"
+        data-part="checkbox"
+        :data-checked="isChecked(node) ? '' : undefined"
+        :data-indeterminate="isIndeterminate(node) ? '' : undefined"
+        class="flex size-4 shrink-0 items-center justify-center rounded-[3px] border border-input bg-background text-background data-[checked]:border-primary data-[checked]:bg-primary data-[indeterminate]:border-primary data-[indeterminate]:bg-primary"
+        aria-hidden="true"
+      >
+        <svg
+          v-if="isChecked(node)"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="size-3"
+        >
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+        <svg
+          v-else-if="isIndeterminate(node)"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          class="size-3"
+        >
+          <path d="M5 12h14" />
+        </svg>
+      </span>
       <span class="truncate">{{ label(node) }}</span>
     </div>
     <div v-if="nodes.length === 0" class="px-2 py-6 text-center text-sm text-muted-foreground">

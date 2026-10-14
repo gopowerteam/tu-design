@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
@@ -27,6 +27,12 @@ const props = defineProps({
   },
   /** 多选：值恒为数组，点击节点切换选中 */
   multiple: { type: Boolean, default: false },
+  /** 勾选模式：行首渲染 checkbox，值恒为数组（隐含多选语义） */
+  checkable: { type: Boolean, default: false },
+  /** 勾选级联：勾选父级联动全部子级（默认 false，对齐 naive-ui） */
+  cascade: { type: Boolean, default: false },
+  /** 勾选策略：all 值含全选节点 / parent 仅父 / child 仅叶（默认 all） */
+  checkStrategy: { type: String as PropType<"all" | "parent" | "child">, default: "all" },
   /** 弹层开合受控；undefined 走内部非受控（default: undefined 禁用 Boolean casting） */
   open: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   defaultOpen: { type: Boolean, default: false },
@@ -83,7 +89,34 @@ function toArrayValue(v: Key | Key[] | undefined): Key[] {
   return Array.isArray(v) ? v : [v];
 }
 
+// checkable 值语义恒为数组：单值 Key 输入按无选中处理并 dev 警告一次
+let warnedNonArrayValue = false;
+function normalizeValue(v: Key | Key[] | undefined): Key[] {
+  if (v === undefined) return [];
+  if (Array.isArray(v)) return v;
+  if (props.checkable) {
+    if (import.meta.env?.DEV && !warnedNonArrayValue) {
+      warnedNonArrayValue = true;
+      console.warn("[TreeSelect] checkable 模式下 modelValue 需为数组，单值输入已按无选中处理。");
+    }
+    return [];
+  }
+  return [v];
+}
+
 const selectedKeys = computed<Key[]>(() => toArrayValue(value.value));
+
+const checkOptions = computed(() => ({
+  cascade: props.cascade,
+  checkStrategy: props.checkStrategy,
+}));
+
+// 勾选模式的展示状态（级联归一后的选中/半选集合）
+const checkedState = computed<{ checked: Key[]; indeterminate: Key[] }>(() => {
+  if (!props.checkable) return { checked: selectedKeys.value, indeterminate: [] };
+  const merged = treeMate.value.getCheckedKeys(normalizeValue(value.value), checkOptions.value);
+  return { checked: merged.checkedKeys, indeterminate: merged.indeterminateKeys };
+});
 
 const tags = computed<TreeSelectTag[]>(() =>
   selectedKeys.value
@@ -96,21 +129,46 @@ const tags = computed<TreeSelectTag[]>(() =>
 
 const singleLabel = computed(() => (props.multiple ? "" : (tags.value[0]?.label ?? "")));
 
+function updateValue(next: Key | Key[] | undefined) {
+  internalValue.value = next;
+  emit("update:modelValue", next);
+}
+
 function selectNode(node: TreeNode) {
   if (node.disabled) return;
+  if (props.checkable) {
+    const current = normalizeValue(value.value);
+    const isNodeChecked = checkedState.value.checked.includes(node.key);
+    const merged = isNodeChecked
+      ? treeMate.value.uncheck(node.key, current, checkOptions.value)
+      : treeMate.value.check(node.key, current, checkOptions.value);
+    updateValue(merged.checkedKeys);
+    return;
+  }
   if (props.multiple) {
     const current = toArrayValue(value.value);
     const next = current.includes(node.key)
       ? current.filter((k) => k !== node.key)
       : [...current, node.key];
-    internalValue.value = next;
-    emit("update:modelValue", next);
+    updateValue(next);
   } else {
-    internalValue.value = node.key;
-    emit("update:modelValue", node.key);
+    updateValue(node.key);
     handleOpenUpdate(false);
   }
 }
+
+// checkStrategy / cascade 运行时切换：值集合按新策略归一
+watch(checkOptions, () => {
+  if (!props.checkable) return;
+  const normalized = treeMate.value.getCheckedKeys(normalizeValue(value.value), checkOptions.value);
+  const current = toArrayValue(value.value);
+  if (
+    normalized.checkedKeys.length !== current.length ||
+    normalized.checkedKeys.some((k) => !current.includes(k))
+  ) {
+    updateValue(normalized.checkedKeys);
+  }
+});
 
 function removeTag(key: Key) {
   const next = toArrayValue(value.value).filter((k) => k !== key);
@@ -222,6 +280,9 @@ const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKey
             :nodes="visibleNodes"
             :selected-keys="selectedKeys"
             :expanded-keys="expandedKeys"
+            :checkable="props.checkable"
+            :checked-keys="checkedState.checked"
+            :indeterminate-keys="checkedState.indeterminate"
             @select="selectNode"
             @toggle="toggleNode"
           />
