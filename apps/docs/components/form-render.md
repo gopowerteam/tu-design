@@ -45,7 +45,7 @@ const search = defineForm<OrderQuery>({
       title: "状态",
       default: null,
       visible: (q) => q.keyword !== "", // 联动显隐（响应式）
-      render: (r) => r.select({ options: ["待付款", "已付款"] }),
+      render: (r) => r.select({ items: ["待付款", "已付款"] }),
     },
     {
       key: "range",
@@ -123,7 +123,19 @@ const search = defineForm<OrderQuery>({
 
 ### widget 一览
 
-`r.input` / `r.password` / `r.number` / `r.currency` / `r.textarea` / `r.select` / `r.checkbox` / `r.switch` / `r.radioGroup` / `r.slider` / `r.datePicker` / `r.monthPicker` / `r.yearPicker` / `r.dateRangePicker` / `r.render(fn)`（完全自定义逃逸口）。各选项接口与对应组件 props 对齐（如 `r.number({ min, max, step, formatOptions })`）。
+`r.input` / `r.password` / `r.number` / `r.currency` / `r.textarea` / `r.select` / `r.checkbox` / `r.switch` / `r.radioGroup` / `r.slider` / `r.datePicker` / `r.monthPicker` / `r.yearPicker` / `r.dateRangePicker` / `r.render(fn)`（完全自定义逃逸口）。
+
+**widget 参数 = 原组件全部 props（命名穿透）**：参数名与组件 prop 一一对应，组件 prop 变更时类型自动同步（如 `r.number({ min, max, step, formatOptions, disabled })`、`r.select({ items, open, locale })`）。
+
+以下字段由 FormRender 内部接管，widget 参数中**不可传**（编译期拦截）：
+
+| 接管字段                                                                                  | 接管方                                    |
+| ----------------------------------------------------------------------------------------- | ----------------------------------------- |
+| `modelValue` / `onUpdate:modelValue` / `checked` / `value` 及对应 `onUpdate:*` / `onBlur` | 受控绑定（`bindField`）                   |
+| `invalid` / `class` / `id`                                                                | FormControl / FormItem 的 aria 与样式接线 |
+| `defaultValue` / `defaultChecked`                                                         | 与 `items.default` 单一真相源冲突         |
+
+特例：`r.input` / `r.textarea` 的 `placeholder` / `type` / `rows` 为原生 attr 透传；`r.radioGroup` 的选项字段为 `items`（组件为纯组装模式，命名与 `Select.items` 对齐）。极端场景仍有 `componentProps` 逃逸口兜底。
 
 ## 注意事项
 

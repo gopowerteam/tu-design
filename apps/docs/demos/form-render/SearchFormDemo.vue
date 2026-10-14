@@ -34,7 +34,7 @@ const search = defineForm<OrderQuery>({
       default: null,
       // 联动显隐：仅当有关键词时出现
       visible: (q) => q.keyword !== "",
-      render: (r) => r.select({ options: ["待付款", "已付款", "已发货"], placeholder: "全部" }),
+      render: (r) => r.select({ items: ["待付款", "已付款", "已发货"], placeholder: "全部" }),
     },
     {
       key: "range",
