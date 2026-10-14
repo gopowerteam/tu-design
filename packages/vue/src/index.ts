@@ -1,5 +1,6 @@
 export * from "./lib/utils";
 export * from "./resolver";
+export * from "./components/form-render";
 export * from "./components/avatar";
 export * from "./components/badge";
 export * from "./components/button";

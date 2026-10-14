@@ -1,0 +1,24 @@
+{
+  "description": "配置驱动表单渲染器：defineForm 聚合 TanStack Form 实例与字段配置，柯里化 widget DSL 声明控件，Tailwind 栅格自适应布局，复用 Form 家族 aria 接线。",
+  "registryDependencies": [
+    "form",
+    "button",
+    "label",
+    "utils",
+    "input",
+    "textarea",
+    "number-input",
+    "password-input",
+    "currency-input",
+    "select",
+    "checkbox",
+    "switch",
+    "radio-group",
+    "slider",
+    "date-picker",
+    "month-picker",
+    "year-picker",
+    "date-range-picker"
+  ],
+  "dependencies": { "@tanstack/vue-form": "catalog:", "valibot": "catalog:" }
+}

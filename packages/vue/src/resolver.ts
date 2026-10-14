@@ -43,6 +43,7 @@ export const COMPONENT_NAMES = [
   "FormItem",
   "FormLabel",
   "FormMessage",
+  "FormRender",
   "FormSubscribe",
   "Input",
   "Label",

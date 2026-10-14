@@ -112,6 +112,7 @@ export default defineConfig({
           text: "表单组件",
           items: [
             { text: "Form", link: "/components/form" },
+            { text: "FormRender", link: "/components/form-render" },
             { text: "Checkbox", link: "/components/checkbox" },
             { text: "CurrencyInput", link: "/components/currency-input" },
             { text: "DatePicker", link: "/components/date-picker" },

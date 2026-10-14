@@ -81,6 +81,12 @@
       "description": "表单状态与校验：基于 TanStack Form，配合 Valibot（Standard Schema）声明式校验，aria 自动接线。"
     },
     {
+      "name": "form-render",
+      "title": "FormRender",
+      "type": "registry:ui",
+      "description": "配置驱动表单渲染器：defineForm 聚合 TanStack Form 实例与字段配置，柯里化 widget DSL 声明控件，Tailwind 栅格自适应布局，复用 Form 家族 aria 接线。"
+    },
+    {
       "name": "input",
       "title": "Input",
       "type": "registry:ui",
