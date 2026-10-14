@@ -131,10 +131,6 @@ export default defineConfig({
           ],
         },
         {
-          text: "高阶组件",
-          items: [{ text: "FormRender", link: "/components/form-render" }],
-        },
-        {
           text: "交互组件",
           items: [
             { text: "Dialog", link: "/components/dialog" },
@@ -143,6 +139,10 @@ export default defineConfig({
             { text: "Tabs", link: "/components/tabs" },
             { text: "Tooltip", link: "/components/tooltip" },
           ],
+        },
+        {
+          text: "高阶组件",
+          items: [{ text: "FormRender", link: "/components/form-render" }],
         },
       ],
     },
