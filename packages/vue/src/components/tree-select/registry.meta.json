@@ -1,0 +1,5 @@
+{
+  "description": "树形下拉选择：一站式 props 驱动，支持单/多选、勾选级联、过滤与多标签折叠。",
+  "registryDependencies": ["tree-shared", "utils", "date-shared"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

@@ -189,6 +189,12 @@
       "description": "文字提示气泡：悬停触发，基于 Ark UI Tooltip 原语，支持 asChild 与延迟配置。"
     },
     {
+      "name": "tree-select",
+      "title": "TreeSelect",
+      "type": "registry:ui",
+      "description": "树形下拉选择：一站式 props 驱动，支持单/多选、勾选级联、过滤与多标签折叠。"
+    },
+    {
       "name": "tree-shared",
       "title": "TreeShared",
       "type": "registry:ui",
