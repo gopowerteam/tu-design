@@ -220,10 +220,17 @@ const tags = computed(() =>
 
 const hasValue = computed(() => tags.value.length > 0);
 
-// —— 键盘导航（列序列 = 各列节点依次拼接，游标仅落在非 disabled 节点）——
+// —— 键盘导航（↑↓ 在 activeKey 所在列内移动，不跨列；←→/Enter 由下方分支处理）——
 const activeKey = ref<Key | null>(null);
 const MOVE_KEYS: MoveKey[] = ["ArrowDown", "ArrowUp", "Home", "End"];
-const flatVisible = computed<TreeNode[]>(() => columns.value.flat());
+
+// activeKey 落在哪一列（无 active 或找不到时视为第 0 列）
+function activeColumn(): TreeNode[] {
+  for (const col of columns.value) {
+    if (col.some((n) => n.key === activeKey.value)) return col;
+  }
+  return columns.value[0] ?? [];
+}
 
 function scrollActiveIntoView() {
   nextTick(() => {
@@ -244,13 +251,13 @@ function handleKeydown(e: KeyboardEvent) {
   }
   if ((MOVE_KEYS as string[]).includes(e.key)) {
     e.preventDefault();
-    activeKey.value = nextActiveKey(flatVisible.value, activeKey.value, e.key as MoveKey);
+    activeKey.value = nextActiveKey(activeColumn(), activeKey.value, e.key as MoveKey);
     scrollActiveIntoView();
     return;
   }
   if (e.key === "ArrowRight") {
     e.preventDefault();
-    const node = flatVisible.value.find((n) => n.key === activeKey.value);
+    const node = activeColumn().find((n) => n.key === activeKey.value);
     if (node?.children?.length) {
       handleExpand(node);
       const firstChild = node.children.find((c) => !c.disabled);
@@ -260,7 +267,7 @@ function handleKeydown(e: KeyboardEvent) {
   }
   if (e.key === "ArrowLeft") {
     e.preventDefault();
-    const node = flatVisible.value.find((n) => n.key === activeKey.value);
+    const node = activeColumn().find((n) => n.key === activeKey.value);
     const parent = node?.parent;
     if (parent && !parent.ignored) {
       expandedPath.value = treeMate.value.getPath(parent.key).keyPath.slice(0, -1);
@@ -270,7 +277,7 @@ function handleKeydown(e: KeyboardEvent) {
   }
   if (e.key === "Enter") {
     e.preventDefault();
-    const node = flatVisible.value.find((n) => n.key === activeKey.value);
+    const node = activeColumn().find((n) => n.key === activeKey.value);
     if (node && !node.disabled) handleSelect(node);
   }
 }

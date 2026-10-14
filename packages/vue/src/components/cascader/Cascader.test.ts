@@ -22,7 +22,6 @@ const TREE: TreeOption[] = [
 const trigger = () => document.querySelector<HTMLElement>('[data-part="trigger"]');
 const contentEl = () =>
   document.querySelector<HTMLElement>('[data-scope="popover"][data-part="content"]');
-const columns = () => [...document.querySelectorAll<HTMLElement>('[data-part="column"]')];
 const rows = () => [...document.querySelectorAll<HTMLElement>('[data-part="tree-node"]')];
 const rowOf = (key: string) =>
   document.querySelector<HTMLElement>(`[data-part="tree-node"][data-key="${key}"]`);
@@ -156,6 +155,22 @@ describe("Cascader", () => {
   it("宿主传入的 id 落在触发器元素上", () => {
     const w = mountCascader({ attrs: { id: "cs" } });
     expect(trigger()!.id).toBe("cs");
+    w.unmount();
+  });
+
+  it("ArrowDown 在当前列内移动不跨列", async () => {
+    const wide: TreeOption[] = [
+      { key: "a", label: "甲", children: [{ key: "b", label: "乙" }] },
+      { key: "x", label: "丙" },
+    ];
+    const w = mountCascader({ props: { options: wide } });
+    await openPanel(w);
+    const t = () => w.find('[data-part="trigger"]');
+    await t().trigger("keydown", { key: "ArrowDown" }); // active = a
+    await t().trigger("keydown", { key: "ArrowRight" }); // 展开 a，active = b
+    await vi.waitFor(() => expect(rows().length).toBe(3)); // 第一列 a,x + 第二列 b
+    await t().trigger("keydown", { key: "ArrowDown" }); // 列内：b 不动（跨列实现会循环跳到 a）
+    await vi.waitFor(() => expect(rowOf("b")!.hasAttribute("data-active")).toBe(true));
     w.unmount();
   });
 });

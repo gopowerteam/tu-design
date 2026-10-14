@@ -273,6 +273,25 @@ describe("TreeSelect checkable", () => {
     warn.mockRestore();
     w.unmount();
   });
+
+  it("checkable=true 多值回显渲染 tags", async () => {
+    const w = mountTreeSelect({ checkable: true, cascade: true, modelValue: ["c", "d", "e"] });
+    await vi.waitFor(() => expect(document.querySelectorAll('[data-part="tag"]').length).toBe(3));
+    w.unmount();
+  });
+
+  it("checkable=true 点击清空发出 []", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({
+      checkable: true,
+      modelValue: ["c"],
+      clearable: true,
+      "onUpdate:modelValue": onUpdate,
+    });
+    w.find('[data-part="clear"]').trigger("click");
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith([]));
+    w.unmount();
+  });
 });
 
 describe("TreeSelect 键盘与过滤", () => {

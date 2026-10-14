@@ -130,7 +130,10 @@ const tags = computed<TreeSelectTag[]>(() =>
     .filter((t): t is TreeSelectTag => t !== null),
 );
 
-const singleLabel = computed(() => (props.multiple ? "" : (tags.value[0]?.label ?? "")));
+// checkable 隐含多选语义（值恒为 Key[]，与 multiple 等价）
+const isMulti = computed(() => props.multiple || props.checkable);
+
+const singleLabel = computed(() => (isMulti.value ? "" : (tags.value[0]?.label ?? "")));
 
 function updateValue(next: Key | Key[] | undefined) {
   internalValue.value = next;
@@ -182,7 +185,7 @@ function removeTag(key: Key) {
 const hasValue = computed(() => tags.value.length > 0);
 
 function handleClear() {
-  const next = props.multiple ? [] : undefined;
+  const next = isMulti.value ? [] : undefined;
   internalValue.value = next;
   emit("update:modelValue", next);
 }
@@ -323,7 +326,7 @@ watch(isOpen, (open) => {
       @click="openFromInput"
       @keydown="handleKeydown"
     >
-      <template v-if="props.multiple">
+      <template v-if="isMulti">
         <ValueTags
           v-if="tags.length"
           :values="tags"
