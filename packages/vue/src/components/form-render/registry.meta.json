@@ -18,7 +18,12 @@
     "date-picker",
     "month-picker",
     "year-picker",
-    "date-range-picker"
+    "date-range-picker",
+    "tree-select",
+    "cascader"
   ],
-  "dependencies": { "@tanstack/vue-form": "catalog:", "valibot": "catalog:" }
+  "dependencies": {
+    "@tanstack/vue-form": "catalog:",
+    "valibot": "catalog:"
+  }
 }

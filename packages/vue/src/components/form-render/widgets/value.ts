@@ -1,38 +1,23 @@
 import { h } from "vue";
-import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
+import { RadioGroup } from "@/components/radio-group";
 import { Slider } from "@/components/slider";
-import { normalizeSelectItem } from "@/components/select/types";
 import type { RadioGroupWidgetOptions, SliderWidgetOptions, WidgetRenderReturn } from "../types";
 import { SLIDER, VALUE, bindField } from "./bind";
 
 /**
- * radioGroup widget：单选组（值 prop 为 value；items 为 DSL 选项字段——组件为
- * 纯组装模式无选项 prop，命名与 Select.items 对齐；解构后 groupProps 整体透传）。
+ * radioGroup widget：单选组（值 prop 为 value）。
+ * 命名穿透：组件已提供 options 声明式选项 prop（内部归一化 string），整体直传，
+ * widget 不再组装 RadioGroupItem。
  */
 export function renderRadioGroupItem<T extends object>(
   options: RadioGroupWidgetOptions,
 ): WidgetRenderReturn<T> {
-  const { items, ...groupProps } = options;
   return (ctx) =>
-    h(
-      RadioGroup,
-      {
-        ...groupProps,
-        ...bindField(ctx.field, VALUE),
-        ...ctx.item.componentProps,
-      },
-      {
-        default: () =>
-          items.map((option) => {
-            const normalized = normalizeSelectItem(option);
-            return h(
-              RadioGroupItem,
-              { key: normalized.value, value: normalized.value },
-              { default: () => normalized.label },
-            );
-          }),
-      },
-    );
+    h(RadioGroup, {
+      ...options,
+      ...bindField(ctx.field, VALUE),
+      ...ctx.item.componentProps,
+    });
 }
 
 /**

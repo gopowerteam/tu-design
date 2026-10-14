@@ -123,7 +123,7 @@ const search = defineForm<OrderQuery>({
 
 ### widget 一览
 
-`r.input` / `r.password` / `r.number` / `r.currency` / `r.textarea` / `r.select` / `r.checkbox` / `r.switch` / `r.radioGroup` / `r.slider` / `r.datePicker` / `r.monthPicker` / `r.yearPicker` / `r.dateRangePicker` / `r.render(fn)`（完全自定义逃逸口）。
+`r.input` / `r.password` / `r.number` / `r.currency` / `r.textarea` / `r.select` / `r.checkbox` / `r.switch` / `r.radioGroup` / `r.treeSelect` / `r.cascader` / `r.slider` / `r.datePicker` / `r.monthPicker` / `r.yearPicker` / `r.dateRangePicker` / `r.render(fn)`（完全自定义逃逸口）。
 
 **widget 参数 = 原组件全部 props（命名穿透）**：参数名与组件 prop 一一对应，组件 prop 变更时类型自动同步（如 `r.number({ min, max, step, formatOptions, disabled })`、`r.select({ items, open, lazyMount })`、`r.datePicker({ locale, min, max })`）。
 
@@ -135,7 +135,7 @@ const search = defineForm<OrderQuery>({
 | `invalid` / `class` / `id`                                                                | FormControl / FormItem 的 aria 与样式接线 |
 | `defaultValue` / `defaultChecked`                                                         | 与 `items.default` 单一真相源冲突         |
 
-特例：`r.input` / `r.textarea` 的 `placeholder` / `type` / `rows` 为原生 attr 透传；`r.radioGroup` 的选项字段为 `items`（组件为纯组装模式，命名与 `Select.items` 对齐）。极端场景仍有 `componentProps` 逃逸口兜底。
+特例：`r.input` / `r.textarea` 的 `placeholder` / `type` / `rows` 为原生 attr 透传；`r.radioGroup` / `r.treeSelect` / `r.cascader` 的选项字段为 `options`——与对应组件的选项 prop 同名（命名穿透：参数名即组件 prop 名）。极端场景仍有 `componentProps` 逃逸口兜底。
 
 ## 注意事项
 

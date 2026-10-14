@@ -10,8 +10,10 @@ import { DateRangePicker } from "@/components/date-range-picker";
 import { MonthPicker } from "@/components/month-picker";
 import { NumberInput } from "@/components/number-input";
 import { PasswordInput } from "@/components/password-input";
-import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
+import { RadioGroup } from "@/components/radio-group";
+import { Cascader } from "@/components/cascader";
 import { Select } from "@/components/select";
+import { TreeSelect } from "@/components/tree-select";
 import { Slider } from "@/components/slider";
 import { Switch } from "@/components/switch";
 import { YearPicker } from "@/components/year-picker";
@@ -147,17 +149,43 @@ describe("checked 形态 widgets", () => {
 });
 
 describe("value 形态 widgets", () => {
-  it("radioGroup：选项渲染 + value 回显 + update:value 写回", () => {
+  it("radioGroup：options 原名穿透直传 + value 回显 + update:value 写回", () => {
     const { wrapper, field } = makeHost("b", (ctx) =>
-      widgetRenders<{ v: string }>().radioGroup({ items: ["a", "b", "c"] })({ ...ctx, item }),
+      widgetRenders<{ v: string }>().radioGroup({ options: ["a", "b", "c"] })({ ...ctx, item }),
     );
     const group = wrapper.findComponent(RadioGroup);
     expect(group.props("value")).toBe("b");
-    const items = wrapper.findAllComponents(RadioGroupItem);
-    expect(items.length).toBe(3);
-    expect(items[1].props("value")).toBe("b");
+    // v3 命名穿透：组件新增 options prop 后，DSL 参数原名直达，widget 不做组装
+    expect(group.props("options")).toEqual(["a", "b", "c"]);
     group.vm.$emit("update:value", "c");
     expect(field().state.value).toBe("c");
+  });
+
+  it("treeSelect：options 树直传 + modelValue 回显 + update:modelValue 写回", () => {
+    const options = [
+      { key: "zj", label: "浙江" },
+      { key: "js", label: "江苏" },
+    ];
+    const { wrapper, field } = makeHost("zj", (ctx) =>
+      widgetRenders<{ v: string }>().treeSelect({ options })({ ...ctx, item }),
+    );
+    const comp = wrapper.findComponent(TreeSelect);
+    expect(comp.props("modelValue")).toBe("zj");
+    expect(comp.props("options")).toEqual(options);
+    comp.vm.$emit("update:modelValue", "js");
+    expect(field().state.value).toBe("js");
+  });
+
+  it("cascader：options 直传 + modelValue 回显 + update:modelValue 写回", () => {
+    const options = [{ key: "zj", label: "浙江", children: [{ key: "hz", label: "杭州" }] }];
+    const { wrapper, field } = makeHost("hz", (ctx) =>
+      widgetRenders<{ v: string }>().cascader({ options })({ ...ctx, item }),
+    );
+    const comp = wrapper.findComponent(Cascader);
+    expect(comp.props("modelValue")).toBe("hz");
+    expect(comp.props("options")).toEqual(options);
+    comp.vm.$emit("update:modelValue", "zj");
+    expect(field().state.value).toBe("zj");
   });
 
   it("slider：number ↔ number[] 转换绑定（value 进、update:modelValue 出）", () => {

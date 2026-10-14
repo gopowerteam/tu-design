@@ -40,7 +40,7 @@ const entry = defineForm<ProductForm>({
       default: "normal",
       render: (r) =>
         r.radioGroup({
-          items: [
+          options: [
             { label: "低", value: "low" },
             { label: "普通", value: "normal" },
             { label: "高", value: "high" },

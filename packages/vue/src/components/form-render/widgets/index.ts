@@ -13,6 +13,7 @@ import {
 import { renderInputItem } from "./input";
 import { renderSelectItem } from "./select";
 import { renderRadioGroupItem, renderSliderItem } from "./value";
+import { renderCascaderItem, renderTreeSelectItem } from "./tree";
 
 /**
  * widget 注册表：`r.input({...})` 等柯里化工厂的运行时对象。
@@ -30,6 +31,8 @@ export function widgetRenders<T extends object>(): WidgetRenders<T> {
     checkbox: renderCheckboxItem<T>,
     switch: renderSwitchItem<T>,
     radioGroup: renderRadioGroupItem<T>,
+    treeSelect: renderTreeSelectItem<T>,
+    cascader: renderCascaderItem<T>,
     slider: renderSliderItem<T>,
     datePicker: renderDatePickerItem<T>,
     monthPicker: renderMonthPickerItem<T>,

@@ -9,6 +9,8 @@ import type { MonthPicker } from "@/components/month-picker";
 import type { NumberInput } from "@/components/number-input";
 import type { PasswordInput } from "@/components/password-input";
 import type { RadioGroup } from "@/components/radio-group";
+import type { Cascader } from "@/components/cascader";
+import type { TreeSelect } from "@/components/tree-select";
 import type { Select } from "@/components/select";
 import type { Slider } from "@/components/slider";
 import type { Switch } from "@/components/switch";
@@ -96,10 +98,13 @@ export type CheckboxWidgetOptions = SfcOptions<typeof Checkbox>;
 
 export type SwitchWidgetOptions = SfcOptions<typeof Switch>;
 
-/** RadioGroup 为纯组装模式（无选项 prop），items 为 DSL 字段（与 Select.items 命名对齐） */
-export type RadioGroupWidgetOptions = SfcOptions<typeof RadioGroup> & {
-  items: WidgetItemOption[];
-};
+/** 命名穿透：组件已提供 options 声明式选项 prop（v3 原则——原名直用，组件内部归一化 string） */
+export type RadioGroupWidgetOptions = SfcOptions<typeof RadioGroup>;
+
+/** TreeSelect / Cascader：选项 prop 原名 options，受控走 modelValue（ControlledKey 自动剔除） */
+export type TreeSelectWidgetOptions = SfcOptions<typeof TreeSelect>;
+
+export type CascaderWidgetOptions = SfcOptions<typeof Cascader>;
 
 export type SliderWidgetOptions = SfcOptions<typeof Slider>;
 
@@ -126,6 +131,8 @@ export interface WidgetRenders<T extends object> {
   checkbox(o?: CheckboxWidgetOptions): WidgetRenderReturn<T>;
   switch(o?: SwitchWidgetOptions): WidgetRenderReturn<T>;
   radioGroup(o: RadioGroupWidgetOptions): WidgetRenderReturn<T>;
+  treeSelect(o: TreeSelectWidgetOptions): WidgetRenderReturn<T>;
+  cascader(o: CascaderWidgetOptions): WidgetRenderReturn<T>;
   slider(o?: SliderWidgetOptions): WidgetRenderReturn<T>;
   datePicker(o?: DatePickerWidgetOptions): WidgetRenderReturn<T>;
   monthPicker(o?: MonthPickerWidgetOptions): WidgetRenderReturn<T>;
