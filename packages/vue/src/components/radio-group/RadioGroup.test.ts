@@ -85,6 +85,16 @@ describe("RadioGroup", () => {
     w.unmount();
   });
 
+  it("ItemControl 带居中布局类（圆点居中的结构保证）", async () => {
+    const w = mountGroup();
+    await vi.waitFor(() => expect(items().length).toBe(2));
+    const cls = itemControls()[0]!.className.split(/\s+/);
+    expect(cls).toContain("flex");
+    expect(cls).toContain("items-center");
+    expect(cls).toContain("justify-center");
+    w.unmount();
+  });
+
   it("invalid=true 时 root 与 item-control 级联 data-invalid，控件带 destructive 样式", async () => {
     const w = mountGroup({ invalid: true });
     await vi.waitFor(() => expect(items().length).toBe(2));
