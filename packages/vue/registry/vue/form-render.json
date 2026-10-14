@@ -28,7 +28,7 @@
       "path": "form-render/index.ts",
       "type": "registry:component",
       "target": "components/ui/form-render/index.ts",
-      "content": "export { default as FormRender } from \"./FormRender.vue\";\nexport { defineForm, type DefineFormOptions } from \"./define-form\";\nexport { useFormRender, type UseFormRenderOptions } from \"./useFormRender\";\nexport { widgetRenders } from \"./widgets\";\nexport {\n  bindField,\n  CHECKED,\n  MODEL_VALUE,\n  SLIDER,\n  VALUE,\n  type BindingSpec,\n} from \"./widgets/bind\";\nexport type {\n  CurrencyWidgetOptions,\n  FormRenderDefinition,\n  FormRenderFormApi,\n  FormRenderItem,\n  InputWidgetOptions,\n  NumberWidgetOptions,\n  PasswordWidgetOptions,\n  PickerWidgetOptions,\n  RadioGroupWidgetOptions,\n  SelectWidgetOptions,\n  SliderWidgetOptions,\n  TextareaWidgetOptions,\n  WidgetContext,\n  WidgetItemOption,\n  WidgetRenderReturn,\n  WidgetRenders,\n} from \"./types\";\n"
+      "content": "export { default as FormRender } from \"./FormRender.vue\";\nexport { defineForm, type DefineFormOptions } from \"./define-form\";\nexport { useFormRender, type UseFormRenderOptions } from \"./useFormRender\";\nexport { widgetRenders } from \"./widgets\";\nexport { bindField, CHECKED, MODEL_VALUE, SLIDER, VALUE, type BindingSpec } from \"./widgets/bind\";\nexport type {\n  CurrencyWidgetOptions,\n  FormRenderDefinition,\n  FormRenderFormApi,\n  FormRenderItem,\n  InputWidgetOptions,\n  NumberWidgetOptions,\n  PasswordWidgetOptions,\n  PickerWidgetOptions,\n  RadioGroupWidgetOptions,\n  SelectWidgetOptions,\n  SliderWidgetOptions,\n  TextareaWidgetOptions,\n  WidgetContext,\n  WidgetItemOption,\n  WidgetRenderReturn,\n  WidgetRenders,\n} from \"./types\";\n"
     },
     {
       "path": "form-render/types.ts",
