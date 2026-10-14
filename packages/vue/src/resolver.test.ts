@@ -24,7 +24,7 @@ describe("TuDesignResolver", () => {
   });
 
   it("白名单与组件库组件导出同步（排除非组件导出）", () => {
-    // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身
+    // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身、form-render API
     const nonComponentExports = new Set([
       "cn",
       "badgeVariants",
@@ -34,6 +34,14 @@ describe("TuDesignResolver", () => {
       "numberOrNull",
       "formatCurrency",
       "parseCurrency",
+      "defineForm",
+      "useFormRender",
+      "widgetRenders",
+      "bindField",
+      "CHECKED",
+      "MODEL_VALUE",
+      "SLIDER",
+      "VALUE",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());

@@ -9,6 +9,24 @@ export interface RegistryIo {
   readFile(path: string): string;
 }
 
+/**
+ * 递归收集组件目录下的相对文件路径（支持子目录，如 form-render/widgets/）。
+ * 文件判定用 readFile 可读性：真实 fs 读目录抛 EISDIR、mock io 未知路径抛 ENOENT，
+ * 两种实现下「可读 = 文件、不可读 = 目录」均成立。
+ */
+function collectRelativeFiles(io: RegistryIo, dir: string, prefix = ""): string[] {
+  return io.readDir(dir).flatMap((name) => {
+    const full = `${dir}/${name}`;
+    const rel = prefix ? `${prefix}/${name}` : name;
+    try {
+      io.readFile(full);
+      return [rel];
+    } catch {
+      return collectRelativeFiles(io, full, rel);
+    }
+  });
+}
+
 export function parseCatalog(workspaceYaml: string): Record<string, string> {
   const doc = parse(workspaceYaml) as { catalog?: Record<string, string> };
   return doc.catalog ?? {};
@@ -65,8 +83,7 @@ export function generateRegistry(
       continue;
     }
     const meta = JSON.parse(metaRaw) as RegistryMeta;
-    const files: RegistryFile[] = io
-      .readDir(`${input.componentsDir}/${dir}`)
+    const files: RegistryFile[] = collectRelativeFiles(io, `${input.componentsDir}/${dir}`)
       .filter((f) => f !== "registry.meta.json" && !f.endsWith(".test.ts"))
       .sort()
       .map((f) => ({
