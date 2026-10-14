@@ -1,0 +1,7 @@
+{
+  "description": "级联选择：一站式 props 驱动，多列联动、勾选级联、路径回显与多标签。",
+  "registryDependencies": ["tree-shared", "utils", "date-shared"],
+  "dependencies": {
+    "@ark-ui/vue": "catalog:"
+  }
+}

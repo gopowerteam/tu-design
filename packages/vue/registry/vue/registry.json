@@ -33,6 +33,12 @@
       "description": "卡片容器族：Header/Title/Description/Content/Footer。"
     },
     {
+      "name": "cascader",
+      "title": "Cascader",
+      "type": "registry:ui",
+      "description": "级联选择：一站式 props 驱动，多列联动、勾选级联、路径回显与多标签。"
+    },
+    {
       "name": "checkbox",
       "title": "Checkbox",
       "type": "registry:ui",
