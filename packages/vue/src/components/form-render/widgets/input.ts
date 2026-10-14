@@ -9,8 +9,8 @@ export function renderInputItem<T extends object>(
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(Input, {
-      placeholder: options.placeholder ?? ctx.item.placeholder,
-      type: options.type,
+      placeholder: ctx.item.placeholder,
+      ...options,
       ...bindField(ctx.field, MODEL_VALUE),
       ...ctx.item.componentProps,
     });

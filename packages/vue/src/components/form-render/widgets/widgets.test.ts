@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { useForm } from "@tanstack/vue-form";
 import type { AnyFieldApi } from "@tanstack/vue-form";
 import { defineComponent, h, type VNode } from "vue";
-import { describe, expect, it } from "vite-plus/test";
+import { describe, expect, expectTypeOf, it } from "vite-plus/test";
 import { Checkbox } from "@/components/checkbox";
 import { CurrencyInput } from "@/components/currency-input";
 import { DatePicker } from "@/components/date-picker";
@@ -15,6 +15,7 @@ import { Select } from "@/components/select";
 import { Slider } from "@/components/slider";
 import { Switch } from "@/components/switch";
 import { YearPicker } from "@/components/year-picker";
+import type { NumberWidgetOptions } from "../types";
 import { widgetRenders } from "./index";
 
 /** widget 绑定契约测试宿主：widget vnode 渲染在 FormField 插槽内，field 捕获到外部 */
@@ -148,7 +149,7 @@ describe("checked 形态 widgets", () => {
 describe("value 形态 widgets", () => {
   it("radioGroup：选项渲染 + value 回显 + update:value 写回", () => {
     const { wrapper, field } = makeHost("b", (ctx) =>
-      widgetRenders<{ v: string }>().radioGroup({ options: ["a", "b", "c"] })({ ...ctx, item }),
+      widgetRenders<{ v: string }>().radioGroup({ items: ["a", "b", "c"] })({ ...ctx, item }),
     );
     const group = wrapper.findComponent(RadioGroup);
     expect(group.props("value")).toBe("b");
@@ -208,7 +209,7 @@ describe("select 组装", () => {
   it("items 由 options 映射 + 受控回显 + update:modelValue 写回 + placeholder", () => {
     const { wrapper, field } = makeHost(undefined, (ctx) =>
       widgetRenders<{ v: string | null }>().select({
-        options: ["a", { label: "B", value: "b" }],
+        items: ["a", { label: "B", value: "b" }],
         placeholder: "请选择",
       })({ ...ctx, item }),
     );
@@ -222,8 +223,29 @@ describe("select 组装", () => {
 
   it("字符串 options 归一化为 { label, value } 供 SelectItem 渲染", () => {
     const { wrapper } = makeHost(null, (ctx) =>
-      widgetRenders<{ v: string | null }>().select({ options: ["a"] })({ ...ctx, item }),
+      widgetRenders<{ v: string | null }>().select({ items: ["a"] })({ ...ctx, item }),
     );
     expect(wrapper.text()).toContain("a");
+  });
+});
+
+describe("方案 C：widget 参数派生组件 props", () => {
+  it("r.number({ disabled }) 类型合法（组件 prop 直写；当前报错 = RED）", () => {
+    expect(() => widgetRenders<{ v: number | null }>().number({ disabled: true })).not.toThrow();
+  });
+
+  it("r.number({ disabled }) 运行时送达 NumberInput", () => {
+    const { wrapper } = makeHost(null, (ctx) =>
+      widgetRenders<{ v: number | null }>().number({ disabled: true })({ ...ctx, item }),
+    );
+    expect(wrapper.findComponent(NumberInput).props("disabled")).toBe(true);
+    expectTypeOf<NumberWidgetOptions>().toHaveProperty("disabled");
+  });
+
+  it("r.select 原生 items 直传（v3 命名穿透；当前报错 = RED）", () => {
+    const { wrapper } = makeHost(null, (ctx) =>
+      widgetRenders<{ v: string }>().select({ items: ["a", "b"] })({ ...ctx, item }),
+    );
+    expect(wrapper.findComponent(Select).props("items")).toEqual(["a", "b"]);
   });
 });

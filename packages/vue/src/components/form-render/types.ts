@@ -1,6 +1,19 @@
 import type { AnyFieldApi, FormApi, VueFormApi } from "@tanstack/vue-form";
 import type { VNode } from "vue";
-import type { CurrencyUnit } from "@/components/currency-input";
+import type { Checkbox } from "@/components/checkbox";
+import type { CurrencyInput } from "@/components/currency-input";
+import type { DatePicker } from "@/components/date-picker";
+import type { DateRangePicker } from "@/components/date-range-picker";
+import type { Input } from "@/components/input";
+import type { MonthPicker } from "@/components/month-picker";
+import type { NumberInput } from "@/components/number-input";
+import type { PasswordInput } from "@/components/password-input";
+import type { RadioGroup } from "@/components/radio-group";
+import type { Select } from "@/components/select";
+import type { Slider } from "@/components/slider";
+import type { Switch } from "@/components/switch";
+import type { Textarea } from "@/components/textarea";
+import type { YearPicker } from "@/components/year-picker";
 import type { SelectItemOption } from "@/components/select";
 
 /**
@@ -25,61 +38,77 @@ export type WidgetRenderReturn<T extends object> = (ctx: WidgetContext<T>) => VN
 /** select/radioGroup 等选项的通用形态（字符串简写或 { label, value }） */
 export type WidgetItemOption = string | SelectItemOption;
 
-/** checkbox/switch widget 选项（boolean 形态共用） */
-export interface BooleanWidgetOptions {
-  disabled?: boolean;
-}
+/**
+ * SFC props 类型派生（方案 C）：widget 参数 = 原组件全部 props（命名穿透，
+ * prop 变更时类型自动同步）。受控字段由 bindField/FormControl/items.default
+ * 接管，用户不可传；Omit 不存在的键是 no-op，统一集合即可。
+ */
+type ControlledKey =
+  | "modelValue"
+  | "onUpdate:modelValue"
+  | "checked"
+  | "onUpdate:checked"
+  | "value"
+  | "onUpdate:value"
+  | "onBlur"
+  | "invalid"
+  | "class"
+  | "id"
+  | "defaultValue"
+  | "defaultChecked";
 
-/** password widget 选项 */
-export interface PasswordWidgetOptions {
+export type SfcOptions<T extends abstract new (...args: any) => any> = Partial<
+  Omit<InstanceType<T>["$props"], ControlledKey>
+>;
+
+// —— 各 widget 选项：组件全 props 派生（命名穿透） ——
+
+export type NumberWidgetOptions = SfcOptions<typeof NumberInput>;
+
+export type CurrencyWidgetOptions = SfcOptions<typeof CurrencyInput>;
+
+/** autoComplete 为 PasswordInput 真实 prop（探针实证），直接派生获得 */
+export type PasswordWidgetOptions = SfcOptions<typeof PasswordInput>;
+
+/** Input 自身无 placeholder/type prop（原生 attr 透传），交叉手写 */
+export type InputWidgetOptions = SfcOptions<typeof Input> & {
   placeholder?: string;
-  autoComplete?: "current-password" | "new-password";
-}
+  type?: string;
+};
 
-/** number widget 选项（对应 NumberInput props） */
-export interface NumberWidgetOptions {
-  min?: number;
-  max?: number;
-  step?: number;
-  formatOptions?: Intl.NumberFormatOptions;
-}
-
-/** currency widget 选项（对应 CurrencyInput props；单位为字面量联合） */
-export interface CurrencyWidgetOptions {
-  labelUnit?: CurrencyUnit;
-  valueUnit?: CurrencyUnit;
-  placeholder?: string;
-}
-
-/** textarea widget 选项（placeholder/rows 为原生 attr 透传） */
-export interface TextareaWidgetOptions {
+/** Textarea 自身无 placeholder/rows prop（原生 attr 透传），交叉手写 */
+export type TextareaWidgetOptions = SfcOptions<typeof Textarea> & {
   placeholder?: string;
   rows?: number;
-}
+};
 
-/** select widget 选项 */
-export interface SelectWidgetOptions {
-  options: WidgetItemOption[];
+/**
+ * v3 命名穿透：选项字段即组件 prop 名 `items`（(string|SelectItemOption)[]）。
+ * placeholder 不透传给 Select Root（无效 fallthrough attr），解构后给 SelectValueText。
+ */
+export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "placeholder"> & {
   placeholder?: string;
-}
+};
 
-/** radioGroup widget 选项 */
-export interface RadioGroupWidgetOptions {
-  options: WidgetItemOption[];
-  orientation?: "horizontal" | "vertical";
-}
+export type CheckboxWidgetOptions = SfcOptions<typeof Checkbox>;
 
-/** slider widget 选项 */
-export interface SliderWidgetOptions {
-  min?: number;
-  max?: number;
-  step?: number;
-}
+export type SwitchWidgetOptions = SfcOptions<typeof Switch>;
 
-/** 日期类 widget 选项（DatePicker/DateRangePicker 同款 placeholder prop） */
-export interface PickerWidgetOptions {
-  placeholder?: string;
-}
+/** RadioGroup 为纯组装模式（无选项 prop），items 为 DSL 字段（与 Select.items 命名对齐） */
+export type RadioGroupWidgetOptions = SfcOptions<typeof RadioGroup> & {
+  items: WidgetItemOption[];
+};
+
+export type SliderWidgetOptions = SfcOptions<typeof Slider>;
+
+/** picker 三组件 props 面不同（DatePicker 有 isDateUnavailable/max/min，Month/Year 有 locale），各自派生 */
+export type DatePickerWidgetOptions = SfcOptions<typeof DatePicker>;
+
+export type MonthPickerWidgetOptions = SfcOptions<typeof MonthPicker>;
+
+export type YearPickerWidgetOptions = SfcOptions<typeof YearPicker>;
+
+export type DateRangeWidgetOptions = SfcOptions<typeof DateRangePicker>;
 
 /**
  * widget 注册表类型契约：实现对象在 widgets/index.ts。
@@ -92,14 +121,14 @@ export interface WidgetRenders<T extends object> {
   currency(o?: CurrencyWidgetOptions): WidgetRenderReturn<T>;
   textarea(o?: TextareaWidgetOptions): WidgetRenderReturn<T>;
   select(o: SelectWidgetOptions): WidgetRenderReturn<T>;
-  checkbox(o?: BooleanWidgetOptions): WidgetRenderReturn<T>;
-  switch(o?: BooleanWidgetOptions): WidgetRenderReturn<T>;
+  checkbox(o?: CheckboxWidgetOptions): WidgetRenderReturn<T>;
+  switch(o?: SwitchWidgetOptions): WidgetRenderReturn<T>;
   radioGroup(o: RadioGroupWidgetOptions): WidgetRenderReturn<T>;
   slider(o?: SliderWidgetOptions): WidgetRenderReturn<T>;
-  datePicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
-  monthPicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
-  yearPicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
-  dateRangePicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
+  datePicker(o?: DatePickerWidgetOptions): WidgetRenderReturn<T>;
+  monthPicker(o?: MonthPickerWidgetOptions): WidgetRenderReturn<T>;
+  yearPicker(o?: YearPickerWidgetOptions): WidgetRenderReturn<T>;
+  dateRangePicker(o?: DateRangeWidgetOptions): WidgetRenderReturn<T>;
   /** 逃逸口：完全自定义渲染 */
   render(fn: (ctx: WidgetContext<T>) => VNode): WidgetRenderReturn<T>;
 }
@@ -130,13 +159,6 @@ export interface FormRenderItem<T extends object> {
   render?: (r: WidgetRenders<T>) => WidgetRenderReturn<T>;
   /** 逃逸口：原样合并到控件 vnode 的 props */
   componentProps?: Record<string, unknown>;
-}
-
-/** input widget 选项 */
-export interface InputWidgetOptions {
-  placeholder?: string;
-  /** 原生 input type（text/email/search 等） */
-  type?: string;
 }
 
 export interface FormRenderDefinition<T extends object> {

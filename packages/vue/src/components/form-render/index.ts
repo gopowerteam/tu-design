@@ -4,21 +4,26 @@ export { useFormRender, type UseFormRenderOptions } from "./useFormRender";
 export { widgetRenders } from "./widgets";
 export { bindField, CHECKED, MODEL_VALUE, SLIDER, VALUE, type BindingSpec } from "./widgets/bind";
 export type {
-  BooleanWidgetOptions,
+  CheckboxWidgetOptions,
   CurrencyWidgetOptions,
+  DatePickerWidgetOptions,
+  DateRangeWidgetOptions,
   FormRenderDefinition,
   FormRenderFormApi,
   FormRenderItem,
   InputWidgetOptions,
+  MonthPickerWidgetOptions,
   NumberWidgetOptions,
   PasswordWidgetOptions,
-  PickerWidgetOptions,
   RadioGroupWidgetOptions,
   SelectWidgetOptions,
+  SfcOptions,
   SliderWidgetOptions,
+  SwitchWidgetOptions,
   TextareaWidgetOptions,
   WidgetContext,
   WidgetItemOption,
   WidgetRenderReturn,
   WidgetRenders,
+  YearPickerWidgetOptions,
 } from "./types";

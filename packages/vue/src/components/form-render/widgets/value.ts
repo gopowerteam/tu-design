@@ -5,21 +5,25 @@ import { normalizeSelectItem } from "@/components/select/types";
 import type { RadioGroupWidgetOptions, SliderWidgetOptions, WidgetRenderReturn } from "../types";
 import { SLIDER, VALUE, bindField } from "./bind";
 
-/** radioGroup widget：单选组（值 prop 为 value；options 映射 RadioGroupItem，label 为插槽文本） */
+/**
+ * radioGroup widget：单选组（值 prop 为 value；items 为 DSL 选项字段——组件为
+ * 纯组装模式无选项 prop，命名与 Select.items 对齐；解构后 groupProps 整体透传）。
+ */
 export function renderRadioGroupItem<T extends object>(
   options: RadioGroupWidgetOptions,
 ): WidgetRenderReturn<T> {
+  const { items, ...groupProps } = options;
   return (ctx) =>
     h(
       RadioGroup,
       {
-        orientation: options.orientation,
+        ...groupProps,
         ...bindField(ctx.field, VALUE),
         ...ctx.item.componentProps,
       },
       {
         default: () =>
-          options.options.map((option) => {
+          items.map((option) => {
             const normalized = normalizeSelectItem(option);
             return h(
               RadioGroupItem,
@@ -40,9 +44,7 @@ export function renderSliderItem<T extends object>(
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(Slider, {
-      min: options.min,
-      max: options.max,
-      step: options.step,
+      ...options,
       ...bindField(ctx.field, SLIDER),
       ...ctx.item.componentProps,
     });
