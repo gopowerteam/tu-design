@@ -274,3 +274,48 @@ describe("TreeSelect checkable", () => {
     w.unmount();
   });
 });
+
+describe("TreeSelect 键盘与过滤", () => {
+  it("ArrowDown 移动 data-active 到下一可见节点", async () => {
+    const w = mountTreeSelect({ defaultExpandAll: true });
+    await openPanel(w);
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowDown" });
+    await vi.waitFor(() => expect(nodeOf("a")!.hasAttribute("data-active")).toBe(true));
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowDown" });
+    await vi.waitFor(() => expect(nodeOf("b")!.hasAttribute("data-active")).toBe(true));
+    w.unmount();
+  });
+
+  it("Enter 选中 active 节点", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({ defaultExpandAll: true, "onUpdate:modelValue": onUpdate });
+    await openPanel(w);
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowDown" });
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowDown" });
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "Enter" });
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith("b"));
+    w.unmount();
+  });
+
+  it("ArrowRight 展开节点，ArrowLeft 折叠回父级", async () => {
+    const w = mountTreeSelect({});
+    await openPanel(w);
+    expect(nodes().length).toBe(1);
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowDown" });
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowRight" });
+    await vi.waitFor(() => expect(nodes().length).toBe(3));
+    await w.find('[data-part="trigger"]').trigger("keydown", { key: "ArrowLeft" });
+    await vi.waitFor(() => expect(nodes().length).toBe(1));
+    w.unmount();
+  });
+
+  it("filterable 输入「子一」后面板只剩匹配节点及其祖先路径", async () => {
+    const w = mountTreeSelect({ filterable: true, defaultExpandAll: true });
+    await openPanel(w);
+    await w.find("input").setValue("子一");
+    await vi.waitFor(() => {
+      expect(nodes().map((n) => n.dataset.key)).toEqual(["a", "b"]);
+    });
+    w.unmount();
+  });
+});

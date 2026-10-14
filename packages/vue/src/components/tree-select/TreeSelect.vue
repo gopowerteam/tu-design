@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
@@ -8,6 +8,7 @@ import ChevronIcon from "../tree-shared/ChevronIcon.vue";
 import ClearIcon from "../tree-shared/ClearIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
 import { createTreeMate, type Key, type TreeNode, type TreeOption } from "../tree-shared";
+import { nextActiveKey, type MoveKey } from "../tree-shared/keyboard";
 import TreePanel from "./TreePanel.vue";
 import type { TreeSelectTag } from "./types";
 
@@ -42,6 +43,8 @@ const props = defineProps({
   maxTagCount: { type: Number, default: undefined },
   /** 展示清空按钮 */
   clearable: { type: Boolean, default: false },
+  /** 可搜索：触发器内嵌输入框，按 label 过滤（展示命中节点及其祖先路径） */
+  filterable: { type: Boolean, default: false },
   /** 受控展开键集合；undefined 走内部非受控 */
   expandedKeys: { type: Array as PropType<Key[] | undefined>, default: undefined },
   defaultExpandedKeys: { type: Array as PropType<Key[]>, default: () => [] },
@@ -207,6 +210,95 @@ function syncPanelWidth() {
 }
 
 const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKeys.value));
+
+// —— 过滤：命中节点及其祖先路径可见（搜索态下全树展开）——
+const pattern = ref("");
+const searchPattern = computed(() => pattern.value.trim().toLowerCase());
+const filteredNodes = computed<TreeNode[]>(() => {
+  if (!props.filterable || !searchPattern.value) return visibleNodes.value;
+  const mate = treeMate.value;
+  // 命中节点与其全部祖先均保留（祖先自身无命中也保留）
+  const keep = new Set<Key>();
+  const allNodes = mate.getFlattenedNodes(mate.getNonLeafKeys({ preserveGroup: true }));
+  for (const node of allNodes) {
+    const path = mate.getPath(node.key);
+    if (path.treeNodePath.some((tn) => labelOf(tn).toLowerCase().includes(searchPattern.value))) {
+      path.treeNodePath.forEach((tn) => keep.add(tn.key));
+    }
+  }
+  return allNodes.filter((n) => keep.has(n.key));
+});
+
+function labelOf(node: TreeNode): string {
+  return (node.rawNode as TreeOption).label ?? String(node.key);
+}
+
+// —— 键盘导航（↑↓←→ / Home / End / Enter，游标仅落在非 disabled 节点）——
+const activeKey = ref<Key | null>(null);
+const MOVE_KEYS: MoveKey[] = ["ArrowDown", "ArrowUp", "Home", "End"];
+
+function scrollActiveIntoView() {
+  nextTick(() => {
+    document
+      .querySelector('[data-part="tree-node"][data-active]')
+      ?.scrollIntoView?.({ block: "nearest" });
+  });
+}
+
+function moveHorizontally(expand: boolean) {
+  if (activeKey.value === null) return;
+  const node = filteredNodes.value.find((n) => n.key === activeKey.value);
+  if (!node) return;
+  if (expand) {
+    if (node.isLeaf || !node.children?.length) return;
+    if (!expandedKeys.value.includes(node.key)) {
+      handleExpandedUpdate([...expandedKeys.value, node.key]);
+      return;
+    }
+    const firstChild = node.children.find((c) => !c.disabled);
+    if (firstChild) activeKey.value = firstChild.key;
+  } else {
+    if (node.children?.length && expandedKeys.value.includes(node.key)) {
+      handleExpandedUpdate(expandedKeys.value.filter((k) => k !== node.key));
+      return;
+    }
+    if (node.parent && !node.parent.ignored) activeKey.value = node.parent.key;
+  }
+}
+
+function handleKeydown(e: KeyboardEvent) {
+  if (props.disabled) return;
+  if (!isOpen.value) {
+    if (e.key === "ArrowDown" || e.key === "Enter") {
+      e.preventDefault();
+      openFromInput();
+    }
+    return;
+  }
+  if ((MOVE_KEYS as string[]).includes(e.key)) {
+    e.preventDefault();
+    activeKey.value = nextActiveKey(filteredNodes.value, activeKey.value, e.key as MoveKey);
+    scrollActiveIntoView();
+    return;
+  }
+  if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+    e.preventDefault();
+    moveHorizontally(e.key === "ArrowRight");
+    return;
+  }
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const node = filteredNodes.value.find((n) => n.key === activeKey.value);
+    if (node) selectNode(node);
+  }
+}
+
+// 弹层开合时重置键盘游标与搜索词
+watch(isOpen, (open) => {
+  activeKey.value = null;
+  if (open) syncPanelWidth();
+  else pattern.value = "";
+});
 </script>
 
 <template>
@@ -229,8 +321,7 @@ const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKey
         )
       "
       @click="openFromInput"
-      @keydown.down.prevent="openFromInput"
-      @keydown.enter.prevent="openFromInput"
+      @keydown="handleKeydown"
     >
       <template v-if="props.multiple">
         <ValueTags
@@ -240,11 +331,33 @@ const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKey
           :disabled="!!props.disabled"
           @remove="removeTag"
         />
-        <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+        <input
+          v-if="props.filterable"
+          v-model="pattern"
+          data-part="input"
+          type="text"
+          class="h-5 w-12 min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+          :placeholder="tags.length ? '' : props.placeholder"
+          :aria-label="props.placeholder"
+        />
+        <span v-if="!tags.length && !props.filterable" class="truncate text-muted-foreground">{{
+          props.placeholder
+        }}</span>
       </template>
       <template v-else>
-        <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
-        <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+        <input
+          v-if="props.filterable"
+          v-model="pattern"
+          data-part="input"
+          type="text"
+          class="h-full w-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+          :placeholder="singleLabel || props.placeholder"
+          :aria-label="props.placeholder"
+        />
+        <template v-else>
+          <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
+          <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+        </template>
       </template>
       <span class="ml-auto flex shrink-0 items-center gap-1">
         <span
@@ -275,11 +388,13 @@ const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKey
             )
           "
           :style="{ minWidth: panelMinWidth }"
+          @keydown="handleKeydown"
         >
           <TreePanel
-            :nodes="visibleNodes"
+            :nodes="filteredNodes"
             :selected-keys="selectedKeys"
             :expanded-keys="expandedKeys"
+            :active-key="activeKey"
             :checkable="props.checkable"
             :checked-keys="checkedState.checked"
             :indeterminate-keys="checkedState.indeterminate"

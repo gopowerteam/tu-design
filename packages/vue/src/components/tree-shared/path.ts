@@ -15,7 +15,7 @@ export function getPath<R, G, I, T extends boolean>(
   const mergedPath: MergedPath<R, G> = {
     keyPath: [],
     treeNodePath: [],
-    treeNode: treeNode as TreeNode<R, G> | null,
+    treeNode: treeNode as unknown as TreeNode<R, G> | null,
   };
   if (treeNode?.ignored) {
     mergedPath.treeNode = null;
