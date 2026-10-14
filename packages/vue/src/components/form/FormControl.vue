@@ -19,7 +19,7 @@ export default defineComponent({
       console.warn("[tu-design] <FormControl> 必须在 <FormField> + <FormItem> 内使用");
     }
 
-    const isInvalid = computed(() => (fieldCtx?.field.value?.state.meta.errors.length ?? 0) > 0);
+    const isInvalid = computed(() => itemCtx?.isInvalid.value ?? false);
     const describedBy = computed(() => {
       if (!itemCtx) return undefined;
       const ids = [
