@@ -112,7 +112,6 @@ export default defineConfig({
           text: "表单组件",
           items: [
             { text: "Form", link: "/components/form" },
-            { text: "FormRender", link: "/components/form-render" },
             { text: "Checkbox", link: "/components/checkbox" },
             { text: "CurrencyInput", link: "/components/currency-input" },
             { text: "DatePicker", link: "/components/date-picker" },
@@ -130,6 +129,10 @@ export default defineConfig({
             { text: "Switch", link: "/components/switch" },
             { text: "Textarea", link: "/components/textarea" },
           ],
+        },
+        {
+          text: "高阶组件",
+          items: [{ text: "FormRender", link: "/components/form-render" }],
         },
         {
           text: "交互组件",
