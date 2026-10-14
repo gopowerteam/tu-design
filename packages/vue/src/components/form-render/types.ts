@@ -24,6 +24,80 @@ export type WidgetRenderReturn<T extends object> = (ctx: WidgetContext<T>) => VN
 /** select/radioGroup 等选项的通用形态（字符串简写或 { label, value }） */
 export type WidgetItemOption = string | SelectItemOption;
 
+/** password widget 选项 */
+export interface PasswordWidgetOptions {
+  placeholder?: string;
+  autoComplete?: "current-password" | "new-password";
+}
+
+/** number widget 选项（对应 NumberInput props） */
+export interface NumberWidgetOptions {
+  min?: number;
+  max?: number;
+  step?: number;
+  formatOptions?: Intl.NumberFormatOptions;
+}
+
+/** currency widget 选项（对应 CurrencyInput props） */
+export interface CurrencyWidgetOptions {
+  labelUnit?: string;
+  valueUnit?: string;
+  placeholder?: string;
+}
+
+/** textarea widget 选项（placeholder/rows 为原生 attr 透传） */
+export interface TextareaWidgetOptions {
+  placeholder?: string;
+  rows?: number;
+}
+
+/** select widget 选项 */
+export interface SelectWidgetOptions {
+  options: WidgetItemOption[];
+  placeholder?: string;
+}
+
+/** radioGroup widget 选项 */
+export interface RadioGroupWidgetOptions {
+  options: WidgetItemOption[];
+  orientation?: "horizontal" | "vertical";
+}
+
+/** slider widget 选项 */
+export interface SliderWidgetOptions {
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+/** 日期类 widget 选项（DatePicker/DateRangePicker 同款 placeholder prop） */
+export interface PickerWidgetOptions {
+  placeholder?: string;
+}
+
+/**
+ * widget 注册表类型契约：实现对象在 widgets/index.ts。
+ * 类型集中于此避免循环依赖（type-only import 无运行时环）。
+ */
+export interface WidgetRenders<T extends object> {
+  input(o?: InputWidgetOptions): WidgetRenderReturn<T>;
+  password(o?: PasswordWidgetOptions): WidgetRenderReturn<T>;
+  number(o?: NumberWidgetOptions): WidgetRenderReturn<T>;
+  currency(o?: CurrencyWidgetOptions): WidgetRenderReturn<T>;
+  textarea(o?: TextareaWidgetOptions): WidgetRenderReturn<T>;
+  select(o: SelectWidgetOptions): WidgetRenderReturn<T>;
+  checkbox(o?: { disabled?: boolean }): WidgetRenderReturn<T>;
+  switch(o?: { disabled?: boolean }): WidgetRenderReturn<T>;
+  radioGroup(o: RadioGroupWidgetOptions): WidgetRenderReturn<T>;
+  slider(o?: SliderWidgetOptions): WidgetRenderReturn<T>;
+  datePicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
+  monthPicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
+  yearPicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
+  dateRangePicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;
+  /** 逃逸口：完全自定义渲染 */
+  render(fn: (ctx: WidgetContext<T>) => VNode): WidgetRenderReturn<T>;
+}
+
 export interface FormRenderItem<T extends object> {
   /**
    * 字段名：严格 keyof T —— 自动补全 + 拼错编译报错。
@@ -57,16 +131,6 @@ export interface InputWidgetOptions {
   placeholder?: string;
   /** 原生 input type（text/email/search 等） */
   type?: string;
-}
-
-/**
- * widget 注册表类型契约：Phase 2 逐个补齐方法（input → … → dateRangePicker）。
- * 实现对象在 widgets/index.ts；类型集中于此避免循环依赖（type-only import 无运行时环）。
- */
-export interface WidgetRenders<T extends object> {
-  input(o?: InputWidgetOptions): WidgetRenderReturn<T>;
-  /** 逃逸口：完全自定义渲染 */
-  render(fn: (ctx: WidgetContext<T>) => VNode): WidgetRenderReturn<T>;
 }
 
 export interface FormRenderDefinition<T extends object> {
