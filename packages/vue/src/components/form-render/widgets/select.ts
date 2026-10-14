@@ -7,8 +7,7 @@ import {
   SelectValueText,
 } from "@/components/select";
 import { normalizeSelectItem } from "@/components/select/types";
-import type { WidgetItemOption, WidgetRenderReturn } from "../types";
-import type { SelectWidgetOptions } from "../types";
+import type { SelectWidgetOptions, WidgetRenderReturn } from "../types";
 import { MODEL_VALUE, bindField } from "./bind";
 
 /**
@@ -19,12 +18,7 @@ import { MODEL_VALUE, bindField } from "./bind";
 export function renderSelectItem<T extends object>(
   options: SelectWidgetOptions,
 ): WidgetRenderReturn<T> {
-  // oxlint typeAware 无法解析 SFC 的 $props 派生（退化为 unknown），items 显式注解
-  const { placeholder, items, ...rootProps } = options as {
-    placeholder?: string;
-    items: WidgetItemOption[];
-    [key: string]: unknown;
-  };
+  const { placeholder, items, ...rootProps } = options;
   return (ctx) =>
     h(
       Select,
@@ -33,7 +27,7 @@ export function renderSelectItem<T extends object>(
         items,
         ...bindField(ctx.field, MODEL_VALUE),
         ...ctx.item.componentProps,
-      } as never,
+      },
       {
         default: () => [
           h(SelectTrigger, () =>

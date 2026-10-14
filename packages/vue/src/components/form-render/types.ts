@@ -83,10 +83,12 @@ export type TextareaWidgetOptions = SfcOptions<typeof Textarea> & {
 };
 
 /**
- * v3 命名穿透：选项字段即组件 prop 名 `items`（(string|SelectItemOption)[]）。
- * placeholder 不透传给 Select Root（无效 fallthrough attr），解构后给 SelectValueText。
+ * v3 命名穿透：选项字段即组件 prop 名 `items`——显式必填（Partial 化会退化为可选，
+ * 缺失时 Select.vue collection 计算在首渲染崩溃）；placeholder 不透传给 Select Root
+ * （Omit 在此为前向防御，组件当前无此 prop），解构后仅给 SelectValueText。
  */
-export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "placeholder"> & {
+export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "placeholder" | "items"> & {
+  items: WidgetItemOption[];
   placeholder?: string;
 };
 

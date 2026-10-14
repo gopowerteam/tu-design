@@ -125,7 +125,7 @@ const search = defineForm<OrderQuery>({
 
 `r.input` / `r.password` / `r.number` / `r.currency` / `r.textarea` / `r.select` / `r.checkbox` / `r.switch` / `r.radioGroup` / `r.slider` / `r.datePicker` / `r.monthPicker` / `r.yearPicker` / `r.dateRangePicker` / `r.render(fn)`（完全自定义逃逸口）。
 
-**widget 参数 = 原组件全部 props（命名穿透）**：参数名与组件 prop 一一对应，组件 prop 变更时类型自动同步（如 `r.number({ min, max, step, formatOptions, disabled })`、`r.select({ items, open, locale })`）。
+**widget 参数 = 原组件全部 props（命名穿透）**：参数名与组件 prop 一一对应，组件 prop 变更时类型自动同步（如 `r.number({ min, max, step, formatOptions, disabled })`、`r.select({ items, open, lazyMount })`、`r.datePicker({ locale, min, max })`）。
 
 以下字段由 FormRender 内部接管，widget 参数中**不可传**（编译期拦截）：
 
@@ -142,4 +142,6 @@ const search = defineForm<OrderQuery>({
 - **须在 setup 中调用 `defineForm`**：TanStack `useForm` 内部依赖 `onMounted` 注册挂载。
 - **`visible`（注意拼写，非 x-render 的 `visiable`）是响应式的**：FormRender 经 `useSelector` 订阅全量值，字段值变化即联动。
 - `definition` / `form` props 不支持运行时切换（与 `<Form :form>` 同款静态约定）。
+- **widget 参数显式传 `placeholder: undefined` 会覆盖 `item.placeholder`**（展开语义：键存在即覆盖，组件收到 undefined）；需要 item 级缺省时请省略该键。
+- `r.select({ open })` / `r.datePicker({ open })` 等**弹层受控字段是半受控语义**：只传 `open` 而不配对 `onUpdate:open` 时弹层无法交互关闭；完整受控用法请两者一起传（组件原语义，非 FormRender 拦截范围）。
 - 二期规划：条件 Tag 回显、高级搜索弹窗、`collapsed` 折叠、`group` 分组、组件/文本双模式。
