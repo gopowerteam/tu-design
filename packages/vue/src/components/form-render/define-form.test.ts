@@ -39,13 +39,16 @@ function makeHost(
 
 describe("useFormRender", () => {
   it("defaultValues 从 items.default 派生：值 / 工厂 / 缺省 null", () => {
-    const { def } = makeHost({
-      items: [
-        { key: "keyword", title: "关键词", default: "hello" },
-        { key: "status", title: "状态", default: () => "open" },
-        { key: "range", title: "日期" },
-      ],
-    });
+    const { def } = makeHost(
+      {
+        items: [
+          { key: "keyword", title: "关键词", default: "hello" },
+          { key: "status", title: "状态", default: () => "open" },
+          { key: "range", title: "日期" },
+        ],
+      },
+      useFormRender,
+    );
     expect(def()!.form.state.values).toEqual({
       keyword: "hello",
       status: "open",
@@ -54,12 +57,15 @@ describe("useFormRender", () => {
   });
 
   it("resetToDefaults 将全部字段恢复为派生默认值", async () => {
-    const { def } = makeHost({
-      items: [
-        { key: "keyword", title: "关键词", default: "hi" },
-        { key: "status", title: "状态" },
-      ],
-    });
+    const { def } = makeHost(
+      {
+        items: [
+          { key: "keyword", title: "关键词", default: "hi" },
+          { key: "status", title: "状态" },
+        ],
+      },
+      useFormRender,
+    );
     const d = def()!;
     d.form.setFieldValue("keyword", "changed");
     d.resetToDefaults();
@@ -68,10 +74,13 @@ describe("useFormRender", () => {
 
   it("handleSubmit 校验通过后调用 onSubmit 且 value 为全量表单值", async () => {
     const onSubmit = vi.fn();
-    const { def } = makeHost({
-      items: [{ key: "keyword", title: "关键词" }],
-      onSubmit: ({ value }) => onSubmit(value),
-    });
+    const { def } = makeHost(
+      {
+        items: [{ key: "keyword", title: "关键词" }],
+        onSubmit: ({ value }) => onSubmit(value),
+      },
+      useFormRender,
+    );
     def()!.form.setFieldValue("keyword", "abc");
     await def()!.form.handleSubmit();
     expect(onSubmit).toHaveBeenCalledWith({ keyword: "abc" });
@@ -79,19 +88,22 @@ describe("useFormRender", () => {
 
   it("schema 校验失败时拦截 onSubmit", async () => {
     const onSubmit = vi.fn();
-    const { def } = makeHost({
-      items: [
-        { key: "keyword", title: "关键词" },
-        { key: "status", title: "状态" },
-        { key: "range", title: "日期" },
-      ],
-      schema: v.object({
-        keyword: v.pipe(v.string(), v.minLength(2, "至少 2 个字符")),
-        status: v.nullable(v.string()),
-        range: v.nullable(v.tuple([v.string(), v.string()])),
-      }),
-      onSubmit: ({ value }) => onSubmit(value),
-    });
+    const { def } = makeHost(
+      {
+        items: [
+          { key: "keyword", title: "关键词" },
+          { key: "status", title: "状态" },
+          { key: "range", title: "日期" },
+        ],
+        schema: v.object({
+          keyword: v.pipe(v.string(), v.minLength(2, "至少 2 个字符")),
+          status: v.nullable(v.string()),
+          range: v.nullable(v.tuple([v.string(), v.string()])),
+        }),
+        onSubmit: ({ value }) => onSubmit(value),
+      },
+      useFormRender,
+    );
     def()!.form.setFieldValue("keyword", "a");
     await def()!.form.handleSubmit();
     expect(onSubmit).not.toHaveBeenCalled();
