@@ -19,10 +19,10 @@ const props = defineProps<Props>();
   >
     <ArkRadioGroup.ItemHiddenInput />
     <ArkRadioGroup.ItemControl
-      class="border-input text-primary shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 group aspect-square size-4 shrink-0 rounded-full border outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
+      class="border-input text-primary shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 group aspect-square size-4 shrink-0 rounded-full border outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]"
     >
       <div
-        class="bg-primary size-2 rounded-full opacity-0 transition-opacity group-data-[state=checked]:opacity-100"
+        class="bg-primary group-data-[invalid]:bg-destructive size-2 rounded-full opacity-0 transition-opacity group-data-[state=checked]:opacity-100"
       />
     </ArkRadioGroup.ItemControl>
     <ArkRadioGroup.ItemText v-if="$slots.default" class="text-sm">
