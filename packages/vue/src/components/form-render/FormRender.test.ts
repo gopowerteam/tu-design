@@ -178,6 +178,18 @@ describe("FormRender actions 与事件", () => {
     expect(wrapper.getComponent(FormRender).emitted("search")).toHaveLength(1);
   });
 
+  it("submitable：handleSubmit 成功后 emit submit；cancel 直发", async () => {
+    const { wrapper } = makeFormRender({ submitable: true });
+    const fr = wrapper.getComponent(FormRender);
+    const buttons = wrapper.findAll("button");
+    await buttons[0].trigger("click");
+    await flushPromises();
+    expect(fr.emitted("submit")).toHaveLength(1);
+    await buttons[1].trigger("click");
+    await flushPromises();
+    expect(fr.emitted("cancel")).toHaveLength(1);
+  });
+
   it("重置：值回 items.default 并 emit reset", async () => {
     const { wrapper } = makeFormRender({ searchable: true });
     await wrapper.find("input").setValue("changed");

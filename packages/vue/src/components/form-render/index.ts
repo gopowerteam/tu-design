@@ -4,6 +4,7 @@ export { useFormRender, type UseFormRenderOptions } from "./useFormRender";
 export { widgetRenders } from "./widgets";
 export { bindField, CHECKED, MODEL_VALUE, SLIDER, VALUE, type BindingSpec } from "./widgets/bind";
 export type {
+  BooleanWidgetOptions,
   CurrencyWidgetOptions,
   FormRenderDefinition,
   FormRenderFormApi,

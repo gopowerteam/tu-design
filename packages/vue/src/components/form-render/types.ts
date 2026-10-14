@@ -1,5 +1,6 @@
 import type { AnyFieldApi, FormApi, VueFormApi } from "@tanstack/vue-form";
 import type { VNode } from "vue";
+import type { CurrencyUnit } from "@/components/currency-input";
 import type { SelectItemOption } from "@/components/select";
 
 /**
@@ -24,6 +25,11 @@ export type WidgetRenderReturn<T extends object> = (ctx: WidgetContext<T>) => VN
 /** select/radioGroup 等选项的通用形态（字符串简写或 { label, value }） */
 export type WidgetItemOption = string | SelectItemOption;
 
+/** checkbox/switch widget 选项（boolean 形态共用） */
+export interface BooleanWidgetOptions {
+  disabled?: boolean;
+}
+
 /** password widget 选项 */
 export interface PasswordWidgetOptions {
   placeholder?: string;
@@ -38,10 +44,10 @@ export interface NumberWidgetOptions {
   formatOptions?: Intl.NumberFormatOptions;
 }
 
-/** currency widget 选项（对应 CurrencyInput props） */
+/** currency widget 选项（对应 CurrencyInput props；单位为字面量联合） */
 export interface CurrencyWidgetOptions {
-  labelUnit?: string;
-  valueUnit?: string;
+  labelUnit?: CurrencyUnit;
+  valueUnit?: CurrencyUnit;
   placeholder?: string;
 }
 
@@ -86,8 +92,8 @@ export interface WidgetRenders<T extends object> {
   currency(o?: CurrencyWidgetOptions): WidgetRenderReturn<T>;
   textarea(o?: TextareaWidgetOptions): WidgetRenderReturn<T>;
   select(o: SelectWidgetOptions): WidgetRenderReturn<T>;
-  checkbox(o?: { disabled?: boolean }): WidgetRenderReturn<T>;
-  switch(o?: { disabled?: boolean }): WidgetRenderReturn<T>;
+  checkbox(o?: BooleanWidgetOptions): WidgetRenderReturn<T>;
+  switch(o?: BooleanWidgetOptions): WidgetRenderReturn<T>;
   radioGroup(o: RadioGroupWidgetOptions): WidgetRenderReturn<T>;
   slider(o?: SliderWidgetOptions): WidgetRenderReturn<T>;
   datePicker(o?: PickerWidgetOptions): WidgetRenderReturn<T>;

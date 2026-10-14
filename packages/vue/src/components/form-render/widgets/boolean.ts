@@ -1,7 +1,7 @@
 import { h } from "vue";
 import { Checkbox } from "@/components/checkbox";
 import { Switch } from "@/components/switch";
-import type { WidgetRenderReturn } from "../types";
+import type { BooleanWidgetOptions, WidgetRenderReturn } from "../types";
 import { CHECKED, bindField } from "./bind";
 
 /**
@@ -9,7 +9,7 @@ import { CHECKED, bindField } from "./bind";
  * 单行布局倾向 hideLabel + label 经 item.title 展示由使用者决定。
  */
 export function renderCheckboxItem<T extends object>(
-  options: { disabled?: boolean } = {},
+  options: BooleanWidgetOptions = {},
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(Checkbox, {
@@ -20,7 +20,7 @@ export function renderCheckboxItem<T extends object>(
 }
 
 export function renderSwitchItem<T extends object>(
-  options: { disabled?: boolean } = {},
+  options: BooleanWidgetOptions = {},
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(Switch, {

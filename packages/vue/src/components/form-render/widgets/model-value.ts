@@ -23,7 +23,7 @@ export function renderPasswordItem<T extends object>(
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(PasswordInput, {
-      placeholder: options.placeholder,
+      placeholder: options.placeholder ?? ctx.item.placeholder,
       autoComplete: options.autoComplete,
       ...bindField(ctx.field, MODEL_VALUE),
       ...ctx.item.componentProps,
@@ -53,7 +53,7 @@ export function renderCurrencyItem<T extends object>(
     h(CurrencyInput, {
       labelUnit: options.labelUnit,
       valueUnit: options.valueUnit,
-      placeholder: options.placeholder,
+      placeholder: options.placeholder ?? ctx.item.placeholder,
       ...bindField(ctx.field, MODEL_VALUE),
       ...ctx.item.componentProps,
     });
@@ -65,7 +65,7 @@ export function renderTextareaItem<T extends object>(
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(Textarea, {
-      placeholder: options.placeholder,
+      placeholder: options.placeholder ?? ctx.item.placeholder,
       rows: options.rows,
       ...bindField(ctx.field, MODEL_VALUE),
       ...ctx.item.componentProps,
@@ -79,7 +79,7 @@ function pickerRenderer<T extends object>(
 ): WidgetRenderReturn<T> {
   return (ctx) =>
     h(component, {
-      placeholder: options.placeholder,
+      placeholder: options.placeholder ?? ctx.item.placeholder,
       ...bindField(ctx.field, MODEL_VALUE),
       ...ctx.item.componentProps,
     });

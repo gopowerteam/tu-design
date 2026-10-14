@@ -22,13 +22,16 @@ export function renderSelectItem<T extends object>(
       Select,
       {
         items: options.options,
-        placeholder: options.placeholder,
         ...bindField(ctx.field, MODEL_VALUE),
         ...ctx.item.componentProps,
       },
       {
         default: () => [
-          h(SelectTrigger, () => h(SelectValueText, { placeholder: options.placeholder })),
+          h(SelectTrigger, () =>
+            h(SelectValueText, {
+              placeholder: options.placeholder ?? ctx.item.placeholder,
+            }),
+          ),
           h(SelectContent, () =>
             options.options.map((option) => {
               const normalized = normalizeSelectItem(option);

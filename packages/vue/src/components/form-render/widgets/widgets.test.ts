@@ -172,6 +172,38 @@ describe("value 形态 widgets", () => {
   });
 });
 
+describe("item.placeholder 缺省回退（I1）", () => {
+  it("input：options 缺省时回退 item.placeholder", () => {
+    const { wrapper } = makeHost("", (ctx) =>
+      widgetRenders<{ v: string }>().input()({
+        ...ctx,
+        item: { key: "v", title: "字段", placeholder: "来自 item" } as never,
+      }),
+    );
+    expect(wrapper.find("input").attributes("placeholder")).toBe("来自 item");
+  });
+
+  it("options.placeholder 优先于 item.placeholder", () => {
+    const { wrapper } = makeHost("", (ctx) =>
+      widgetRenders<{ v: string }>().input({ placeholder: "来自 options" })({
+        ...ctx,
+        item: { key: "v", title: "字段", placeholder: "来自 item" } as never,
+      }),
+    );
+    expect(wrapper.find("input").attributes("placeholder")).toBe("来自 options");
+  });
+
+  it("datePicker：options 缺省时回退 item.placeholder", () => {
+    const { wrapper } = makeHost(null, (ctx) =>
+      widgetRenders<{ v: string | null }>().datePicker()({
+        ...ctx,
+        item: { key: "v", title: "字段", placeholder: "选个日期" } as never,
+      }),
+    );
+    expect(wrapper.findComponent(DatePicker).props("placeholder")).toBe("选个日期");
+  });
+});
+
 describe("select 组装", () => {
   it("items 由 options 映射 + 受控回显 + update:modelValue 写回 + placeholder", () => {
     const { wrapper, field } = makeHost(undefined, (ctx) =>
