@@ -223,6 +223,108 @@ const table = defineTable<Order>({
 | `serial`   | `(base? = 1)`                            | 页内序号 `index + base`（跨页连续序号属二期）                                                                              |
 | `button`   | `(items)`                                | `Array<string \| { text, onClick?, variant?, disabled? }>`，渲染为 `variant="link"` 按钮行                                 |
 
+所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。以下逐个给出参数与行为细则。
+
+#### `r.dict(mapping, options?)` — 字典映射
+
+| 参数 / 字段     | 类型                                                      | 默认 | 说明                                                                       |
+| --------------- | --------------------------------------------------------- | ---- | -------------------------------------------------------------------------- |
+| `mapping`       | `Record<string \| number, string \| DictEntry>`           | —    | 键为字段**原始值**，值为显示内容                                           |
+| `DictEntry`     | `string \| { label: string; variant?: DictEntryVariant }` | —    | 字符串 = 纯文本；对象 = Badge 形态                                         |
+| `variant`       | `"default" \| "secondary" \| "destructive" \| "outline"`  | —    | 条目级 Badge 变体（`default` 即主题色实底）                                |
+| `options.badge` | `DictEntryVariant \| true`                                | —    | 整列统一 Badge 的简写；`true` 用 Badge 默认变体；**条目级 `variant` 优先** |
+
+行为细则：
+
+- **命中** → 显示映射文本（或 Badge）；**未命中** → 原始值原样显示（与 x-render `dict.get(value) \|\| value` 一致）；`null`/`undefined` → 空字符串
+- 每行变体不同的状态列用对象条目；全部同款徽标时用 `options.badge` 省去逐条写 `variant`
+- 布尔键不受支持（`Record` 键约束），请以 `0`/`1` 或字符串承载
+
+```ts
+r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } });
+```
+
+#### `r.date(pattern?)` — 日期格式化
+
+| 参数      | 类型     | 默认         | 说明       |
+| --------- | -------- | ------------ | ---------- |
+| `pattern` | `string` | `yyyy-MM-dd` | 令牌模板串 |
+
+支持的令牌（其余字符原样输出）：
+
+| 令牌   | 含义   | 补零 | 示例   |
+| ------ | ------ | ---- | ------ |
+| `yyyy` | 年     | —    | `2026` |
+| `MM`   | 月     | ✓    | `01`   |
+| `dd`   | 日     | ✓    | `15`   |
+| `HH`   | 时(24) | ✓    | `09`   |
+| `mm`   | 分     | ✓    | `05`   |
+| `ss`   | 秒     | ✓    | `03`   |
+
+行为细则：
+
+- 输入接受 `Date`、ISO 字符串（`2026-01-15T00:00:00`）、`yyyy-MM-dd` 字符串、毫秒时间戳
+- **非法输入（无法解析的字符串 / NaN 时间戳）原样显示，不抛错** —— 脏数据不会炸表格
+- 内置迷你格式化实现，不引入 date-fns；需要时区、相对时间等复杂格式请用自定义 `render`
+
+```ts
+r.date(); // "2026-01-15"
+r.date("yyyy/MM/dd HH:mm"); // "2026/01/15 09:05"
+```
+
+#### `r.currency(currency?, locale?)` — 货币格式化
+
+| 参数       | 类型     | 默认    | 说明                      |
+| ---------- | -------- | ------- | ------------------------- |
+| `currency` | `string` | `CNY`   | ISO 4217 币种代码         |
+| `locale`   | `string` | `zh-CN` | Intl 地区（决定符号位置） |
+
+行为细则：
+
+- 等价 `new Intl.NumberFormat(locale, { style: "currency", currency }).format(value)`，输出如 `¥1,234.50`、`$1,234.50`
+- 输入接受数字或数字字符串（`"1234.5"` 会被 `Number()` 转换）；**NaN / 非数字原样显示**
+- 依赖运行时的 `Intl.NumberFormat`（现代浏览器均支持）
+
+```ts
+r.currency(); // ¥1,234.50
+r.currency("USD", "en-US"); // $1,234.50
+```
+
+#### `r.serial(base?)` — 序号列
+
+| 参数   | 类型     | 默认 | 说明     |
+| ------ | -------- | ---- | -------- |
+| `base` | `number` | `1`  | 起始序号 |
+
+行为细则：
+
+- 显示 `index + base`；**翻页后从 `base` 重新计数（页内序号）**——跨页连续序号需要总行数偏移，属二期
+- 不读取字段值，`key` 可为任意占位（如 `"seq"`）
+
+#### `r.button(items)` — 操作列
+
+| 字段        | 类型                                    | 默认   | 说明                                         |
+| ----------- | --------------------------------------- | ------ | -------------------------------------------- |
+| `items`     | `Array<string \| TableActionButton>`    | —      | 按钮序列；**字符串简写等价 `{ text }`**      |
+| `text`      | `string \| ((record, index) => string)` | —      | 按钮文本，支持按行定制                       |
+| `onClick?`  | `(record, index) => void`               | —      | 点击回调（**不含事件对象**，见下方注意事项） |
+| `variant?`  | `ButtonVariants["variant"]`             | `link` | 沿用 Button 组件全部变体                     |
+| `disabled?` | `(record, index) => boolean`            | —      | 逐行求值，返回真即渲染原生 `disabled`        |
+
+行为细则：
+
+- 渲染为 `flex items-center gap-1` 的按钮行，`size="sm"`；**空数组渲染为空字符串**（不产生节点）
+- 点击回调只携带 `(record, index)`；点击会**冒泡触发行 `row-click`**（行点击绑在 `<tr>` 上）——操作列与行点击并存时，请在 `row-click` 处理器里排除操作列来源，或对操作列所在表格不启用 `row-click`
+- 空数组与全禁用是有意支持的合法形态（权限收敛后常整列禁用/隐藏）
+
+```ts
+r.button([
+  { text: "编辑", onClick: (row) => edit(row) },
+  { text: (row) => (row.locked ? "已锁定" : "解锁"), disabled: (row) => row.locked },
+  "删除", // 简写，等价 { text: "删除" }
+]);
+```
+
 与 x-render 的差异：无 `TableColumnRenders` 集合与 `$type` 标记机制（我们无列模式/视图模式切换）；`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 二期再做。
 
 ## 注意事项
