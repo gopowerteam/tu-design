@@ -54,7 +54,9 @@ const pages = computed<(number | string)[]>(() => {
       </select>
     </div>
 
+    <!-- Root 渲染为裸 nav 且 Ellipsis 是块级 div，必须显式 flex 才不会断行 -->
     <ArkPaginationRoot
+      class="flex items-center gap-1"
       :count="total"
       :page="pageIndex"
       :page-size="pageSize"
