@@ -145,7 +145,10 @@ export default defineConfig({
         },
         {
           text: "高阶组件",
-          items: [{ text: "FormRender", link: "/components/form-render" }],
+          items: [
+            { text: "FormRender", link: "/components/form-render" },
+            { text: "TableRender", link: "/components/table-render" },
+          ],
         },
       ],
     },
