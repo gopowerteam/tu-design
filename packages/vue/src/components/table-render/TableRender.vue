@@ -71,18 +71,23 @@ const loading = computed(() => props.loading === true || instance.loading.value)
 const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
 
 /** 行 → 单元格值矩阵：render > formatter > record[key]（R17） */
-const body = computed(() =>
-  rows.value.map((row) => ({
+const body = computed(() => {
+  // 渲染器工厂按列求值一次（而非每单元格），避免用户工厂内的重分配被放大
+  const renderFns = new Map(
+    columns.value.filter((c) => c.render).map((c) => [c, c.render!(RENDERS)]),
+  );
+  return rows.value.map((row) => ({
     key: rowKeyOf(row.original, row.index),
     index: row.index,
     record: row.original,
     cells: columns.value.map((column): VNodeChild => {
-      if (column.render) return column.render(RENDERS)(row.original, row.index, column);
+      const render = renderFns.get(column);
+      if (render) return render(row.original, row.index, column);
       if (column.formatter) return column.formatter(row.original) as VNodeChild;
       return String(row.original[column.key] ?? "");
     }),
-  })),
-);
+  }));
+});
 
 let missingRowKeyWarned = false;
 

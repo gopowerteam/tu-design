@@ -99,11 +99,12 @@ export function columnRenders<T extends DataRecord>(): ColumnRenders<T> {
     },
 
     currency(currency = "CNY", locale = "zh-CN") {
+      const format = new Intl.NumberFormat(locale, { style: "currency", currency });
       return (record, _index, column) => {
         const raw = (record as Record<string, unknown>)[column.key];
         const value = typeof raw === "string" ? Number(raw) : raw;
         if (typeof value !== "number" || Number.isNaN(value)) return raw as VNodeChild;
-        return new Intl.NumberFormat(locale, { style: "currency", currency }).format(value);
+        return format.format(value);
       };
     },
 
