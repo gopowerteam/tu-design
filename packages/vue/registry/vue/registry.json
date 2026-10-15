@@ -177,6 +177,12 @@
       "description": "开关：基于 Ark UI Switch 原语，支持标签插槽、受控/非受控与禁用。"
     },
     {
+      "name": "table-render",
+      "title": "TableRender",
+      "type": "registry:ui",
+      "description": "配置驱动表格渲染器：defineTable 聚合 TanStack Table 实例与列配置，静态/服务端双模式（onLoad 回写分页排序），Ark Pagination 分页条 + 原生 select 每页条数，排序表头 aria-sort、加载骨架与空态插槽，语义化 table + Tailwind tokens。"
+    },
+    {
       "name": "tabs",
       "title": "Tabs",
       "type": "registry:ui",
