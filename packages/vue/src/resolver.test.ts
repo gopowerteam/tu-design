@@ -45,6 +45,7 @@ describe("TuDesignResolver", () => {
       "defineTable",
       "defineColumns",
       "useTableRender",
+      "columnRenders",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());

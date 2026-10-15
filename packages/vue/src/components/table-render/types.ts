@@ -19,7 +19,7 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   align?: "left" | "center" | "right";
   width?: number | string;
   /** 自定义单元格渲染，取值链 render > formatter > record[key]（R17） */
-  render?: (record: T, index: number) => VNodeChild;
+  render?: (record: T, index: number, column: TableColumnOptions<T>) => VNodeChild;
   /** 纯数据格式化；render 存在时被忽略 */
   formatter?: (record: T) => string | number | Date | undefined;
   /** 超宽截断 + 原生 title 提示（R15） */

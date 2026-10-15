@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { h, ref } from "vue";
-import { Badge, Button, defineTable } from "@tu-design/vue";
+import { ref } from "vue";
+import { columnRenders, defineTable } from "@tu-design/vue";
 
 interface User {
   id: number;
@@ -18,12 +18,9 @@ const USERS: User[] = Array.from({ length: 86 }, (_, i) => ({
   createdAt: `2026-0${(i % 9) + 1}-${String((i % 27) + 1).padStart(2, "0")}`,
 }));
 
-const STATUS_TEXT = { active: "启用", pending: "待审", banned: "禁用" } as const;
-const STATUS_VARIANT = {
-  active: "default",
-  pending: "secondary",
-  banned: "destructive",
-} as const;
+const picked = ref<User>();
+
+const r = columnRenders<User>();
 
 const table = defineTable<User>({
   data: USERS,
@@ -35,20 +32,20 @@ const table = defineTable<User>({
     {
       key: "status",
       title: "状态",
-      render: (record) =>
-        h(Badge, { variant: STATUS_VARIANT[record.status] }, () => STATUS_TEXT[record.status]),
+      render: r.dict({
+        active: { label: "启用", variant: "default" },
+        pending: { label: "待审", variant: "secondary" },
+        banned: { label: "禁用", variant: "destructive" },
+      }),
     },
     { key: "createdAt", title: "创建时间", ellipsis: true },
     {
       key: "ops",
       title: "操作",
-      render: (record) =>
-        h(Button, { size: "sm", variant: "outline" }, () => `编辑 ${record.name}`),
+      render: r.button([{ text: (row) => `编辑 ${row.name}` }]),
     },
   ],
 });
-
-const picked = ref<User>();
 </script>
 
 <template>

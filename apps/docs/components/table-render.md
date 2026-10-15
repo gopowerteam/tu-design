@@ -157,17 +157,17 @@ const table = defineTable<User>({
 
 ### `TableColumnOptions<T>`
 
-| 字段           | 类型                                       | 说明                                            |
-| -------------- | ------------------------------------------ | ----------------------------------------------- |
-| `key`          | `string`                                   | 列标识，同时作为默认取值字段                    |
-| `title`        | `string`                                   | 表头文本                                        |
-| `align?`       | `"left" \| "center" \| "right"`            | 单元格对齐                                      |
-| `width?`       | `number \| string`                         | 列宽                                            |
-| `render?`      | `(record: T, index: number) => VNodeChild` | 自定义单元格；优先于 `formatter`                |
-| `formatter?`   | `(record: T) => string \| number \| Date`  | 纯数据格式化                                    |
-| `ellipsis?`    | `boolean`                                  | 超宽截断 + 原生 `title` 提示                    |
-| `sortable?`    | `boolean`                                  | 是否可排序（渲染为 `<button>`，带 `aria-sort`） |
-| `defaultSort?` | `"asc" \| "desc"`                          | 初始排序方向；须同时 `sortable: true`           |
+| 字段           | 类型                                               | 说明                                                                     |
+| -------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
+| `key`          | `string`                                           | 列标识，同时作为默认取值字段                                             |
+| `title`        | `string`                                           | 表头文本                                                                 |
+| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐                                                               |
+| `width?`       | `number \| string`                                 | 列宽                                                                     |
+| `render?`      | `(record: T, index: number, column) => VNodeChild` | 自定义单元格；优先于 `formatter`；第三参 `column` 供内置渲染器读取字段值 |
+| `formatter?`   | `(record: T) => string \| number \| Date`          | 纯数据格式化                                                             |
+| `ellipsis?`    | `boolean`                                          | 超宽截断 + 原生 `title` 提示                                             |
+| `sortable?`    | `boolean`                                          | 是否可排序（渲染为 `<button>`，带 `aria-sort`）                          |
+| `defaultSort?` | `"asc" \| "desc"`                                  | 初始排序方向；须同时 `sortable: true`                                    |
 
 取值优先级：`render` > `formatter` > `record[key]`（`null`/`undefined` 显示为空）。
 
@@ -181,6 +181,49 @@ const table = defineTable<User>({
 | `update` | `(data: T[], total?: number) => void` | 回写数据；`total` 缺省时保留旧值                        |
 
 `defineColumns<T>(columns)` 是可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
+
+### 内置列渲染器 `columnRenders<T>()`（对标 x-render table-columns）
+
+`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`columnRenders<T>()` 返回 5 个预设单元格渲染器，返回值直接填入 `column.render`（即 `(record, index, column) => VNodeChild`）。高频样板——状态映射、日期/货币格式化、序号列、操作列——不再手写 `h(...)`。
+
+```ts
+import { columnRenders, defineTable } from "@tu-design/vue";
+
+const r = columnRenders<Order>();
+
+const table = defineTable<Order>({
+  columns: [
+    // 字典映射：未命中的值原样显示；条目带 variant 或 options.badge 时渲染 Badge
+    {
+      key: "status",
+      title: "状态",
+      render: r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } }),
+    },
+    // 日期：迷你令牌 yyyy MM dd HH mm ss（非法输入原样显示，不抛错）
+    { key: "createdAt", title: "日期", render: r.date("yyyy-MM-dd HH:mm") },
+    // 货币：Intl.NumberFormat，默认 CNY / zh-CN
+    { key: "amount", title: "金额", render: r.currency("CNY") },
+    // 序号：页内序号，默认从 1 起
+    { key: "seq", title: "#", render: r.serial() },
+    // 操作列：字符串简写或对象；onClick/disabled/text 均收到 (record, index)
+    {
+      key: "ops",
+      title: "操作",
+      render: r.button([{ text: "编辑", onClick: (row) => edit(row) }, "删除"]),
+    },
+  ],
+});
+```
+
+| 渲染器     | 签名                                     | 说明                                                                                                                       |
+| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `dict`     | `(mapping, { badge? }?)`                 | 值→label 映射；条目 `string` 或 `{ label, variant? }`；`badge: true` 整列 Badge（条目级 `variant` 优先）；未命中显示原始值 |
+| `date`     | `(pattern? = "yyyy-MM-dd")`              | 接受 `Date`/ISO 字符串/时间戳；非法输入原样显示                                                                            |
+| `currency` | `(currency? = "CNY", locale? = "zh-CN")` | `Intl.NumberFormat` 货币格式；NaN 原样显示                                                                                 |
+| `serial`   | `(base? = 1)`                            | 页内序号 `index + base`（跨页连续序号属二期）                                                                              |
+| `button`   | `(items)`                                | `Array<string \| { text, onClick?, variant?, disabled? }>`，渲染为 `variant="link"` 按钮行                                 |
+
+与 x-render 的差异：无 `TableColumnRenders` 集合与 `$type` 标记机制（我们无列模式/视图模式切换）；`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 二期再做。
 
 ## 注意事项
 

@@ -73,7 +73,7 @@ const body = computed(() =>
     index: row.index,
     record: row.original,
     cells: columns.value.map((column): VNodeChild => {
-      if (column.render) return column.render(row.original, row.index);
+      if (column.render) return column.render(row.original, row.index, column);
       if (column.formatter) return column.formatter(row.original) as VNodeChild;
       return String(row.original[column.key] ?? "");
     }),

@@ -1,4 +1,13 @@
 export { default as TableRender } from "./TableRender.vue";
+export { columnRenders } from "./column-renders";
+export type {
+  ColumnRenders,
+  DictColumnMapping,
+  DictColumnOptions,
+  DictEntryVariant,
+  SerialColumnOptions,
+  TableActionButton,
+} from "./column-renders";
 export { defineColumns } from "./define-columns";
 export { defineTable } from "./define-table";
 export { useTableRender } from "./useTableRender";
