@@ -3,6 +3,7 @@ import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
+import { isSameWeek } from "../date-shared/shared";
 import CalendarNav from "./CalendarNav.vue";
 
 const props = withDefaults(
@@ -11,8 +12,12 @@ const props = withDefaults(
     mode?: "day" | "month" | "year";
     /** 日视图并排月数 */
     numOfMonths?: number;
+    /** 周选择形态：日视图下与选中值同周的格子全部 data-selected（整周高亮，周起点随 locale） */
+    week?: boolean;
+    /** 周起点 locale（week 形态下生效） */
+    locale?: string;
   }>(),
-  { mode: "day", numOfMonths: 1 },
+  { mode: "day", numOfMonths: 1, week: false, locale: "zh-CN" },
 );
 
 // —— 卡片视觉常量（打磨单点：视觉调整只改本文件）——
@@ -20,13 +25,17 @@ const cardCls = computed(() => [props.numOfMonths > 1 ? "w-[40rem]" : "w-80", "p
 // 导航条（ViewControl/Prev/Next/ViewTrigger）样式常量已迁 calendar/CalendarNav.vue
 // 日视图双层格子（naive 式「命中大、视觉小」）：
 // trigger = 全格命中区 + range 无缝条带层（primary/10；行首行尾圆角由模板按列位补）
+//           + week 整周条带层（data-week-selected：实心 primary 无缝整行，行首行尾圆角同上）
+//           + week hover 预览（行挂 group/week-row，任意格 hover 时同周全行亮 primary/10 浅条带；
+//             非 week 形态无 group/week-row 宿主，变体永不命中，零副作用）
 // dot     = 24px 视觉圆点层，hover/选中/今天/禁用色全落此层（经 group-* 读取 trigger 状态）
 // outside-view = Card 自标「格不属于本表锚点月」，range/选中视觉在补位格上失效，
-//                且补位格不可点击（naive excluded 语义：仅作日期连续性视觉提示）
+//                且补位格不可点击（naive excluded 语义：仅作日期连续性视觉提示；
+//                week 条带上补位格降为 40% 透明，保留整行连续性）
 const dayTriggerCls =
-  "group relative flex h-8 w-full cursor-pointer items-center justify-center outline-none data-[outside-view]:pointer-events-none data-[disabled]:pointer-events-none data-[in-range]:not-data-[outside-view]:not-data-[range-start]:not-data-[range-end]:bg-primary/10 data-[range-start]:rounded-l-[3px] data-[range-end]:rounded-r-[3px]";
+  "group relative flex h-8 w-full cursor-pointer items-center justify-center outline-none data-[outside-view]:pointer-events-none data-[disabled]:pointer-events-none data-[in-range]:not-data-[outside-view]:not-data-[range-start]:not-data-[range-end]:bg-primary/10 data-[range-start]:rounded-l-[3px] data-[range-end]:rounded-r-[3px] data-[week-selected]:bg-primary data-[week-selected]:data-[outside-view]:bg-primary/40 data-[week-selected]:hover:data-[outside-view]:bg-primary/40 group-hover/week-row:not-data-[week-selected]:not-data-[outside-view]:bg-primary/10 group-hover/week-row:data-[outside-view]:not-data-[week-selected]:bg-primary/5";
 const dayDotCls =
-  "flex size-6 items-center justify-center rounded-[3px] text-sm transition-colors group-hover:bg-accent group-data-[focus]:not-group-data-[outside-view]:bg-accent group-data-[selected]:not-group-data-[outside-view]:bg-primary group-data-[selected]:not-group-data-[outside-view]:font-medium group-data-[selected]:not-group-data-[outside-view]:text-primary-foreground group-data-[today]:not-group-data-[selected]:text-primary group-data-[today]:not-group-data-[selected]:font-semibold group-data-[unavailable]:line-through group-data-[unavailable]:opacity-30 group-data-[disabled]:opacity-40 group-data-[outside-view]:opacity-30";
+  "flex size-6 items-center justify-center rounded-[3px] text-sm transition-colors group-hover:not-group-data-[week-selected]:bg-accent group-data-[focus]:not-group-data-[outside-view]:not-group-data-[week-selected]:bg-accent group-data-[selected]:not-group-data-[week-selected]:not-group-data-[outside-view]:bg-primary group-data-[selected]:not-group-data-[week-selected]:not-group-data-[outside-view]:font-medium group-data-[selected]:not-group-data-[week-selected]:not-group-data-[outside-view]:text-primary-foreground group-data-[week-selected]:bg-transparent group-data-[week-selected]:font-medium group-data-[week-selected]:text-primary-foreground group-data-[week-selected]:hover:bg-white/20 group-data-[today]:not-group-data-[selected]:text-primary group-data-[today]:not-group-data-[selected]:font-semibold group-data-[unavailable]:line-through group-data-[unavailable]:opacity-30 group-data-[disabled]:opacity-40 group-data-[outside-view]:opacity-30";
 // 月/年视图单层格子（沿用小圆角语言；range 变体单选无副作用，此处不涉及）
 const cellCls =
   "flex h-9 w-full items-center justify-center rounded-[3px] text-sm outline-none hover:bg-accent data-[selected]:bg-primary data-[selected]:font-medium data-[selected]:text-primary-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-40";
@@ -53,6 +62,23 @@ function tableAnchor(context: TableCtx, i: number): DateValue | undefined {
 function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
   return !!anchor && (day.year !== anchor.year || day.month !== anchor.month);
 }
+
+/**
+ * 周形态整周高亮：day 与选中值同周 → 补 data-selected（语义标记，供 zag 状态/测试判定）
+ * 与 data-week-selected（视觉标记，驱动 trigger 整行条带与 dot 层反色变体）；
+ * 非 week 形态返回空对象，完全不下发属性，选中视觉交回 zag 原生绑定，避免 fallthrough 覆盖。
+ * 走显式函数而非模板内联，避免与日视图 v-for 的 `week` 循环变量同名遮蔽。
+ */
+function weekSelectedAttrs(
+  day: DateValue,
+  selected: DateValue[] | undefined,
+): Record<string, string> {
+  return weekSelected(day, selected) ? { "data-selected": "", "data-week-selected": "" } : {};
+}
+
+function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolean {
+  return !!props.week && !!selected?.[0] && isSameWeek(day, selected[0], props.locale);
+}
 </script>
 
 <template>
@@ -77,7 +103,7 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
               </ArkDatePicker.TableHead>
               <ArkDatePicker.TableBody>
                 <ArkDatePicker.TableRow
-                  :class="rowCls"
+                  :class="cn(rowCls, props.week && 'group/week-row')"
                   v-for="(week, id) in context.getOffset({ months: i - 1 }).weeks"
                   :key="id"
                 >
@@ -98,6 +124,7 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
                       :data-outside-view="
                         isOutsideView(day, tableAnchor(context, i)) ? '' : undefined
                       "
+                      v-bind="weekSelectedAttrs(day, context.value)"
                     >
                       <span :class="dayDotCls">{{ day.day }}</span>
                     </ArkDatePicker.TableCellTrigger>

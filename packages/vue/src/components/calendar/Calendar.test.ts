@@ -225,11 +225,13 @@ describe("Calendar（standalone）", () => {
     expect(dot?.tagName).toBe("SPAN");
     expect(dot?.className).toContain("size-6");
     expect(dot?.className).toContain("rounded-[3px]");
-    expect(dot?.className).toContain("group-hover:bg-accent");
+    expect(dot?.className).toContain("group-hover:not-group-data-[week-selected]:bg-accent");
     expect(dot?.className).toContain(
-      "group-data-[selected]:not-group-data-[outside-view]:bg-primary",
+      "group-data-[selected]:not-group-data-[week-selected]:not-group-data-[outside-view]:bg-primary",
     );
-    expect(dot?.className).toContain("group-data-[focus]:not-group-data-[outside-view]:bg-accent");
+    expect(dot?.className).toContain(
+      "group-data-[focus]:not-group-data-[outside-view]:not-group-data-[week-selected]:bg-accent",
+    );
     expect(dot?.className).toContain("not-group-data-[selected]:text-primary");
     // 行界圆角（naive 7n+1/7n+7）：首行首格左圆角、首行尾格右圆角
     const triggers = [

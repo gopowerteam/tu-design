@@ -118,6 +118,7 @@ export default defineConfig({
             { text: "DatePicker", link: "/components/date-picker" },
             { text: "DateRangePicker", link: "/components/date-range-picker" },
             { text: "MonthPicker", link: "/components/month-picker" },
+            { text: "WeekPicker", link: "/components/week-picker" },
             { text: "YearPicker", link: "/components/year-picker" },
             { text: "Input", link: "/components/input" },
             { text: "Label", link: "/components/label" },

@@ -31,5 +31,6 @@ export * from "./components/switch";
 export * from "./components/tabs";
 export * from "./components/textarea";
 export * from "./components/tree-select";
+export * from "./components/week-picker";
 export * from "./components/year-picker";
 export * from "./components/tooltip";

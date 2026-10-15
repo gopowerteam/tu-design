@@ -76,6 +76,7 @@ export const COMPONENT_NAMES = [
   "Tooltip",
   "TooltipContent",
   "TooltipTrigger",
+  "WeekPicker",
   "YearPicker",
 ] as const;
 

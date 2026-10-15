@@ -1,0 +1,5 @@
+{
+  "description": "周选择器：输入框 + 日历弹层，点任意可选日归一到所在周并整周高亮，值以 \"yyyy-MM-dd\"（所在周起始日）字符串受控；周起点跟随 locale（zh-CN 周一起始），输入框回显 \"start ~ end\"。",
+  "registryDependencies": ["utils", "date-shared", "calendar"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

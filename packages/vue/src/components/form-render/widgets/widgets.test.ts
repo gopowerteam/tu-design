@@ -16,6 +16,7 @@ import { Select } from "@/components/select";
 import { TreeSelect } from "@/components/tree-select";
 import { Slider } from "@/components/slider";
 import { Switch } from "@/components/switch";
+import { WeekPicker } from "@/components/week-picker";
 import { YearPicker } from "@/components/year-picker";
 import type { NumberWidgetOptions } from "../types";
 import { widgetRenders } from "./index";
@@ -122,6 +123,16 @@ describe("modelValue 形态 widgets", () => {
     expect(y.wrapper.findComponent(YearPicker).props("modelValue")).toBe("2026");
     y.wrapper.findComponent(YearPicker).vm.$emit("update:modelValue", "2027");
     expect(y.field().state.value).toBe("2027");
+  });
+
+  it("weekPicker：string|null 回显 + 写回", () => {
+    const { wrapper, field } = makeHost("2026-01-05", (ctx) =>
+      widgetRenders<{ v: string | null }>().weekPicker()({ ...ctx, item }),
+    );
+    const comp = wrapper.findComponent(WeekPicker);
+    expect(comp.props("modelValue")).toBe("2026-01-05");
+    comp.vm.$emit("update:modelValue", "2026-02-02");
+    expect(field().state.value).toBe("2026-02-02");
   });
 
   it("dateRangePicker：[start,end]|null 回显 + 写回", () => {

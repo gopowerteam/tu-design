@@ -223,7 +223,7 @@ describe("DateRangePicker", () => {
     const startDot = start.firstElementChild as HTMLElement;
     expect(startDot.className).toContain("size-6");
     expect(startDot.className).toContain(
-      "group-data-[selected]:not-group-data-[outside-view]:bg-primary",
+      "group-data-[selected]:not-group-data-[week-selected]:not-group-data-[outside-view]:bg-primary",
     );
     // 补位端点存在性（用户 bug 回归锁）：右表首行的 10-28 属于 10 月表 → 带 outside-view，
     // 同时 zag 按 date 值标 selected/range-end；修复后其 dot 不再渲染选中主色，且不可点击

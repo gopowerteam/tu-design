@@ -7,6 +7,7 @@ import { MonthPicker } from "@/components/month-picker";
 import { NumberInput } from "@/components/number-input";
 import { PasswordInput } from "@/components/password-input";
 import { Textarea } from "@/components/textarea";
+import { WeekPicker } from "@/components/week-picker";
 import { YearPicker } from "@/components/year-picker";
 import type {
   CurrencyWidgetOptions,
@@ -16,6 +17,7 @@ import type {
   NumberWidgetOptions,
   PasswordWidgetOptions,
   TextareaWidgetOptions,
+  WeekPickerWidgetOptions,
   WidgetRenderReturn,
   YearPickerWidgetOptions,
 } from "../types";
@@ -115,4 +117,10 @@ export function renderDateRangePickerItem<T extends object>(
   options: DateRangeWidgetOptions = {},
 ): WidgetRenderReturn<T> {
   return pickerRenderer(DateRangePicker, options);
+}
+
+export function renderWeekPickerItem<T extends object>(
+  options: WeekPickerWidgetOptions = {},
+): WidgetRenderReturn<T> {
+  return pickerRenderer(WeekPicker, options);
 }

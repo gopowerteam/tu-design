@@ -26,6 +26,8 @@ const props = defineProps({
   },
   /** 文案与周起点跟随 locale（仅 standalone；embedded 随宿主 Picker） */
   locale: { type: String, default: "zh-CN" },
+  /** 周选择形态：日视图下整周高亮（与 TWeekPicker 配套） */
+  week: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -78,11 +80,22 @@ function handleValueUpdate(next: DateValue[]) {
       @update:model-value="handleValueUpdate"
     >
       <ArkDatePicker.Content>
-        <CalendarBody :mode="props.mode" :num-of-months="props.numOfMonths" />
+        <CalendarBody
+          :mode="props.mode"
+          :num-of-months="props.numOfMonths"
+          :week="props.week"
+          :locale="props.locale"
+        />
       </ArkDatePicker.Content>
     </ArkDatePicker.Root>
   </div>
 
   <!-- embedded 内嵌形态：宿主 Picker 的 Root 供能，纯卡片内核 -->
-  <CalendarBody v-else :mode="props.mode" :num-of-months="props.numOfMonths" />
+  <CalendarBody
+    v-else
+    :mode="props.mode"
+    :num-of-months="props.numOfMonths"
+    :week="props.week"
+    :locale="props.locale"
+  />
 </template>

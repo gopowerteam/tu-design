@@ -9,6 +9,7 @@ import {
   renderPasswordItem,
   renderTextareaItem,
   renderYearPickerItem,
+  renderWeekPickerItem,
 } from "./model-value";
 import { renderInputItem } from "./input";
 import { renderSelectItem } from "./select";
@@ -38,6 +39,7 @@ export function widgetRenders<T extends object>(): WidgetRenders<T> {
     monthPicker: renderMonthPickerItem<T>,
     yearPicker: renderYearPickerItem<T>,
     dateRangePicker: renderDateRangePickerItem<T>,
+    weekPicker: renderWeekPickerItem<T>,
     render: (fn) => fn,
   };
 }

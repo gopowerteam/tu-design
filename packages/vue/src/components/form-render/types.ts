@@ -6,6 +6,7 @@ import type { DatePicker } from "@/components/date-picker";
 import type { DateRangePicker } from "@/components/date-range-picker";
 import type { Input } from "@/components/input";
 import type { MonthPicker } from "@/components/month-picker";
+import type { WeekPicker } from "@/components/week-picker";
 import type { NumberInput } from "@/components/number-input";
 import type { PasswordInput } from "@/components/password-input";
 import type { RadioGroup } from "@/components/radio-group";
@@ -117,6 +118,8 @@ export type YearPickerWidgetOptions = SfcOptions<typeof YearPicker>;
 
 export type DateRangeWidgetOptions = SfcOptions<typeof DateRangePicker>;
 
+export type WeekPickerWidgetOptions = SfcOptions<typeof WeekPicker>;
+
 /**
  * widget 注册表类型契约：实现对象在 widgets/index.ts。
  * 类型集中于此避免循环依赖（type-only import 无运行时环）。
@@ -138,6 +141,7 @@ export interface WidgetRenders<T extends object> {
   monthPicker(o?: MonthPickerWidgetOptions): WidgetRenderReturn<T>;
   yearPicker(o?: YearPickerWidgetOptions): WidgetRenderReturn<T>;
   dateRangePicker(o?: DateRangeWidgetOptions): WidgetRenderReturn<T>;
+  weekPicker(o?: WeekPickerWidgetOptions): WidgetRenderReturn<T>;
   /** 逃逸口：完全自定义渲染 */
   render(fn: (ctx: WidgetContext<T>) => VNode): WidgetRenderReturn<T>;
 }

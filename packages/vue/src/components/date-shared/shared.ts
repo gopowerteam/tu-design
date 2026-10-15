@@ -73,6 +73,47 @@ export function formatIsoYear(date: DateValue): string {
   return String(date.year);
 }
 
+// —— 周粒度换算（WeekPicker 复用）：不引入新依赖，纯日历计算 ——
+
+/**
+ * locale 周起点（1=周一 … 7=周日，ISO 语义）。
+ * 取 Intl.Locale.weekInfo.firstDay（Node ≥ 22 / 现代浏览器可用），异常兜底周一。
+ */
+function localeFirstDay(locale: string): number {
+  try {
+    const info = (new Intl.Locale(locale) as Intl.Locale & { weekInfo?: { firstDay?: number } })
+      .weekInfo;
+    if (info?.firstDay && info.firstDay >= 1 && info.firstDay <= 7) return info.firstDay;
+  } catch {
+    // 非法 locale 落兜底
+  }
+  return 1;
+}
+
+/** DateValue → 周起点（跟随 locale；zh-CN 周一起始、en-US 周日起始） */
+export function weekStartOf(date: DateValue, locale = "zh-CN"): DateValue {
+  // 纯公历星期计算：ISO 日期 → UTC Date 的 getUTCDay（0=周日…6=周六），无时区歧义
+  const utcDay = new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay();
+  const firstDayIndex = localeFirstDay(locale) % 7; // 归一为 0=周日…6=周六
+  const diff = (utcDay - firstDayIndex + 7) % 7;
+  return diff === 0 ? date : date.subtract({ days: diff });
+}
+
+/** DateValue → 周终点（= 周起点 + 6 天） */
+export function weekEndOf(date: DateValue, locale = "zh-CN"): DateValue {
+  return weekStartOf(date, locale).add({ days: 6 });
+}
+
+/** 两日期是否同属一周（跟随 locale） */
+export function isSameWeek(a: DateValue, b: DateValue, locale = "zh-CN"): boolean {
+  return weekStartOf(a, locale).compare(weekStartOf(b, locale)) === 0;
+}
+
+/** DateValue → "yyyy-MM-dd ~ yyyy-MM-dd"（所在周区间，输入框回显用） */
+export function formatIsoWeek(date: DateValue, locale = "zh-CN"): string {
+  return `${formatIsoDate(weekStartOf(date, locale))} ~ ${formatIsoDate(weekEndOf(date, locale))}`;
+}
+
 /** 区间解析：逐侧 parseIsoDate + 顺序归一（start ≤ end）；null / 任一侧非法返回 undefined */
 export function parseIsoRange(
   raw: [string, string] | null | undefined,
