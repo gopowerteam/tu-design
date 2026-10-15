@@ -7,7 +7,7 @@ import Badge from "../badge/Badge.vue";
 import Button from "../button/Button.vue";
 
 /** 单元格渲染器：与 TableColumnOptions.render 同签名（column 用于读取字段值） */
-type ColumnRender<T extends DataRecord> = (
+export type ColumnRender<T extends DataRecord> = (
   record: T,
   index: number,
   column: TableColumnOptions<T>,
@@ -41,6 +41,8 @@ export interface TableActionButton<T extends DataRecord> {
 }
 
 export interface ColumnRenders<T extends DataRecord> {
+  /** 逃逸口：自定义渲染器与内置同一范式（对齐 x-render renderRenderColumn） */
+  render: (fn: ColumnRender<T>) => ColumnRender<T>;
   dict: (mapping: DictColumnMapping, options?: DictColumnOptions) => ColumnRender<T>;
   date: (pattern?: DateColumnPattern) => ColumnRender<T>;
   currency: (currency?: string, locale?: string) => ColumnRender<T>;
@@ -72,6 +74,8 @@ function formatDate(input: unknown, pattern: string): VNodeChild {
  */
 export function columnRenders<T extends DataRecord>(): ColumnRenders<T> {
   return {
+    render: (fn) => fn,
+
     dict(mapping, options) {
       return (record, _index, column) => {
         const raw = (record as Record<string, unknown>)[column.key];

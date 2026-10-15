@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { columnRenders, defineTable } from "@tu-design/vue";
+import { defineTable } from "@tu-design/vue";
 
 interface Invoice {
   id: number;
@@ -40,32 +40,32 @@ const INVOICES: Invoice[] = [
 
 const picked = ref<Invoice>();
 
-const r = columnRenders<Invoice>();
-
 const table = defineTable<Invoice>({
   data: INVOICES,
   pageSize: 10,
   columns: [
-    { key: "seq", title: "#", width: 48, render: r.serial() },
+    { key: "seq", title: "#", width: 48, render: (r) => r.serial() },
     { key: "customer", title: "客户" },
     {
       key: "status",
       title: "状态",
-      render: r.dict({
-        paid: { label: "已付款", variant: "default" },
-        pending: { label: "待付款", variant: "secondary" },
-        overdue: { label: "已逾期", variant: "destructive" },
-      }),
+      render: (r) =>
+        r.dict({
+          paid: { label: "已付款", variant: "default" },
+          pending: { label: "待付款", variant: "secondary" },
+          overdue: { label: "已逾期", variant: "destructive" },
+        }),
     },
-    { key: "createdAt", title: "开票日期", render: r.date("yyyy/MM/dd HH:mm") },
-    { key: "amount", title: "金额", align: "right", render: r.currency("CNY") },
+    { key: "createdAt", title: "开票日期", render: (r) => r.date("yyyy/MM/dd HH:mm") },
+    { key: "amount", title: "金额", align: "right", render: (r) => r.currency("CNY") },
     {
       key: "ops",
       title: "操作",
-      render: r.button([
-        { text: "查看", onClick: (row) => (picked.value = row) },
-        { text: (row) => (row.locked ? "已锁定" : "作废"), disabled: (row) => row.locked },
-      ]),
+      render: (r) =>
+        r.button([
+          { text: "查看", onClick: (row) => (picked.value = row) },
+          { text: (row) => (row.locked ? "已锁定" : "作废"), disabled: (row) => row.locked },
+        ]),
     },
   ],
 });

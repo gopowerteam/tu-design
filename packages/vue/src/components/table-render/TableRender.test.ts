@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
+import type { ColumnRenders } from "./column-renders";
 import type { TableColumnOptions, TableRenderDefinition } from "./types";
 
 interface User {
@@ -79,7 +80,8 @@ describe("TableRender 基础渲染", () => {
           key: "age",
           title: "年龄",
           formatter: (r: User) => `${r.age}岁`,
-          render: (r: User) => h("button", { onClick: () => onEdit(r) }, "编辑"),
+          render: (rr: ColumnRenders<User>) =>
+            rr.render((record: User) => h("button", { onClick: () => onEdit(record) }, "编辑")),
         },
       ],
     });

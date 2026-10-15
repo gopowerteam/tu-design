@@ -190,7 +190,7 @@ const table = defineTable<User>({
 
 ## 内置列渲染器
 
-`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`columnRenders<T>()` 返回 5 个预设单元格渲染器，返回值直接填入 `column.render`。高频样板——状态映射、日期/货币格式化、序号列、操作列——不再手写 `h(...)`。
+`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`column.render` 声明为 `(r: ColumnRenders<T>) => ColumnRender<T>` 工厂形态——**`r` 由 `defineTable<T>` 的列类型自动推断，无需手写泛型**。5 个预设渲染器覆盖高频样板：状态映射、日期/货币格式化、序号列、操作列。
 
 五种渲染器同台演示（含 `disabled` 逐行禁用、函数化 `text`）：
 
@@ -199,27 +199,25 @@ const table = defineTable<User>({
 ```ts
 import { columnRenders, defineTable } from "@tu-design/vue";
 
-const r = columnRenders<Order>();
-
 const table = defineTable<Order>({
   columns: [
     // 字典映射：未命中的值原样显示；条目带 variant 或 options.badge 时渲染 Badge
     {
       key: "status",
       title: "状态",
-      render: r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } }),
+      render: (r) => r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } }),
     },
     // 日期：迷你令牌 yyyy MM dd HH mm ss（非法输入原样显示，不抛错）
-    { key: "createdAt", title: "日期", render: r.date("yyyy-MM-dd HH:mm") },
+    { key: "createdAt", title: "日期", render: (r) => r.date("yyyy-MM-dd HH:mm") },
     // 货币：Intl.NumberFormat，默认 CNY / zh-CN
-    { key: "amount", title: "金额", render: r.currency("CNY") },
+    { key: "amount", title: "金额", render: (r) => r.currency("CNY") },
     // 序号：页内序号，默认从 1 起
-    { key: "seq", title: "#", render: r.serial() },
+    { key: "seq", title: "#", render: (r) => r.serial() },
     // 操作列：字符串简写或对象；onClick/disabled/text 均收到 (record, index)
     {
       key: "ops",
       title: "操作",
-      render: r.button([{ text: "编辑", onClick: (row) => edit(row) }, "删除"]),
+      render: (r) => r.button([{ text: "编辑", onClick: (row) => edit(row) }, "删除"]),
     },
   ],
 });
@@ -380,7 +378,8 @@ interface Task {
 
 // 自定义工厂与内置渲染器同一签名：(record, index, column) => VNodeChild
 function progressColumn(warnBelow = 30): TableColumnOptions<Task>["render"] {
-  return (record) => (
+  // r.render 是自定义渲染器逃逸口（对齐 x-render renderRenderColumn）
+  return (r) => r.render((record) => (
     <div class="flex items-center gap-2">
       <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
         <div
@@ -391,9 +390,10 @@ function progressColumn(warnBelow = 30): TableColumnOptions<Task>["render"] {
           style={{ width: `${record.percent}%` }}
         />
       </div>
-      <span class="text-xs tabular-nums">{record.percent}%</span>
-    </div>
-  );
+        <span class="text-xs tabular-nums">{record.percent}%</span>
+      </div>
+    );
+  });
 }
 
 // 逐列混用：自定义与内置渲染器并存
@@ -401,7 +401,7 @@ const table = defineTable<Task>({
   columns: [
     { key: "name", title: "任务" },
     { key: "percent", title: "进度", render: progressColumn() }, // 自定义
-    { key: "status", title: "状态", render: r.dict({/* ... */}) }, // 内置
+    { key: "status", title: "状态", render: (r) => r.dict({/* ... */}) }, // 内置
   ],
 });
 ```

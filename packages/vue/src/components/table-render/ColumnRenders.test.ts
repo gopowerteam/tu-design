@@ -162,18 +162,17 @@ describe("columnRenders", () => {
 
   // ---------- 集成 ----------
   it("集成：经 defineTable 列配置在 TableRender 中真实渲染", async () => {
-    const r = columnRenders<Order>();
     const box: { def?: ReturnType<typeof defineTable<Order>> } = {};
     const Host = defineComponent({
       setup() {
         box.def = defineTable<Order>({
           data: [ORDER],
           columns: [
-            { key: "status", title: "状态", render: r.dict({ paid: "已付款" }) },
-            { key: "createdAt", title: "日期", render: r.date("yyyy/MM/dd") },
-            { key: "amount", title: "金额", render: r.currency("CNY") },
-            { key: "x", title: "#", render: r.serial() },
-            { key: "ops", title: "操作", render: r.button([{ text: "编辑" }, "删除"]) },
+            { key: "status", title: "状态", render: (r) => r.dict({ paid: "已付款" }) },
+            { key: "createdAt", title: "日期", render: (r) => r.date("yyyy/MM/dd") },
+            { key: "amount", title: "金额", render: (r) => r.currency("CNY") },
+            { key: "x", title: "#", render: (r) => r.serial() },
+            { key: "ops", title: "操作", render: (r) => r.button([{ text: "编辑" }, "删除"]) },
           ],
         });
         return () => h(TableRender, { definition: box.def, rowKey: "id" });

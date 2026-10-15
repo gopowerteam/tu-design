@@ -1,5 +1,6 @@
+import type { ColumnRender, ColumnRenders } from "./column-renders";
 import type { Table as TanstackTable } from "@tanstack/vue-table";
-import type { MaybeRefOrGetter, VNodeChild } from "vue";
+import type { MaybeRefOrGetter } from "vue";
 
 /** 任意数据行（表格是弱类型数据容器，行结构由调用方的 T 决定） */
 export interface DataRecord {
@@ -19,7 +20,7 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   align?: "left" | "center" | "right";
   width?: number | string;
   /** 自定义单元格渲染，取值链 render > formatter > record[key]（R17） */
-  render?: (record: T, index: number, column: TableColumnOptions<T>) => VNodeChild;
+  render?: (r: ColumnRenders<T>) => ColumnRender<T>;
   /** 纯数据格式化；render 存在时被忽略 */
   formatter?: (record: T) => string | number | Date | undefined;
   /** 超宽截断 + 原生 title 提示（R15） */

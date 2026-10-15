@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import { columnRenders, defineTable } from "@tu-design/vue";
+import { defineTable } from "@tu-design/vue";
 
 interface User {
   id: number;
@@ -20,8 +20,6 @@ const USERS: User[] = Array.from({ length: 86 }, (_, i) => ({
 
 const picked = ref<User>();
 
-const r = columnRenders<User>();
-
 const table = defineTable<User>({
   data: USERS,
   pageSize: 10,
@@ -32,17 +30,18 @@ const table = defineTable<User>({
     {
       key: "status",
       title: "状态",
-      render: r.dict({
-        active: { label: "启用", variant: "default" },
-        pending: { label: "待审", variant: "secondary" },
-        banned: { label: "禁用", variant: "destructive" },
-      }),
+      render: (r) =>
+        r.dict({
+          active: { label: "启用", variant: "default" },
+          pending: { label: "待审", variant: "secondary" },
+          banned: { label: "禁用", variant: "destructive" },
+        }),
     },
     { key: "createdAt", title: "创建时间", ellipsis: true },
     {
       key: "ops",
       title: "操作",
-      render: r.button([{ text: (row) => `编辑 ${row.name}` }]),
+      render: (r) => r.button([{ text: (row) => `编辑 ${row.name}` }]),
     },
   ],
 });

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PropType, VNodeChild } from "vue";
+import { columnRenders } from "./column-renders";
 import { computed, isVNode } from "vue";
 import { Skeleton } from "@/components/skeleton";
 import TablePagination from "./TablePagination.vue";
@@ -44,6 +45,9 @@ defineSlots<{ empty?: () => VNodeChild }>();
 /** 加载态骨架行数（R14） */
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
 
+/** 内置渲染器单例：render 工厂按列求值时复用（工厂本身轻量，仅为整洁） */
+const RENDERS = columnRenders();
+
 // 聚合式直接复用 defineTable 建好的内核；拆分式在本组件 setup 内建内核
 // （TanStack useVueTable 只能在 setup 调用，故不能放进条件分支深处）
 if (props.definition && props.columns && import.meta.env.DEV) {
@@ -73,7 +77,7 @@ const body = computed(() =>
     index: row.index,
     record: row.original,
     cells: columns.value.map((column): VNodeChild => {
-      if (column.render) return column.render(row.original, row.index, column);
+      if (column.render) return column.render(RENDERS)(row.original, row.index, column);
       if (column.formatter) return column.formatter(row.original) as VNodeChild;
       return String(row.original[column.key] ?? "");
     }),
