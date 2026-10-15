@@ -368,27 +368,35 @@ r.button([
 
 内置渲染器覆盖不到的形态（比如带确认弹窗的操作、进度条、头像组），直接写同签名的函数即可，内置与自定义可以逐列混用：
 
-```ts
-import { h } from "vue";
+```tsx
+// progress-column.tsx —— JSX 写法（Vue JSX 用 class 而非 className）
+// 前置：项目需启用 JSX 转换，Vite 下为 @vitejs/plugin-vue-jsx
+import type { TableColumnOptions } from "@tu-design/vue";
 
-// 自定义工厂与内置渲染器同一形态：(record, index, column) => VNodeChild
-function progressColumn<T extends { percent: number }>(warnBelow = 30) {
-  return (record: T) =>
-    h("div", { class: "flex items-center gap-2" }, [
-      h("div", { class: "h-1.5 w-24 overflow-hidden rounded-full bg-muted" }, [
-        h("div", {
-          class: [
-            "h-full rounded-full",
-            record.percent < warnBelow ? "bg-destructive" : "bg-primary",
-          ],
-          style: { width: `${record.percent}%` },
-        }),
-      ]),
-      h("span", { class: "text-xs tabular-nums" }, `${record.percent}%`),
-    ]);
+interface Task {
+  name: string;
+  percent: number;
 }
 
-// 逐列混用
+// 自定义工厂与内置渲染器同一签名：(record, index, column) => VNodeChild
+function progressColumn(warnBelow = 30): TableColumnOptions<Task>["render"] {
+  return (record) => (
+    <div class="flex items-center gap-2">
+      <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
+        <div
+          class={[
+            "h-full rounded-full",
+            record.percent < warnBelow ? "bg-destructive" : "bg-primary",
+          ]}
+          style={{ width: `${record.percent}%` }}
+        />
+      </div>
+      <span class="text-xs tabular-nums">{record.percent}%</span>
+    </div>
+  );
+}
+
+// 逐列混用：自定义与内置渲染器并存
 const table = defineTable<Task>({
   columns: [
     { key: "name", title: "任务" },
