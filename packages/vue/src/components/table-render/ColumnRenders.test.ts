@@ -34,6 +34,13 @@ describe("columnRenders", () => {
       title: "状态",
     });
     expect(unknown).toBe("closed");
+
+    // null/undefined → 空字符串（文档承诺的兜底语义）
+    const blank = r.dict({ paid: "已付款" })({ ...ORDER, status: null as unknown as string }, 0, {
+      key: "status",
+      title: "状态",
+    });
+    expect(blank).toBe("");
   });
 
   it("dict：条目带 variant 渲染 Badge，options.badge 整列生效", () => {

@@ -146,17 +146,17 @@ const table = defineTable<User>({
 
 ### `TableRender` props
 
-| prop                        | 类型                    | 默认       | 说明                                |
-| --------------------------- | ----------------------- | ---------- | ----------------------------------- |
-| `definition`                | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）      |
-| `rowKey`                    | `string`                | **必填**   | 行主键字段名                        |
-| `columns`                   | `TableColumnOptions[]`  | —          | 拆分式列配置                        |
-| `onLoad`                    | 见上                    | —          | 拆分式数据源                        |
-| `data`                      | `T[]`                   | —          | 拆分式静态数据源                    |
-| `autoLoad`                  | `boolean`               | `true`     | 同 config                           |
-| `pageSize` / `pageSizeOpts` | `number` / `number[]`   | 同 config  | 同 config                           |
-| `loading`                   | `boolean`               | —          | 外部受控加载态，与内部 loading 取或 |
-| `emptyText`                 | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）       |
+| prop                        | 类型                    | 默认       | 说明                                                          |
+| --------------------------- | ----------------------- | ---------- | ------------------------------------------------------------- |
+| `definition`                | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                |
+| `rowKey`                    | `string`                | **必填**   | 行主键字段名                                                  |
+| `columns`                   | `TableColumnOptions[]`  | —          | 拆分式列配置                                                  |
+| `onLoad`                    | 见上                    | —          | 拆分式数据源                                                  |
+| `data`                      | `T[]`                   | —          | 拆分式静态数据源                                              |
+| `autoLoad`                  | `boolean`               | `true`     | 同 config                                                     |
+| `pageSize` / `pageSizeOpts` | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize` |
+| `loading`                   | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                           |
+| `emptyText`                 | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                 |
 
 事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）。
 插槽：`empty`（空态）、以及列 `render` 返回的任意 VNode（完全自定义逃逸口）。
