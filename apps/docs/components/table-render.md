@@ -192,6 +192,10 @@ const table = defineTable<User>({
 
 `defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`columnRenders<T>()` 返回 5 个预设单元格渲染器，返回值直接填入 `column.render`。高频样板——状态映射、日期/货币格式化、序号列、操作列——不再手写 `h(...)`。
 
+五种渲染器同台演示（含 `disabled` 逐行禁用、函数化 `text`）：
+
+<DemoPreview file="table-render/ColumnRendersDemo.vue" />
+
 ```ts
 import { columnRenders, defineTable } from "@tu-design/vue";
 
@@ -246,6 +250,15 @@ const table = defineTable<Order>({
 - 每行变体不同的状态列用对象条目；全部同款徽标时用 `options.badge` 省去逐条写 `variant`
 - 布尔键不受支持（`Record` 键约束），请以 `0`/`1` 或字符串承载
 
+输入 → 输出对照（以 `r.dict({ paid: "已付款" }, { badge: true })` 为例）：
+
+| 字段原始值 | mapping 条目                              | 渲染结果                    |
+| ---------- | ----------------------------------------- | --------------------------- |
+| `"paid"`   | `"已付款"`                                | Badge「已付款」（默认变体） |
+| `"paid"`   | `{ label: "已付款", variant: "outline" }` | Badge「已付款」（outline）  |
+| `"closed"` | 未配置                                    | 原始文本 `closed`           |
+| `null`     | 任意                                      | 空字符串                    |
+
 ```ts
 r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } });
 ```
@@ -273,6 +286,16 @@ r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } 
 - **非法输入（无法解析的字符串 / NaN 时间戳）原样显示，不抛错** —— 脏数据不会炸表格
 - 内置迷你格式化实现，不引入 date-fns；需要时区、相对时间等复杂格式请用自定义 `render`
 
+输入 → 输出对照（`pattern = "yyyy-MM-dd"`）：
+
+| 字段原始值                    | 渲染结果        |
+| ----------------------------- | --------------- |
+| `new Date(2026, 0, 15)`       | `2026-01-15`    |
+| `"2026-01-15T00:00:00"`       | `2026-01-15`    |
+| `"2026-01-15"`                | `2026-01-15`    |
+| `1768435200000`（毫秒时间戳） | `2026-01-15`    |
+| `"明天"`（无法解析）          | 原样显示 `明天` |
+
 ```ts
 r.date(); // "2026-01-15"
 r.date("yyyy/MM/dd HH:mm"); // "2026/01/15 09:05"
@@ -290,6 +313,16 @@ r.date("yyyy/MM/dd HH:mm"); // "2026/01/15 09:05"
 - 等价 `new Intl.NumberFormat(locale, { style: "currency", currency }).format(value)`，输出如 `¥1,234.50`、`$1,234.50`
 - 输入接受数字或数字字符串（`"1234.5"` 会被 `Number()` 转换）；**NaN / 非数字原样显示**
 - 依赖运行时的 `Intl.NumberFormat`（现代浏览器均支持）
+
+输入 → 输出对照（默认 CNY / zh-CN）：
+
+| 字段原始值   | 渲染结果    |
+| ------------ | ----------- |
+| `1234.5`     | `¥1,234.50` |
+| `"1234.5"`   | `¥1,234.50` |
+| `0`          | `¥0.00`     |
+| `Number.NaN` | 原样显示    |
+| `"一万"`     | 原样显示    |
 
 ```ts
 r.currency(); // ¥1,234.50
@@ -330,6 +363,51 @@ r.button([
   "删除", // 简写，等价 { text: "删除" }
 ]);
 ```
+
+### 自定义渲染器
+
+内置渲染器覆盖不到的形态（比如带确认弹窗的操作、进度条、头像组），直接写同签名的函数即可，内置与自定义可以逐列混用：
+
+```ts
+import { h } from "vue";
+
+// 自定义工厂与内置渲染器同一形态：(record, index, column) => VNodeChild
+function progressColumn<T extends { percent: number }>(warnBelow = 30) {
+  return (record: T) =>
+    h("div", { class: "flex items-center gap-2" }, [
+      h("div", { class: "h-1.5 w-24 overflow-hidden rounded-full bg-muted" }, [
+        h("div", {
+          class: [
+            "h-full rounded-full",
+            record.percent < warnBelow ? "bg-destructive" : "bg-primary",
+          ],
+          style: { width: `${record.percent}%` },
+        }),
+      ]),
+      h("span", { class: "text-xs tabular-nums" }, `${record.percent}%`),
+    ]);
+}
+
+// 逐列混用
+const table = defineTable<Task>({
+  columns: [
+    { key: "name", title: "任务" },
+    { key: "percent", title: "进度", render: progressColumn() }, // 自定义
+    { key: "status", title: "状态", render: r.dict({/* ... */}) }, // 内置
+  ],
+});
+```
+
+选择顺序建议：**能 `formatter` 就不 `render`**（纯文本格式化走取值链更轻）；格式化不够了再上内置渲染器；内置也不够才手写 `render`。三者优先级：`render` > `formatter` > `record[key]`。
+
+### 常见问题
+
+- **为什么我的布尔枚举映射不生效？** —— `Record` 的键约束不支持 `boolean`，把字段规整为 `0`/`1` 或字符串（`"true"`/`"false"`）再配 `dict`。
+- **点了操作列按钮，行点击也触发了？** —— 行点击绑在 `<tr>` 上，按钮点击会冒泡；操作列与 `row-click` 并存时需在行点击处理器中区分来源（事件目标是否在操作列单元格内）。
+- **`onClick` 能拿到事件对象吗？** —— 不能，回调签名是 `(record, index)`。这是有意收敛：需要事件的特殊场景请用自定义 `render` 完全接管。
+- **`date` 的时区行为是什么？** —— 走浏览器本地时区解析与显示；服务端返回 UTC 字符串且需要固定时区展示时，请先在自己的数据层转换为目标时区的 `Date`。
+- **`serial` 翻页后重头计数正常吗？** —— 正常，这是页内序号的设计语义；跨页连续序号需要总行数偏移，属二期。
+- **金额带千分位但想要 `1,234.50`（无货币符号）？** —— `currency` 固定走货币格式；纯千分位请自定义 `render` 用 `Intl.NumberFormat({ style: "decimal" })`。
 
 ## 注意事项
 
