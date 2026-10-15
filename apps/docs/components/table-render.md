@@ -4,7 +4,9 @@
 
 两种数据模式由 `onLoad` 决定：**静态模式**（传 `data`）本地分页与排序；**服务端模式**（传 `onLoad`）把分页/排序交还数据源，每次状态变化都以新参数回调取数。数据协议与 [x-render table-render](https://github.com/alibaba/x-render) 同构，迁移成本低。
 
-与手写 `<table>` 的关系：列多、要排序分页、还要接搜索条件的列表页，用 TableRender 可省去每张表约 60 行样板；结构特殊或单元格要重度定制的页面仍建议手写。
+| 适用                                            | 不适用                         |
+| ----------------------------------------------- | ------------------------------ |
+| 列多、要排序分页的列表页（省约 60 行/表的样板） | 结构特殊、单元格重度定制的页面 |
 
 ## 演示
 
@@ -112,6 +114,8 @@ const table = defineTable<User>({
 
 ## API
 
+按「入口函数 → 组件 → 数据类型」三组组织；单元格预设见下一节 [内置列渲染器](#内置列渲染器)。
+
 ### `defineTable<T>(config)` / `useTableRender(options)`
 
 `defineTable` 是 `useTableRender` 的聚合别名（后者供「已有内核、动态切换数据源」的场景）。两者均须在组件 `setup` 中调用。
@@ -138,6 +142,8 @@ const table = defineTable<User>({
 | `toggleSort(key)`                    | 排序三态切换：无 → asc → desc → 取消                             |
 | `setPageIndex(n)` / `setPageSize(n)` | 1-based 页码；改每页条数会归位到第 1 页                          |
 
+辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
+
 ### `TableRender` props
 
 | prop                        | 类型                    | 默认       | 说明                                |
@@ -155,7 +161,9 @@ const table = defineTable<User>({
 事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）。
 插槽：`empty`（空态）、以及列 `render` 返回的任意 VNode（完全自定义逃逸口）。
 
-### `TableColumnOptions<T>`
+### 类型速查
+
+#### `TableColumnOptions<T>`
 
 | 字段           | 类型                                               | 说明                                                                     |
 | -------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
@@ -171,7 +179,7 @@ const table = defineTable<User>({
 
 取值优先级：`render` > `formatter` > `record[key]`（`null`/`undefined` 显示为空）。
 
-### `TableLoadParams<T>`
+#### `TableLoadParams<T>`
 
 | 字段     | 类型                                  | 说明                                                    |
 | -------- | ------------------------------------- | ------------------------------------------------------- |
@@ -180,11 +188,9 @@ const table = defineTable<User>({
 | `form`   | `Record<string, unknown>`             | 搜索表单值，**v1 恒为 `{}`**（二期接 FormRender）       |
 | `update` | `(data: T[], total?: number) => void` | 回写数据；`total` 缺省时保留旧值                        |
 
-`defineColumns<T>(columns)` 是可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
+## 内置列渲染器
 
-### 内置列渲染器 `columnRenders<T>()`（对标 x-render table-columns）
-
-`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`columnRenders<T>()` 返回 5 个预设单元格渲染器，返回值直接填入 `column.render`（即 `(record, index, column) => VNodeChild`）。高频样板——状态映射、日期/货币格式化、序号列、操作列——不再手写 `h(...)`。
+`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`columnRenders<T>()` 返回 5 个预设单元格渲染器，返回值直接填入 `column.render`。高频样板——状态映射、日期/货币格式化、序号列、操作列——不再手写 `h(...)`。
 
 ```ts
 import { columnRenders, defineTable } from "@tu-design/vue";
@@ -215,17 +221,17 @@ const table = defineTable<Order>({
 });
 ```
 
-| 渲染器     | 签名                                     | 说明                                                                                                                       |
-| ---------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `dict`     | `(mapping, { badge? }?)`                 | 值→label 映射；条目 `string` 或 `{ label, variant? }`；`badge: true` 整列 Badge（条目级 `variant` 优先）；未命中显示原始值 |
-| `date`     | `(pattern? = "yyyy-MM-dd")`              | 接受 `Date`/ISO 字符串/时间戳；非法输入原样显示                                                                            |
-| `currency` | `(currency? = "CNY", locale? = "zh-CN")` | `Intl.NumberFormat` 货币格式；NaN 原样显示                                                                                 |
-| `serial`   | `(base? = 1)`                            | 页内序号 `index + base`（跨页连续序号属二期）                                                                              |
-| `button`   | `(items)`                                | `Array<string \| { text, onClick?, variant?, disabled? }>`，渲染为 `variant="link"` 按钮行                                 |
+| 渲染器                                                 | 签名                                     | 一句话说明                                       |
+| ------------------------------------------------------ | ---------------------------------------- | ------------------------------------------------ |
+| [`dict`](#r-dict-mapping-options-—-字典映射)           | `(mapping, { badge? }?)`                 | 值→label 映射，可带 Badge 变体；未命中显示原始值 |
+| [`date`](#r-date-pattern-—-日期格式化)                 | `(pattern? = "yyyy-MM-dd")`              | 令牌模板格式化；非法输入原样显示                 |
+| [`currency`](#r-currency-currency-locale-—-货币格式化) | `(currency? = "CNY", locale? = "zh-CN")` | `Intl.NumberFormat` 货币格式；NaN 原样显示       |
+| [`serial`](#r-serial-base-—-序号列)                    | `(base? = 1)`                            | 页内序号 `index + base`                          |
+| [`button`](#r-button-items-—-操作列)                   | `(items)`                                | 操作列按钮行，支持字符串简写                     |
 
-所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。以下逐个给出参数与行为细则。
+约定：所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。与 x-render 的差异：无 `TableColumnRenders` 集合与 `$type` 标记机制（我们无列模式/视图模式切换）；`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 二期再做。
 
-#### `r.dict(mapping, options?)` — 字典映射
+### `r.dict(mapping, options?)` — 字典映射
 
 | 参数 / 字段     | 类型                                                      | 默认 | 说明                                                                       |
 | --------------- | --------------------------------------------------------- | ---- | -------------------------------------------------------------------------- |
@@ -244,7 +250,7 @@ const table = defineTable<Order>({
 r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } });
 ```
 
-#### `r.date(pattern?)` — 日期格式化
+### `r.date(pattern?)` — 日期格式化
 
 | 参数      | 类型     | 默认         | 说明       |
 | --------- | -------- | ------------ | ---------- |
@@ -272,7 +278,7 @@ r.date(); // "2026-01-15"
 r.date("yyyy/MM/dd HH:mm"); // "2026/01/15 09:05"
 ```
 
-#### `r.currency(currency?, locale?)` — 货币格式化
+### `r.currency(currency?, locale?)` — 货币格式化
 
 | 参数       | 类型     | 默认    | 说明                      |
 | ---------- | -------- | ------- | ------------------------- |
@@ -290,7 +296,7 @@ r.currency(); // ¥1,234.50
 r.currency("USD", "en-US"); // $1,234.50
 ```
 
-#### `r.serial(base?)` — 序号列
+### `r.serial(base?)` — 序号列
 
 | 参数   | 类型     | 默认 | 说明     |
 | ------ | -------- | ---- | -------- |
@@ -301,7 +307,7 @@ r.currency("USD", "en-US"); // $1,234.50
 - 显示 `index + base`；**翻页后从 `base` 重新计数（页内序号）**——跨页连续序号需要总行数偏移，属二期
 - 不读取字段值，`key` 可为任意占位（如 `"seq"`）
 
-#### `r.button(items)` — 操作列
+### `r.button(items)` — 操作列
 
 | 字段        | 类型                                    | 默认   | 说明                                         |
 | ----------- | --------------------------------------- | ------ | -------------------------------------------- |
@@ -325,8 +331,6 @@ r.button([
 ]);
 ```
 
-与 x-render 的差异：无 `TableColumnRenders` 集合与 `$type` 标记机制（我们无列模式/视图模式切换）；`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 二期再做。
-
 ## 注意事项
 
 - **须在 `setup` 中调用 `defineTable`**：TanStack `useVueTable` 依赖组件挂载。拆分式 props 则无此限制（内核在 TableRender 内部创建）。
@@ -336,4 +340,4 @@ r.button([
 - **排序改的是页码**：服务端模式下切换排序会自动回到第 1 页；`setPageSize` 同样归位第 1 页。
 - **`rowKey` 字段缺失**时按行索引兜底，并在 DEV 下警告一次（仅一次，不会刷屏）。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable` 等都会在控制台提示并降级运行；生产构建静默。
-- 二期规划：搜索表单联动（`form` 接 FormRender）、行选择、列固定与显隐、列宽拖拽、导出、编辑态。
+- 二期规划：搜索表单联动（`form` 接 FormRender）、行选择、列固定与显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
