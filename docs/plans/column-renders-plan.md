@@ -1,7 +1,10 @@
 # TableRender 内置列渲染器（columnRenders）设计
 
 > 对标 x-render `table-render/src/table-columns` 的 12 个内置列渲染器；经用户确认：
-> API 采用 `columnRenders<T>()` 工厂形态（与 FormRender 的 `r.input()` 范式共词根），
+> [变更记录 2026-10-15] 实现演进为 `(r) => r.xxx()` 工厂形态：`column.render` 类型为
+> `(r: ColumnRenders<T>) => ColumnRender<T>`，`r` 由 `defineTable<T>` 列类型自动推断，
+> 无需手动 `columnRenders<Order>()`（原文示例保留为设计时快照，旧写法已废弃）。
+> 原始决策：> API 采用 `columnRenders<T>()` 工厂形态（与 FormRender 的 `r.input()` 范式共词根），
 > v1 范围为核心 5 个：**dict / date / currency / serial / button**。
 
 ## 一、动机
