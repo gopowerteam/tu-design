@@ -36,6 +36,8 @@ npx tu-design add table-render
 
 `defineTable` 须在组件 `setup` 中调用（TanStack `useVueTable` 依赖组件挂载），返回值直接传给 `:definition`：
 
+<DemoPreview file="table-render/StaticTableDemo.vue" />
+
 ```vue
 <script setup lang="ts">
 import { defineTable } from "@tu-design/vue";
@@ -73,6 +75,8 @@ const table = defineTable<User>({
 ### 服务端模式
 
 传 `onLoad` 即切换为服务端模式：引擎不做本地分页与排序，翻页/排序/改每页条数都以新参数回调 `onLoad`。
+
+<DemoPreview file="table-render/ServerTableDemo.vue" />
 
 ```vue
 <script setup lang="ts">
@@ -115,6 +119,8 @@ const table = defineTable<User>({
 ```vue
 <TableRender row-key="id" :columns="columns" :data="users" />
 ```
+
+<DemoPreview file="table-render/SplitUsageDemo.vue" />
 
 ## API
 
@@ -203,6 +209,8 @@ const table = defineTable<User>({
 
 开启 `rowSelection` 即注入首列选择列。**单选/多选同一入口**：`"radio"` / `"checkbox"` 字符串简写，或对象详写。批量操作示例见顶部演示 [RowSelectionDemo](#演示)。
 
+<DemoPreview file="table-render/RowSelectionDemo.vue" />
+
 ```vue
 <script setup lang="ts">
 import { computed } from "vue";
@@ -245,6 +253,8 @@ function batchDelete() {
 ### 设置默认选中值
 
 `rowSelection` 没有 `defaultSelection` 配置项——默认选中走程序化出口 `setSelection(keys)`，在 `onMounted` 中预置即可（演示中的两块表格均带默认选中）：
+
+<DemoPreview file="table-render/RowSelectionDemo.vue" />
 
 ```vue
 <script setup lang="ts">
@@ -345,6 +355,10 @@ const table = defineTable<Order>({
 
 ### `r.dict(mapping, options?)` — 字典映射
 
+条目级 variant 与整列 `options.badge` 简写、未命中原样显示：
+
+<DemoPreview file="table-render/DictDemo.vue" />
+
 | 参数 / 字段     | 类型                                                      | 默认 | 说明                                                                       |
 | --------------- | --------------------------------------------------------- | ---- | -------------------------------------------------------------------------- |
 | `mapping`       | `Record<string \| number, string \| DictEntry>`           | —    | 键为字段**原始值**，值为显示内容                                           |
@@ -372,6 +386,10 @@ r.dict({ paid: "已付款", pending: { label: "待付款", variant: "outline" } 
 ```
 
 ### `r.date(pattern?)` — 日期格式化
+
+多令牌模板、时间戳输入、非法输入原样显示：
+
+<DemoPreview file="table-render/DateDemo.vue" />
 
 | 参数      | 类型     | 默认         | 说明       |
 | --------- | -------- | ------------ | ---------- |
@@ -411,6 +429,10 @@ r.date("yyyy/MM/dd HH:mm"); // "2026/01/15 09:05"
 
 ### `r.currency(currency?, locale?)` — 货币格式化
 
+默认 CNY、自定义 USD/en-US、数字字符串与脏数据：
+
+<DemoPreview file="table-render/CurrencyDemo.vue" />
+
 | 参数       | 类型     | 默认    | 说明                      |
 | ---------- | -------- | ------- | ------------------------- |
 | `currency` | `string` | `CNY`   | ISO 4217 币种代码         |
@@ -439,6 +461,10 @@ r.currency("USD", "en-US"); // $1,234.50
 
 ### `r.serial(base?)` — 序号列
 
+默认与 `base=0` 两种起始序号（分页可翻看页内重计数）：
+
+<DemoPreview file="table-render/SerialDemo.vue" />
+
 | 参数   | 类型     | 默认 | 说明     |
 | ------ | -------- | ---- | -------- |
 | `base` | `number` | `1`  | 起始序号 |
@@ -449,6 +475,10 @@ r.currency("USD", "en-US"); // $1,234.50
 - 不读取字段值，`key` 可为任意占位（如 `"seq"`）
 
 ### `r.button(items)` — 操作列
+
+字符串简写、函数化 text、逐行 disabled 与 onClick：
+
+<DemoPreview file="table-render/ButtonDemo.vue" />
 
 | 字段        | 类型                                    | 默认   | 说明                                         |
 | ----------- | --------------------------------------- | ------ | -------------------------------------------- |
@@ -473,6 +503,10 @@ r.button([
 ```
 
 ### 自定义渲染器
+
+进度条自定义工厂（SFC 内以 `h()` 实现，等价文档中的 TSX 写法）：
+
+<DemoPreview file="table-render/CustomRenderDemo.vue" />
 
 内置渲染器覆盖不到的形态（比如带确认弹窗的操作、进度条、头像组），直接写同签名的函数即可，内置与自定义可以逐列混用：
 
