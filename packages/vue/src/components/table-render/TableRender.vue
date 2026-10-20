@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import type { PropType, VNodeChild } from "vue";
 import { columnRenders } from "./column-renders";
-import { computed, isVNode } from "vue";
+import { computed, isVNode, watch } from "vue";
+import { Checkbox } from "@/components/checkbox";
 import { Skeleton } from "@/components/skeleton";
 import TablePagination from "./TablePagination.vue";
 import type {
@@ -10,6 +11,7 @@ import type {
   TableColumnOptions,
   TableLoadParams,
   TableRenderDefinition,
+  TableSelectionOptions,
 } from "./types";
 import { useTableRender } from "./useTableRender";
 
@@ -31,6 +33,11 @@ const props = defineProps({
   pageSizeOpts: { type: Array as PropType<number[]> },
   loading: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   emptyText: { type: String },
+  /** 行选择（仅拆分式生效；聚合式请在 defineTable 配置）："radio" | "checkbox" | 对象 */
+  rowSelection: {
+    type: [String, Object] as PropType<"radio" | "checkbox" | TableSelectionOptions>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -38,6 +45,8 @@ const emit = defineEmits<{
   "update:page-size": [pageSize: number];
   "sort-change": [sort: SortableOptions | undefined];
   "row-click": [record: DataRecord, index: number, event: MouseEvent];
+  "selection-change": [rows: DataRecord[]];
+  "update:selected-keys": [keys: Array<string | number>];
 }>();
 
 defineSlots<{ empty?: () => VNodeChild }>();
@@ -53,6 +62,11 @@ const RENDERS = columnRenders();
 if (props.definition && props.columns && import.meta.env.DEV) {
   console.warn("[tu-design] <TableRender> definition 与 columns 同时传入，已按 definition 渲染。");
 }
+if (props.definition && props.rowSelection && import.meta.env.DEV) {
+  console.warn(
+    "[tu-design] <TableRender> 聚合式下 rowSelection 请在 defineTable 配置，组件 prop 已忽略。",
+  );
+}
 const instance =
   props.definition ??
   useTableRender({
@@ -62,13 +76,57 @@ const instance =
     autoLoad: props.autoLoad,
     pageSize: props.pageSize,
     pageSizeOpts: props.pageSizeOpts,
+    rowKey: props.rowKey,
+    rowSelection: props.rowSelection,
   });
+// 拆分式已传 rowKey；聚合式由组件回填（S1：选择引擎依赖 rowKey 就绪）
+instance.setRowKey(props.rowKey);
 
 const columns = computed(() => instance.columns);
 const rows = computed(() => instance.table.getRowModel().rows);
 /** 内部加载态 ∪ 外部受控加载态（R14） */
 const loading = computed(() => props.loading === true || instance.loading.value);
 const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
+
+// ---- 行选择（S 系列） -------------------------------------------------------
+const selection = computed(() => instance.selection);
+const selectedKeys = instance.selectedKeys;
+const hasSelection = computed(() => selection.value.enabled);
+/** 总列数 = 业务列 + 选择列（空态 colspan 与骨架行，S8） */
+const columnCount = computed(() => columns.value.length + (hasSelection.value ? 1 : 0));
+
+/** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
+const selectableKeys = computed(() =>
+  rows.value.filter((row) => row.getCanSelect()).map((row) => rowKeyOf(row.original, row.index)),
+);
+const headerChecked = computed(
+  () =>
+    hasSelection.value &&
+    selection.value.type === "checkbox" &&
+    selectableKeys.value.length > 0 &&
+    selectableKeys.value.every((key) => selectedKeys.value.has(key)),
+);
+const headerIndeterminate = computed(
+  () =>
+    hasSelection.value &&
+    !headerChecked.value &&
+    selectableKeys.value.some((key) => selectedKeys.value.has(key)),
+);
+
+function onHeaderSelect(checked: boolean) {
+  instance.table.toggleAllPageRowsSelected(checked);
+}
+
+/** 行选择控件切换；radio 不可取消由引擎 S4 守卫，不选中态点击传 checked=true */
+function onRowSelect(line: { key: string }, checked: boolean) {
+  instance.toggleRowSelected(line.key, checked);
+}
+
+// 选中集变化 → 对外事件（S7）：排序/翻页不改变选中集，故不会误发
+watch(instance.selectedKeys, (keys) => {
+  emit("selection-change", [...selection.value.value]);
+  emit("update:selected-keys", [...keys]);
+});
 
 /** 行 → 单元格值矩阵：render > formatter > record[key]（R17） */
 const body = computed(() => {
@@ -80,6 +138,8 @@ const body = computed(() => {
     key: rowKeyOf(row.original, row.index),
     index: row.index,
     record: row.original,
+    /** 行级可选过滤（S5）：selectable 谓词交由引擎 enableRowSelection 判定 */
+    canSelect: row.getCanSelect(),
     cells: columns.value.map((column): VNodeChild => {
       const render = renderFns.get(column);
       if (render) return render(row.original, row.index, column);
@@ -150,6 +210,10 @@ defineExpose({
   toggleSort: onSort,
   setPageIndex: onPageIndex,
   setPageSize: onPageSize,
+  selection: instance.selection,
+  selectedKeys: instance.selectedKeys,
+  setSelection: instance.setSelection,
+  clearSelection: instance.clearSelection,
 });
 </script>
 
@@ -158,6 +222,20 @@ defineExpose({
     <table class="w-full caption-bottom text-sm">
       <thead class="[&_tr]:border-b">
         <tr>
+          <!-- 选择列：checkbox 型表头为本页全选三态（S3/S10）；radio 型占位 -->
+          <th
+            v-if="hasSelection"
+            scope="col"
+            class="h-10 w-12 px-2 align-middle font-medium text-muted-foreground"
+            :style="{ width: `${selection.width}px` }"
+          >
+            <Checkbox
+              v-if="selection.type === 'checkbox'"
+              :checked="headerIndeterminate ? 'indeterminate' : headerChecked"
+              :aria-label="'全选本页'"
+              @update:checked="onHeaderSelect"
+            />
+          </th>
           <th
             v-for="column in columns"
             :key="column.key"
@@ -181,9 +259,12 @@ defineExpose({
       </thead>
 
       <tbody class="[&_tr:last-child]:border-0">
-        <!-- 加载态：固定 5 行骨架（R14） -->
+        <!-- 加载态：固定 5 行骨架（R14）；选择列一并占位（S8） -->
         <template v-if="loading">
           <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>
+            <td v-if="hasSelection" class="p-2 align-middle">
+              <Skeleton class="size-4" />
+            </td>
             <td
               v-for="column in columns"
               :key="column.key"
@@ -202,6 +283,25 @@ defineExpose({
             class="border-b transition-colors hover:bg-muted/50"
             @click="onRowClick(line.record, line.index, $event)"
           >
+            <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
+            <td v-if="hasSelection" class="w-12 p-2 align-middle" @click.stop>
+              <input
+                v-if="selection.type === 'radio'"
+                type="radio"
+                class="accent-primary size-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
+                :checked="selectedKeys.has(line.key)"
+                :disabled="!line.canSelect"
+                :aria-label="`选择第 ${line.index + 1} 行`"
+                @click="onRowSelect(line, !selectedKeys.has(line.key))"
+              />
+              <Checkbox
+                v-else
+                :checked="selectedKeys.has(line.key)"
+                :disabled="!line.canSelect"
+                :aria-label="`选择第 ${line.index + 1} 行`"
+                @update:checked="(checked: boolean) => onRowSelect(line, checked)"
+              />
+            </td>
             <td
               v-for="(value, index) in line.cells"
               :key="columns[index].key"
@@ -217,7 +317,7 @@ defineExpose({
           </tr>
 
           <tr v-if="body.length === 0" data-empty>
-            <td :colspan="columns.length" class="p-8 text-center text-muted-foreground">
+            <td :colspan="columnCount" class="p-8 text-center text-muted-foreground">
               <slot name="empty">{{ emptyText ?? "暂无数据" }}</slot>
             </td>
           </tr>

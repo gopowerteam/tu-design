@@ -1,6 +1,6 @@
 import type { ColumnRender, ColumnRenders } from "./column-renders";
 import type { Table as TanstackTable } from "@tanstack/vue-table";
-import type { MaybeRefOrGetter } from "vue";
+import type { MaybeRefOrGetter, Ref } from "vue";
 
 /** 任意数据行（表格是弱类型数据容器，行结构由调用方的 T 决定） */
 export interface DataRecord {
@@ -67,6 +67,23 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   autoLoad?: boolean;
   pageSize?: number;
   pageSizeOpts?: number[];
+  /** 行选择：radio 单选 / checkbox 多选；字符串为简写（S2） */
+  rowSelection?: "radio" | "checkbox" | TableSelectionOptions<T>;
+  /** 行主键字段；rowSelection 启用且此值无效时禁用选择（S1） */
+  rowKey?: string;
+}
+
+/** 行选择配置（S 系列） */
+export interface TableSelectionOptions<T extends DataRecord = DataRecord> {
+  type: "radio" | "checkbox";
+  /** 选择列宽，默认 48 */
+  width?: number;
+  /** 行级可选过滤；false 的行选择控件置灰且被全选跳过（S5） */
+  selectable?: (record: T) => boolean;
+  /** radio 再点已选中行是否取消，默认 true（S4） */
+  cancelable?: boolean;
+  /** 翻页/重载后是否保留选中，默认 true（S6） */
+  reserveOnPageChange?: boolean;
 }
 
 /** useTableRender 的入参：data 额外支持 ref/getter（拆分模式下 props 天然响应式） */
@@ -91,4 +108,21 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   toggleSort: (key: string) => void;
   setPageIndex: (pageIndex: number) => void;
   setPageSize: (pageSize: number) => void;
+  /** 选中行快照（含跨页保留行；跨页行可能为过期数据，见 S6） */
+  selection: Readonly<{
+    value: T[];
+    /** rowSelection 配置有效（含 rowKey 就绪）时为 true（S1） */
+    enabled: boolean;
+    type: "radio" | "checkbox";
+    width: number;
+  }>;
+  /** 选中主键集合；每次选中集变化替换为新 Set（S7） */
+  selectedKeys: Readonly<Ref<Set<string | number>>>;
+  /** 程序化设置选中集；不存在的 key 保留（S12） */
+  setSelection: (keys: Array<string | number>) => void;
+  clearSelection: () => void;
+  /** 行控件切换：checked 为 false 时移除（radio 受 cancelable 约束，S4） */
+  toggleRowSelected: (key: string, checked: boolean) => void;
+  /** 内部装配口：拆分式由 TableRender 在 setup 时回填 rowKey（S1） */
+  setRowKey: (rowKey: string | undefined) => void;
 }

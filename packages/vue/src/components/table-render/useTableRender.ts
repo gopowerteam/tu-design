@@ -1,5 +1,6 @@
-import type { ColumnDef } from "@tanstack/vue-table";
-import { onMounted, reactive, readonly, ref, shallowRef, toValue, watch } from "vue";
+import type { ColumnDef, RowSelectionState } from "@tanstack/vue-table";
+import { computed, onMounted, reactive, readonly, ref, shallowRef, toValue, watch } from "vue";
+import type { Ref } from "vue";
 import {
   getCoreRowModel,
   getPaginationRowModel,
@@ -10,6 +11,7 @@ import type {
   DataRecord,
   SortableOptions,
   TableRenderDefinition,
+  TableSelectionOptions,
   UseTableRenderOptions,
 } from "./types";
 
@@ -59,10 +61,80 @@ export function useTableRender<T extends DataRecord>(
   const loading = ref(false);
   const rows = shallowRef<T[]>([]);
 
+  // ---- 行选择（S 系列） ------------------------------------------------------
+  // 字符串简写 → 对象（S2）
+  const rawSelection = options.rowSelection;
+  const selectionConfig: TableSelectionOptions<T> | undefined =
+    rawSelection === undefined
+      ? undefined
+      : typeof rawSelection === "string"
+        ? { type: rawSelection }
+        : rawSelection;
+  // rowKey 由 defineTable 配置或 TableRender setup 时回填（S1）；就绪前选择不可用
+  const rowKey = ref(options.rowKey);
+  const selectionEnabled = computed(() => selectionConfig !== undefined && !!rowKey.value);
+  const selectedKeys = ref(new Set<string | number>()) as Ref<Set<string | number>>;
+  const selectionRows = shallowRef<T[]>([]);
+  /** key → 最近一次出现的行对象；跨页选中行由此返回快照（S6） */
+  const selectionSnapshot = new Map<string, T>();
+  /** 选中但当前数据中不存在的 key（reserveOnPageChange 语义，S12） */
+  const dirtyKeys = new Set<string>();
+  /** 受控选择状态：单一真相源，onRowSelectionChange 只通知不落盘（避免 setRowSelection 回环） */
+  const rowSelectionState = ref<RowSelectionState>({});
+
+  function selectionEmitSafe() {
+    // 选择集变化 → 替换新 Set 触发依赖（S7）；rows 从快照解析（含跨页）
+    const keys = new Set<string | number>();
+    for (const key of Object.keys(rowSelectionState.value))
+      if (rowSelectionState.value[key]) keys.add(key);
+    selectedKeys.value = keys;
+    selectionRows.value = [...keys].map(
+      (key) => selectionSnapshot.get(String(key)) ?? ({ [rowKey.value!]: key } as T),
+    );
+  }
+
+  /** 选中集写入的唯一入口：赋受控 state + 重建对外投影 */
+  function applyRowSelection(next: RowSelectionState) {
+    rowSelectionState.value = next;
+    selectionEmitSafe();
+  }
+
+  /** 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达，S1） */
+  function rowIdOf(record: T, index: number): string {
+    const key = rowKey.value;
+    const value = key ? record[key] : undefined;
+    return value === undefined || value === null ? `index-${index}` : String(value);
+  }
+
+  /** 数据窗口变化时刷新快照中已存在 key 的行对象（S6：后写覆盖） */
+  function refreshSnapshot() {
+    const key = rowKey.value;
+    if (!key) return;
+    let collisionWarned = false;
+    for (const record of rows.value) {
+      const value = record[key];
+      if (value === undefined || value === null) continue;
+      const id = String(value);
+      if (selectionSnapshot.has(id) && !collisionWarned && import.meta.env.DEV) {
+        // S11：撞 key 属数据问题，只提示一次
+        if (selectionSnapshot.get(id) !== record) {
+          collisionWarned = true;
+          warn(`rowKey "${key}" 存在重复值，行选择快照以后出现的记录为准。`);
+        }
+      }
+      selectionSnapshot.set(id, record);
+      dirtyKeys.delete(id);
+    }
+    // 选中行对象可能刚被刷新：重建投影
+    if (selectedKeys.value.size > 0) selectionEmitSafe();
+  }
+
+  // ---- 引擎组装 -------------------------------------------------------------
   const table = useVueTable({
     get data() {
       return rows.value;
     },
+    getRowId: (originalRow, index) => rowIdOf(originalRow, index),
     columns: columns.map<ColumnDef<T>>((column) => ({
       accessorKey: column.key,
       header: column.title,
@@ -76,6 +148,26 @@ export function useTableRender<T extends DataRecord>(
     getSortedRowModel: getSortedRowModel(),
     manualPagination: serverMode,
     manualSorting: serverMode,
+    get state() {
+      return { rowSelection: rowSelectionState.value };
+    },
+    enableRowSelection: selectionConfig?.selectable
+      ? (row) => selectionConfig.selectable!(row.original)
+      : selectionConfig !== undefined,
+    enableMultiRowSelection: selectionConfig?.type !== "radio",
+    onRowSelectionChange: (updater) => {
+      const prev = rowSelectionState.value;
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      // S4：radio 且 cancelable: false 时，解绑结果为空集则保持原状
+      if (
+        selectionConfig?.type === "radio" &&
+        selectionConfig.cancelable === false &&
+        !Object.keys(next).some((key) => next[key])
+      ) {
+        return;
+      }
+      applyRowSelection(next);
+    },
   });
 
   watch(
@@ -180,6 +272,10 @@ export function useTableRender<T extends DataRecord>(
 
   onMounted(() => {
     if (serverMode && (options.autoLoad ?? true)) void load();
+    // S1：rowKey 在 defineTable 阶段可能尚未就绪（聚合式由 TableRender 回填），挂载时终审
+    if (selectionConfig && !rowKey.value) {
+      warn("rowSelection 需要有效的 rowKey 字段，已禁用行选择。");
+    }
   });
 
   function reload(resetPage = false) {
@@ -193,6 +289,54 @@ export function useTableRender<T extends DataRecord>(
     syncData();
   }
 
+  // ---- 行选择动作与联动（S 系列） -------------------------------------------
+
+  /** 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12） */
+  function setSelection(keys: Array<string | number>) {
+    const next: RowSelectionState = {};
+    for (const key of keys) {
+      next[String(key)] = true;
+      if (!selectionSnapshot.has(String(key))) dirtyKeys.add(String(key));
+    }
+    applyRowSelection(next);
+  }
+
+  function clearSelection() {
+    applyRowSelection({});
+  }
+
+  function toggleRowSelected(key: string, checked: boolean) {
+    // S4：radio 且 cancelable: false 时，交互解绑最后一个选中为空操作
+    if (!checked && selectionConfig?.type === "radio" && selectionConfig.cancelable === false) {
+      return;
+    }
+    if (!checked) {
+      const { [key]: _removed, ...rest } = rowSelectionState.value;
+      applyRowSelection(rest);
+      return;
+    }
+    // radio：单选互斥（S4）；checkbox：累加
+    const next =
+      selectionConfig?.type === "radio"
+        ? { [key]: true }
+        : { ...rowSelectionState.value, [key]: true };
+    applyRowSelection(next);
+  }
+
+  /** 拆分式装配口：TableRender setup 时回传组件 rowKey（S1） */
+  function setRowKey(key: string | undefined) {
+    if (rowKey.value === key) return;
+    rowKey.value = key;
+    // 聚合式下数据窗口早于 rowKey 就绪（pre-flush 先于子组件 setup），补建快照
+    refreshSnapshot();
+  }
+
+  // 数据窗口变化（翻页或数据替换）：刷新快照；reserveOnPageChange: false 时清空选中（S6）
+  watch([rows, () => page.pageIndex], () => {
+    refreshSnapshot();
+    if (selectionConfig && selectionConfig.reserveOnPageChange === false) clearSelection();
+  });
+
   return {
     columns,
     table,
@@ -203,5 +347,24 @@ export function useTableRender<T extends DataRecord>(
     toggleSort,
     setPageIndex,
     setPageSize,
+    selection: {
+      get value(): T[] {
+        return selectionRows.value;
+      },
+      get enabled(): boolean {
+        return selectionEnabled.value;
+      },
+      get type(): "radio" | "checkbox" {
+        return selectionConfig?.type ?? "checkbox";
+      },
+      get width(): number {
+        return selectionConfig?.width ?? 48;
+      },
+    },
+    selectedKeys: selectedKeys as Readonly<Ref<Set<string | number>>>,
+    setSelection,
+    clearSelection,
+    toggleRowSelected,
+    setRowKey,
   };
 }

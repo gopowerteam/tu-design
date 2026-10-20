@@ -5,7 +5,7 @@ import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
 import type { ColumnRenders } from "./column-renders";
-import type { TableColumnOptions, TableRenderDefinition } from "./types";
+import type { TableColumnOptions, TableLoadParams, TableRenderDefinition } from "./types";
 
 interface User {
   id: number;
@@ -590,5 +590,184 @@ describe("defineColumns", () => {
 
     const { wrapper } = makeTableRender({ columns });
     expect(dataRows(wrapper)).toHaveLength(10);
+  });
+});
+
+describe("TableRender 行选择（S 系列）", () => {
+  /** 取 tbody 数据行的选择控件（Ark control 元素；hidden input 不触发机器状态） */
+  function rowChecks(wrapper: ReturnType<typeof mount>) {
+    return wrapper
+      .findAll("tbody tr:not([data-skeleton]):not([data-empty])")
+      .map((tr) => tr.find('[data-part="control"]'));
+  }
+
+  /** checkbox 行控件勾选/取消（点击切换） */
+  function checkRow(
+    control: ReturnType<typeof mount>["find"] extends never ? never : any,
+    on: boolean,
+  ) {
+    const state = control.attributes("data-state");
+    if (on && state !== "checked") return control.trigger("click");
+    if (!on && state === "checked") return control.trigger("click");
+  }
+
+  it("checkbox 简写：注入选择列、勾选更新 selectedKeys 并发出 selection-change（S2/S3/S7）", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "checkbox" });
+    const checks = rowChecks(wrapper);
+    // 选择列注入：表头 3 格（选择列 + 业务列）
+    expect(wrapper.findAll("thead th")).toHaveLength(3);
+    expect(checks).toHaveLength(10);
+
+    await checkRow(checks[0]!, true);
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    // 事件挂在 TableRender 组件上（Host 包装下需 findComponent）
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("selection-change")?.at(-1)).toEqual([[USERS[0]]]);
+    expect(table.emitted("update:selected-keys")?.at(-1)).toEqual([["1"]]);
+
+    await checkRow(checks[0]!, false);
+    expect(def().selectedKeys.value.size).toBe(0);
+    wrapper.unmount();
+  });
+
+  it("表头全选为本页三态：全选 → 半选 → 全选恢复（S10）", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "checkbox" });
+    const headerControl = wrapper.find("thead [data-part='control']");
+    await headerControl.trigger("click");
+    expect(def().selectedKeys.value.size).toBe(10);
+    // 全选后取消一行 → 表头半选
+    await rowChecks(wrapper)[2]!.trigger("click");
+    expect(wrapper.find("thead [data-part='control']").attributes("data-state")).toBe(
+      "indeterminate",
+    );
+    // 再勾回 → 全选恢复
+    await rowChecks(wrapper)[2]!.trigger("click");
+    expect(def().selectedKeys.value.size).toBe(10);
+    wrapper.unmount();
+  });
+
+  it("radio 简写：单选互斥，再点可取消（S4）", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "radio" });
+    const radios = () => wrapper.findAll("tbody input[type='radio']");
+    // radio 交互走 click（原生 radio 重复点击不触发 change）
+    await radios()[0]!.trigger("click");
+    await radios()[3]!.trigger("click");
+    expect(def().selectedKeys.value).toEqual(new Set(["4"]));
+    // 再点已选中 → 取消
+    await radios()[3]!.trigger("click");
+    expect(def().selectedKeys.value.size).toBe(0);
+    // radio 表头为占位（无全选框）
+    expect(wrapper.find("thead input[type='checkbox']").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("radio cancelable: false：解绑最后一个选中被守卫（S4）", async () => {
+    const { wrapper, def } = makeTableRender({
+      rowSelection: { type: "radio", cancelable: false },
+    });
+    const radios = () => wrapper.findAll("tbody input[type='radio']");
+    await radios()[0]!.trigger("click");
+    await radios()[0]!.trigger("click");
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    wrapper.unmount();
+  });
+
+  it("selectable 谓词：不可选行置灰且被全选跳过（S5）", async () => {
+    const { wrapper, def } = makeTableRender({
+      rowSelection: { type: "checkbox", selectable: (r: User) => r.id % 2 === 1 },
+    });
+    // 第 2 行 id=2 不可选：control 带 disabled 态
+    expect(rowChecks(wrapper)[1]!.attributes("data-disabled")).toBe("");
+    await wrapper.find("thead [data-part='control']").trigger("click");
+    // 本页 10 行中奇数 id 1,3,5,7,9
+    expect(def().selectedKeys.value).toEqual(new Set(["1", "3", "5", "7", "9"]));
+    wrapper.unmount();
+  });
+
+  it("跨页选中保留：翻页后 selection.value 返回完整行对象（S6）", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "checkbox" });
+    await checkRow(rowChecks(wrapper)[0]!, true);
+    def().setPageIndex(2);
+    await flushPromises();
+    // 第 2 页行控件均未勾选，但选中集仍含第 1 页的 id=1
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    expect(def().selection.value).toEqual([USERS[0]]);
+    wrapper.unmount();
+  });
+
+  it("reserveOnPageChange: false：数据窗口变化清空选中（S6）", async () => {
+    const { wrapper, def } = makeTableRender({
+      rowSelection: { type: "checkbox", reserveOnPageChange: false },
+    });
+    await checkRow(rowChecks(wrapper)[0]!, true);
+    def().setPageIndex(2);
+    await flushPromises();
+    expect(def().selectedKeys.value.size).toBe(0);
+    wrapper.unmount();
+  });
+
+  it("服务端模式：update() 重载后选中保留（S6）", async () => {
+    const onLoad = vi.fn((params: TableLoadParams<User>) => {
+      params.update(USERS.slice(0, params.page.pageIndex * 10));
+    });
+    const { wrapper, def } = makeTableRender({ onLoad, rowSelection: "checkbox" });
+    await flushPromises();
+    await checkRow(rowChecks(wrapper)[0]!, true);
+    def().setPageIndex(2);
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    def().clearSelection();
+    await flushPromises();
+    expect(def().selectedKeys.value.size).toBe(0);
+    wrapper.unmount();
+  });
+
+  it("setSelection / clearSelection 程序化出口（S12）", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "checkbox" });
+    def().setSelection([1, 2]);
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["1", "2"]));
+    // 不存在的 key 保留（dirtyKeys 语义）
+    def().setSelection([99]);
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["99"]));
+    def().clearSelection();
+    await flushPromises();
+    expect(def().selectedKeys.value.size).toBe(0);
+    wrapper.unmount();
+  });
+
+  it("rowKey 无效时 DEV 警告（S1）", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          data: USERS,
+          rowSelection: "checkbox",
+        });
+        // 组件 rowKey 为空串：选择引擎无法构造稳定行 id，禁用选择
+        return () => h(TableRender, { rowKey: "", definition: box.def });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("rowSelection 需要有效的 rowKey"));
+    // 选择列不渲染
+    expect(wrapper.findAll("thead th")).toHaveLength(2);
+    wrapper.unmount();
+  });
+
+  it("无 rowSelection 时无选择列，row-click 不被阻断", async () => {
+    // 事件断言需直接挂 TableRender（拆分式）
+    const wrapper = mount(TableRender, {
+      props: { rowKey: "id", columns: baseColumns(), data: USERS },
+      attachTo: document.body,
+    });
+    expect(wrapper.findAll("thead th")).toHaveLength(2);
+    await wrapper.findAll("tbody tr")[0]!.trigger("click");
+    expect(wrapper.emitted("row-click")).toHaveLength(1);
+    wrapper.unmount();
   });
 });
