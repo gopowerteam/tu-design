@@ -18,6 +18,10 @@
 
 <DemoPreview file="table-render/ServerTableDemo.vue" />
 
+行选择（checkbox 多选 + `selectable` 行级过滤 + 跨页保留；radio 单选 + 再点取消）：
+
+<DemoPreview file="table-render/RowSelectionDemo.vue" />
+
 ## 安装
 
 ```bash
@@ -128,19 +132,25 @@ const table = defineTable<User>({
 | `autoLoad?`     | `boolean`                                         | `true`           | 挂载后是否自动取数（仅服务端模式生效）     |
 | `pageSize?`     | `number`                                          | `10`             | 每页条数                                   |
 | `pageSizeOpts?` | `number[]`                                        | `[10,20,50,100]` | 每页条数下拉选项                           |
+| `rowSelection?` | `"radio" \| "checkbox" \| TableSelectionOptions`  | —                | 行选择；字符串为简写（S2）                 |
+| `rowKey?`       | `string`                                          | —                | 行主键字段；rowSelection 依赖（S1）        |
 
 返回 `TableRenderDefinition<T>`：
 
-| 字段                                 | 说明                                                             |
-| ------------------------------------ | ---------------------------------------------------------------- |
-| `columns`                            | 列配置                                                           |
-| `table`                              | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）           |
-| `page`                               | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }` |
-| `sort`                               | 只读投影 `{ key, direction } \| undefined`                       |
-| `loading`                            | 只读布尔（内部取数中）                                           |
-| `reload(resetPage?)`                 | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页           |
-| `toggleSort(key)`                    | 排序三态切换：无 → asc → desc → 取消                             |
-| `setPageIndex(n)` / `setPageSize(n)` | 1-based 页码；改每页条数会归位到第 1 页                          |
+| 字段                                      | 说明                                                                      |
+| ----------------------------------------- | ------------------------------------------------------------------------- |
+| `columns`                                 | 列配置                                                                    |
+| `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                    |
+| `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`          |
+| `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                |
+| `loading`                                 | 只读布尔（内部取数中）                                                    |
+| `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                    |
+| `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                      |
+| `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                   |
+| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行（S6） |
+| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`（S7）                                 |
+| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集（S12）                                              |
+| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束（S4）                              |
 
 辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
 
@@ -158,8 +168,9 @@ const table = defineTable<User>({
 | `loading`                   | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                           |
 | `emptyText`                 | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                 |
 
-事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）。
+事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）、`selection-change`（`(rows)`）、`update:selected-keys`（`(keys)`）。
 插槽：`empty`（空态）、以及列 `render` 返回的任意 VNode（完全自定义逃逸口）。
+拆分式 props：`rowSelection`（仅拆分式生效；聚合式请在 `defineTable` 配置，同时传入时按 definition 为准并 DEV 警告）。
 
 ### 类型速查
 
@@ -187,6 +198,58 @@ const table = defineTable<User>({
 | `sort?`  | `SortableOptions`                     | 无排序或已取消排序时为 `undefined`                      |
 | `form`   | `Record<string, unknown>`             | 搜索表单值，**v1 恒为 `{}`**（二期接 FormRender）       |
 | `update` | `(data: T[], total?: number) => void` | 回写数据；`total` 缺省时保留旧值                        |
+
+## 行选择
+
+开启 `rowSelection` 即注入首列选择列。**单选/多选同一入口**：`"radio"` / `"checkbox"` 字符串简写，或对象详写。批量操作示例见顶部演示 [RowSelectionDemo](#演示)。
+
+```vue
+<script setup lang="ts">
+import { computed } from "vue";
+import { defineTable } from "@tu-design/vue";
+
+const table = defineTable<User>({
+  rowKey: "id",
+  data: users,
+  rowSelection: {
+    type: "checkbox",
+    width: 48,
+    selectable: (row) => !row.locked, // 返回 false 的行置灰且被全选跳过
+    reserveOnPageChange: true, // 默认 true：翻页/重载后选中保留
+  },
+  columns: [/* ... */],
+});
+
+// 批量操作：selection.value 是完整行对象（含跨页保留行）
+function batchDelete() {
+  const rows = table.selection.value; // T[]
+  const keys = [...table.selectedKeys.value]; // Set<string>
+}
+</script>
+
+<template>
+  <TableRender :definition="table" row-key="id" @selection-change="onSelectionChange" />
+</template>
+```
+
+### `rowSelection` 配置
+
+| 字段                   | 类型                     | 默认   | 说明                                                 |
+| ---------------------- | ------------------------ | ------ | ---------------------------------------------------- |
+| `type`                 | `"radio" \| "checkbox"`  | —      | radio 单选互斥，checkbox 多选                        |
+| `width?`               | `number`                 | `48`   | 选择列宽                                             |
+| `selectable?`          | `(record: T) => boolean` | —      | 行级可选过滤；`false` 的行控件置灰且被全选跳过（S5） |
+| `cancelable?`          | `boolean`                | `true` | radio 再点已选行是否取消（S4）                       |
+| `reserveOnPageChange?` | `boolean`                | `true` | 翻页/数据重载后是否保留选中（S6）                    |
+
+行为细则（S 系列，编号对应设计文档 `docs/plans/table-selection-plan.md`）：
+
+- **rowKey 是硬依赖（S1）**：rowSelection 启用但 rowKey 无效时 DEV 警告并禁用选择——组件内部以 `String(row[rowKey])` 作为行 id，缺失会跨页串选，不做索引兜底
+- **全选是本页语义（S10）**：表头 checkbox 三态（全选/半选/未选）只作用于当前页的可选行，不选中未加载的行
+- **跨页保留（S6）**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 从内置快照返回完整行对象——**跨页行可能是过期数据**（数据源已更新时），行对象再次出现会以新数据覆盖快照
+- **radio 默认可取消（S4）**：再点已选行取消选中；`cancelable: false` 时该交互为空操作（程序化 `clearSelection` 不受限）
+- **选择不冒泡（S5）**：点击选择控件不会触发行 `row-click`；`selection-change` 只在选中集变化时发一次，排序/翻页不触发
+- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key（S12）
 
 ## 内置列渲染器
 
@@ -424,6 +487,6 @@ const table = defineTable<Task>({
 - **`onLoad` 抛错不会打断表格**：内部 `console.error` 并保持空态，请在自己的 `onLoad` 里做错误提示。
 - **竞态已内置**：同一表格的多次取数带序号守卫，先发后到的旧响应不会覆盖新结果，无需自行 debounce（但也不会替你做节流）。
 - **排序改的是页码**：服务端模式下切换排序会自动回到第 1 页；`setPageSize` 同样归位第 1 页。
-- **`rowKey` 字段缺失**时按行索引兜底，并在 DEV 下警告一次（仅一次，不会刷屏）。
+- **`rowKey` 字段缺失**时按行索引兜底，并在 DEV 下警告一次（仅一次，不会刷屏）；但**行选择场景例外**：rowKey 无效时禁用选择而非兜底（S1，索引作行 id 会跨页串选）。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable` 等都会在控制台提示并降级运行；生产构建静默。
-- 二期规划：搜索表单联动（`form` 接 FormRender）、行选择、列固定与显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
+- 二期规划：搜索表单联动（`form` 接 FormRender）、列固定与显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
