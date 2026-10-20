@@ -737,6 +737,20 @@ describe("TableRender 行选择（S 系列）", () => {
     wrapper.unmount();
   });
 
+  it("setSelection 过滤不可选行：默认选中不落 selectable=false 的行（S5/S12）", async () => {
+    const { wrapper, def } = makeTableRender({
+      rowSelection: { type: "checkbox", selectable: (r: User) => r.id % 2 === 1 },
+    });
+    def().setSelection([1, 2, 3]); // id=2 不可选（偶数）
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["1", "3"]));
+    // 待定 key（不在快照中）不受过滤拦截
+    def().setSelection([99]);
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["99"]));
+    wrapper.unmount();
+  });
+
   it("rowKey 无效时 DEV 警告（S1）", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const box: { def?: TableRenderDefinition<User> } = {};

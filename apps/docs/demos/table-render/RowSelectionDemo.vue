@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted } from "vue";
 import { defineTable } from "@tu-design/vue";
 
 interface User {
@@ -34,7 +34,12 @@ const multi = defineTable<User>({
 
 const count = computed(() => multi.selection.value.length);
 
-// radio 单选：再点已选行可取消
+// 默认选中：挂载后程序化预置选中集（selectable=false 的行会被引擎忽略）
+onMounted(() => {
+  multi.setSelection([1, 3]);
+});
+
+// radio 单选：再点已选行可取消；默认选中第 1 行
 const single = defineTable<User>({
   data: USERS.slice(0, 5),
   pageSize: 5,
@@ -44,6 +49,10 @@ const single = defineTable<User>({
     { key: "name", title: "姓名" },
     { key: "role", title: "角色" },
   ],
+});
+
+onMounted(() => {
+  single.setSelection([2]);
 });
 </script>
 

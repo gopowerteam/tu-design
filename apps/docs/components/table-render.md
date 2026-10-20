@@ -242,6 +242,53 @@ function batchDelete() {
 | `cancelable?`          | `boolean`                | `true` | radio 再点已选行是否取消（S4）                       |
 | `reserveOnPageChange?` | `boolean`                | `true` | 翻页/数据重载后是否保留选中（S6）                    |
 
+### 设置默认选中值
+
+`rowSelection` 没有 `defaultSelection` 配置项——默认选中走程序化出口 `setSelection(keys)`，在 `onMounted` 中预置即可（演示中的两块表格均带默认选中）：
+
+```vue
+<script setup lang="ts">
+import { onMounted } from "vue";
+import { defineTable } from "@tu-design/vue";
+
+const table = defineTable<User>({
+  rowKey: "id",
+  data: users,
+  rowSelection: { type: "checkbox", selectable: (row) => !row.locked },
+  columns: [/* ... */],
+});
+
+// 预置 id 为 1、3 的行；selectable 为 false 的行会被引擎忽略
+onMounted(() => {
+  table.setSelection([1, 3]);
+});
+</script>
+```
+
+行为细则：
+
+- **静态模式**：`data` 在 setup 阶段已就绪，`onMounted` 里 `setSelection` 即可生效，表头三态与 `selection-change` 都会正确联动
+- **服务端模式**：首屏数据由 `onLoad` 异步回写，预置须等数据到达后执行——在 `onLoad` 的 `update` 回调里判断“仅首次”后调用 `setSelection`（此时快照已含该页行对象，`selection.value` 拿到完整行）
+
+```ts
+let primed = false;
+
+const table = defineTable<User>({
+  // ...
+  onLoad: async ({ page, update }) => {
+    const { list, total } = await fetchUsers(page);
+    update(list, total);
+    if (!primed) {
+      primed = true;
+      table.setSelection([1, 3]); // 默认选中，仅首屏一次
+    }
+  },
+});
+```
+
+- `setSelection` 允许传入当前数据中不存在的 key（进入待定集，数据出现后自动关联行对象，S12）；`selectable` 过滤范围内的不可选行会被直接忽略（对齐 S5）
+- radio 型预置多个 key 时只有最后一个生效（单选互斥，S4）
+
 行为细则（S 系列，编号对应设计文档 `docs/plans/table-selection-plan.md`）：
 
 - **rowKey 是硬依赖（S1）**：rowSelection 启用但 rowKey 无效时 DEV 警告并禁用选择——组件内部以 `String(row[rowKey])` 作为行 id，缺失会跨页串选，不做索引兜底
@@ -249,7 +296,7 @@ function batchDelete() {
 - **跨页保留（S6）**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 从内置快照返回完整行对象——**跨页行可能是过期数据**（数据源已更新时），行对象再次出现会以新数据覆盖快照
 - **radio 默认可取消（S4）**：再点已选行取消选中；`cancelable: false` 时该交互为空操作（程序化 `clearSelection` 不受限）
 - **选择不冒泡（S5）**：点击选择控件不会触发行 `row-click`；`selection-change` 只在选中集变化时发一次，排序/翻页不触发
-- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key（S12）
+- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key、并过滤不可选行（S5/S12）
 
 ## 内置列渲染器
 

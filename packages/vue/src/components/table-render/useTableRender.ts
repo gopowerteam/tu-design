@@ -291,12 +291,15 @@ export function useTableRender<T extends DataRecord>(
 
   // ---- 行选择动作与联动（S 系列） -------------------------------------------
 
-  /** 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12） */
+  /** 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12）；不可选行被过滤（对齐 S5） */
   function setSelection(keys: Array<string | number>) {
     const next: RowSelectionState = {};
     for (const key of keys) {
+      const row = selectionSnapshot.get(String(key));
+      // 快照中存在的行按 selectable 谓词过滤；待定 key（尚无行对象）无法判定的不拦
+      if (row && selectionConfig?.selectable && !selectionConfig.selectable(row)) continue;
       next[String(key)] = true;
-      if (!selectionSnapshot.has(String(key))) dirtyKeys.add(String(key));
+      if (!row) dirtyKeys.add(String(key));
     }
     applyRowSelection(next);
   }
