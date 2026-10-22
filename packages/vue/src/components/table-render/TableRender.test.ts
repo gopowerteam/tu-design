@@ -1,11 +1,79 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
+import { defineForm } from "../form-render";
+import type { FormRenderDefinition, FormRenderItem } from "../form-render/types";
 import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
 import type { ColumnRenders } from "./column-renders";
 import type { TableColumnOptions, TableLoadParams, TableRenderDefinition } from "./types";
+
+// 虚拟滚动测试策略（务实取舍）：happy-dom 无 ResizeObserver、getBoundingClientRect 恒 0，
+// 真实 virtualizer 的窗口计算不可靠（virtual-core 对缺失 ResizeObserver 静默跳过）。
+// 这里 mock @tanstack/vue-virtual 为「scroll 事件驱动的固定行高窗口算法」fake：
+// 保留 scroll 事件 → 窗口状态（shallowRef）→ computed → DOM 重渲染的真实链路，
+// 只 fake 窗口算法本身；measureElement / getItemKey / scrollMargin / count 以传导断言覆盖。
+const virtualMock = vi.hoisted(() => ({ instances: [] as any[] }));
+
+vi.mock("@tanstack/vue-virtual", async () => {
+  const { shallowRef, unref } = await import("vue");
+
+  function createFake(options: any) {
+    const ROW_H = 40;
+    const items = shallowRef<any[]>([]);
+    const total = { value: 0 };
+    const measured: Element[] = [];
+    let el: HTMLElement | null = null;
+
+    function recompute() {
+      const opts = unref(options);
+      const viewport = el?.clientHeight || 200;
+      const offset = Math.max(0, (el?.scrollTop ?? 0) - (opts.scrollMargin ?? 0));
+      const start = Math.max(0, Math.floor(offset / ROW_H) - 2);
+      const end = Math.min(opts.count, Math.ceil((offset + viewport) / ROW_H) + 2);
+      const window: any[] = [];
+      for (let i = start; i < end; i++) {
+        window.push({
+          index: i,
+          start: i * ROW_H,
+          end: (i + 1) * ROW_H,
+          size: ROW_H,
+          key: opts.getItemKey(i),
+        });
+      }
+      items.value = window;
+      total.value = opts.count * ROW_H;
+    }
+
+    return {
+      get options() {
+        return unref(options);
+      },
+      measured,
+      getVirtualItems: () => items.value,
+      getTotalSize: () => total.value,
+      measureElement: (node: Element) => {
+        measured.push(node);
+      },
+      // 真实 virtualizer 在滚动元素就绪后自动订阅；mock 由测试显式接线
+      attach() {
+        const opts = unref(options);
+        el = opts.getScrollElement() as HTMLElement;
+        el?.addEventListener("scroll", recompute);
+        recompute();
+      },
+    };
+  }
+
+  return {
+    useVirtualizer: (options: any) => {
+      const instance = createFake(options);
+      virtualMock.instances.push(instance);
+      return shallowRef(instance);
+    },
+  };
+});
 
 interface User {
   id: number;
@@ -47,11 +115,23 @@ function makeTableRender(
   return { wrapper, def: () => box.def! };
 }
 
-/** 数据行（排除骨架行与空态行）单元格文本矩阵 */
+/** 数据行（排除骨架行、空态行与虚拟占位行）单元格文本矩阵 */
 function dataRows(wrapper: ReturnType<typeof mount>): string[][] {
   return wrapper
-    .findAll("tbody tr:not([data-skeleton]):not([data-empty])")
+    .findAll("tbody tr:not([data-skeleton]):not([data-empty]):not([data-virtual-pad])")
     .map((tr) => tr.findAll("td").map((td) => td.text()));
+}
+
+/** 接线滚动元素（真实 virtualizer 在挂载后自动订阅，mock 由测试显式触发） */
+function attachVirtual() {
+  const instance = virtualMock.instances.at(-1)!;
+  instance.attach();
+  return instance;
+}
+
+/** 单元格内联样式（sticky 断言用；DOMWrapper.element 是 Element，需收窄到 HTMLElement） */
+function cellStyle(el: { element: Element }): CSSStyleDeclaration {
+  return (el.element as HTMLElement).style;
 }
 
 describe("TableRender 基础渲染", () => {
@@ -782,6 +862,710 @@ describe("TableRender 行选择（S 系列）", () => {
     expect(wrapper.findAll("thead th")).toHaveLength(2);
     await wrapper.findAll("tbody tr")[0]!.trigger("click");
     expect(wrapper.emitted("row-click")).toHaveLength(1);
+    wrapper.unmount();
+  });
+});
+
+// ---- 搜索表单联动（FormRender / search） -------------------------------------
+
+interface Query {
+  name: string;
+}
+
+function searchItems(): FormRenderItem<Query>[] {
+  return [{ key: "name", title: "姓名", default: "" }];
+}
+
+function clickButton(wrapper: ReturnType<typeof mount>, text: string) {
+  const target = wrapper.findAll("button").find((button) => button.text() === text);
+  if (!target) throw new Error(`未找到按钮：${text}`);
+  return target.trigger("click");
+}
+
+/**
+ * 服务端模式 + search 表单：Host 在 setup 内 defineForm + defineTable（TanStack 约束）。
+ * via = "config" 时 search 走 defineTable 配置；"prop" 时走组件 prop（回填装配口）。
+ */
+function makeSearchRender(
+  onLoad: (params: TableLoadParams<User>) => void | Promise<unknown>,
+  config: Record<string, unknown> = {},
+  via: "config" | "prop" = "config",
+) {
+  const box: { def?: TableRenderDefinition<User>; form?: FormRenderDefinition<Query> } = {};
+  const Host = defineComponent({
+    setup() {
+      const form = defineForm<Query>({ items: searchItems() });
+      box.form = form;
+      box.def = defineTable<User>({
+        columns: baseColumns(),
+        onLoad,
+        ...(via === "config" ? { search: form } : {}),
+        ...config,
+      });
+      return () =>
+        h(TableRender, {
+          rowKey: "id",
+          definition: box.def,
+          ...(via === "prop" ? { search: form } : {}),
+        });
+    },
+  });
+  const wrapper = mount(Host, { attachTo: document.body });
+  return { wrapper, def: () => box.def!, form: () => box.form! };
+}
+
+describe("TableRender 搜索表单联动（search）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it("onLoad 携带 search 表单当前值；未配置 search 时恒 {}", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 2), 2));
+    const { wrapper, def, form } = makeSearchRender(onLoad);
+    await flushPromises();
+
+    // 首载即带 defaults
+    expect(onLoad.mock.calls[0][0].form).toEqual({ name: "" });
+    expect(def().search).toBe(form());
+
+    // 输入后再取数（翻页）携带最新值
+    await wrapper.find("input").setValue("用户1");
+    def().setPageIndex(2);
+    await flushPromises();
+    expect(onLoad.mock.calls.at(-1)![0].form).toEqual({ name: "用户1" });
+    wrapper.unmount();
+
+    // 对照：未配置 search 的服务端表格恒为 {}
+    const plainOnLoad = vi.fn(({ update }: any) => update([], 0));
+    makeServerRender(plainOnLoad);
+    await flushPromises();
+    expect(plainOnLoad.mock.calls[0][0].form).toEqual({});
+  });
+
+  it("点击搜索：归位第 1 页、携带最新值并 emit search(values)", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { wrapper, def } = makeSearchRender(onLoad);
+    await flushPromises();
+
+    def().setPageIndex(3);
+    await flushPromises();
+
+    await wrapper.find("input").setValue("张三");
+    await clickButton(wrapper, "搜索");
+    await flushPromises();
+
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("search")?.at(-1)).toEqual([{ name: "张三" }]);
+    const last = onLoad.mock.calls.at(-1)![0];
+    expect(last.page.pageIndex).toBe(1);
+    expect(last.form).toEqual({ name: "张三" });
+    wrapper.unmount();
+  });
+
+  it("点击重置：重载读到 defaults 并 emit reset(values)，归位第 1 页", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { wrapper, def } = makeSearchRender(onLoad);
+    await flushPromises();
+
+    def().setPageIndex(2);
+    await flushPromises();
+    await wrapper.find("input").setValue("临时值");
+    await clickButton(wrapper, "搜索");
+    await flushPromises();
+    expect(onLoad.mock.calls.at(-1)![0].form).toEqual({ name: "临时值" });
+
+    def().setPageIndex(4);
+    await flushPromises();
+    await clickButton(wrapper, "重置");
+    await flushPromises();
+
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("reset")?.at(-1)).toEqual([{ name: "" }]);
+    const last = onLoad.mock.calls.at(-1)![0];
+    expect(last.page.pageIndex).toBe(1);
+    // TanStack reset 为同步 setState：reset 事件后 reload 读取即 defaults
+    expect(last.form).toEqual({ name: "" });
+    wrapper.unmount();
+  });
+
+  it("静态模式传 search：DEV 警告且不渲染搜索区", () => {
+    const fakeSearch = {
+      items: [] as FormRenderItem<Query>[],
+      form: { state: { values: {} } } as FormRenderDefinition<Query>["form"],
+      resetToDefaults: () => {},
+    };
+    const { wrapper, def } = makeTableRender({ data: USERS, search: fakeSearch });
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("search 仅服务端模式生效"));
+    expect(def().search).toBeUndefined();
+    // 搜索区不渲染：静态表格无任何 input
+    expect(wrapper.find("input").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("search 缺 form/items：DEV 警告并忽略", () => {
+    const onLoad = vi.fn(({ update }: any) => update([], 0));
+    const { def } = makeTableRender({
+      onLoad,
+      data: undefined,
+      search: { items: [] } as never,
+    });
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("search 缺少 form 或 items"));
+    expect(def().search).toBeUndefined();
+  });
+
+  it("聚合式 definition 与 prop 同传 search：definition 优先 + DEV 警告", async () => {
+    const onLoad = vi.fn(({ update }: any) => update([], 0));
+    const box: {
+      def?: TableRenderDefinition<User>;
+      a?: FormRenderDefinition<Query>;
+      b?: FormRenderDefinition<Query>;
+    } = {};
+    const Host = defineComponent({
+      setup() {
+        box.a = defineForm<Query>({ items: searchItems() });
+        box.b = defineForm<Query>({ items: searchItems() });
+        box.def = defineTable<User>({ columns: baseColumns(), onLoad, search: box.a });
+        return () => h(TableRender, { rowKey: "id", definition: box.def, search: box.b });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("聚合式下 search"));
+    expect(box.def!.search).toBe(box.a);
+    // B 未渲染：页面唯一的 input 属于 A，取数携带 A 的值
+    await wrapper.find("input").setValue("A值");
+    box.def!.reload();
+    await flushPromises();
+    expect(onLoad.mock.calls.at(-1)![0].form).toEqual({ name: "A值" });
+    wrapper.unmount();
+  });
+
+  it("聚合式未配 search 时 prop 回填生效（不做聚合式忽略限制）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update([], 0));
+    const { wrapper, def, form } = makeSearchRender(onLoad, {}, "prop");
+    await flushPromises();
+
+    expect(def().search).toBe(form());
+    await wrapper.find("input").setValue("回填值");
+    await clickButton(wrapper, "搜索");
+    await flushPromises();
+    expect(onLoad.mock.calls.at(-1)![0].form).toEqual({ name: "回填值" });
+    wrapper.unmount();
+  });
+});
+
+// ---- 固定列（fixed / sticky） -------------------------------------------------
+
+describe("TableRender 固定列（fixed）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  // cellStyle 见文件级定义
+  function fixedCols(): TableColumnOptions<User>[] {
+    return [
+      { key: "name", title: "姓名", width: 120, fixed: "left" },
+      { key: "age", title: "年龄", width: 100, sortable: true },
+      { key: "id", title: "ID", width: 80, fixed: "right" },
+    ];
+  }
+
+  it("fixed 列渲染 sticky 样式与正确 offset；表头/数据行 z 分层且交界列带分隔边框", () => {
+    const { wrapper } = makeTableRender({ columns: fixedCols() });
+
+    const head = wrapper.findAll("thead th");
+    // 姓名（fixed-left）：sticky left 0，表头 z 20，bg + 左组交界边框
+    expect(cellStyle(head[0]).position).toBe("sticky");
+    expect(cellStyle(head[0]).left).toBe("0px");
+    expect(cellStyle(head[0]).zIndex).toBe("20");
+    expect(head[0]!.classes()).toContain("bg-background");
+    expect(head[0]!.classes()).toContain("border-r");
+    // 年龄（普通列）：无 sticky
+    expect(cellStyle(head[1]).position).toBe("");
+
+    const tds = () => wrapper.findAll("tbody tr")[0]!.findAll("td");
+    expect(cellStyle(tds()[0]).position).toBe("sticky");
+    expect(cellStyle(tds()[0]).left).toBe("0px");
+    expect(cellStyle(tds()[0]).zIndex).toBe("10"); // 表体 z 低于表头
+    expect(cellStyle(tds()[1]).position).toBe("");
+    // ID（fixed-right）：sticky right 0 + 右组交界边框
+    expect(cellStyle(tds()[2]).right).toBe("0px");
+    expect(tds()[2]!.classes()).toContain("bg-background");
+    expect(tds()[2]!.classes()).toContain("border-l");
+    wrapper.unmount();
+  });
+
+  it("多列 fixed-left 顺序累计 offset；多列 fixed-right 反向累计", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "a", title: "A", width: 100, fixed: "left" },
+        { key: "b", title: "B", width: 80, fixed: "left" },
+        { key: "c", title: "C", width: 90 },
+        { key: "d", title: "D", width: 70, fixed: "right" },
+        { key: "e", title: "E", width: 60, fixed: "right" },
+      ],
+    });
+
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).left).toBe("0px");
+    expect(head[0]!.classes()).not.toContain("border-r"); // 左组内部不加分隔
+    expect(cellStyle(head[1]).left).toBe("100px"); // 100 + 0
+    expect(head[1]!.classes()).toContain("border-r"); // 左组交界（靠内容侧）
+    expect(cellStyle(head[3]).right).toBe("60px"); // D = E 宽 60
+    expect(head[3]!.classes()).toContain("border-l"); // 右组交界（靠内容侧）
+    expect(cellStyle(head[4]).right).toBe("0px");
+    expect(head[4]!.classes()).not.toContain("border-l");
+    wrapper.unmount();
+  });
+
+  it("选择列视作最左 sticky 列参与累计，fixed-left 业务列偏移累加选择列宽", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 120, fixed: "left" },
+        { key: "age", title: "年龄", width: 100 },
+      ],
+      rowSelection: "checkbox",
+    });
+
+    const head = wrapper.findAll("thead th"); // [选择列, 姓名, 年龄]
+    expect(cellStyle(head[0]).position).toBe("sticky");
+    expect(cellStyle(head[0]).left).toBe("0px");
+    expect(head[0]!.classes()).not.toContain("border-r"); // 与左组同侧，非交界
+    expect(cellStyle(head[1]).left).toBe("48px"); // 0 + 选择列宽 48
+    expect(head[1]!.classes()).toContain("border-r");
+
+    const tds = wrapper.findAll("tbody tr")[0]!.findAll("td");
+    expect(cellStyle(tds[0]).left).toBe("0px");
+    expect(cellStyle(tds[1]).left).toBe("48px");
+    wrapper.unmount();
+  });
+
+  it("仅 rowSelection 无 fixed 列：选择列 sticky，业务列不受影响", () => {
+    const { wrapper } = makeTableRender({ rowSelection: "checkbox" });
+
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).position).toBe("sticky");
+    expect(cellStyle(head[0]).left).toBe("0px");
+    expect(head[0]!.classes()).toContain("border-r"); // 唯一左 sticky → 交界
+    expect(cellStyle(head[1]).position).toBe("");
+    expect(cellStyle(head[2]).position).toBe("");
+    wrapper.unmount();
+  });
+
+  it("fixed 缺数字 width：DEV 警告并降级普通列（字符串宽度同样降级）", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", fixed: "left" }, // 无 width
+        { key: "age", title: "年龄", width: "10rem", fixed: "left" }, // 字符串 width
+        { key: "id", title: "ID", width: 80 },
+      ],
+    });
+
+    expect(warn).toHaveBeenCalledTimes(2);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("已忽略 fixed"));
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).position).toBe("");
+    expect(cellStyle(head[1]).position).toBe("");
+    wrapper.unmount();
+  });
+
+  it("加载骨架行的 fixed 列同 sticky 同 offset", async () => {
+    const pending = deferred();
+    const { wrapper } = makeServerRender(() => pending.promise, { columns: fixedCols() });
+    await flushPromises();
+
+    const tds = wrapper.findAll("tbody tr[data-skeleton]")[0]!.findAll("td");
+    expect(cellStyle(tds[0]).position).toBe("sticky");
+    expect(cellStyle(tds[0]).left).toBe("0px");
+    expect(cellStyle(tds[1]).position).toBe("");
+    expect(cellStyle(tds[2]).right).toBe("0px");
+
+    pending.resolve();
+    await flushPromises();
+    wrapper.unmount();
+  });
+
+  it("无 fixed 列时无 sticky 样式（表头与数据行）", async () => {
+    const { wrapper } = makeTableRender();
+    await flushPromises();
+
+    for (const th of wrapper.findAll("thead th")) {
+      expect(cellStyle(th).position).toBe("");
+    }
+    for (const td of wrapper.findAll("tbody tr td")) {
+      expect(cellStyle(td).position).toBe("");
+    }
+    wrapper.unmount();
+  });
+});
+
+// ---- 虚拟滚动（virtual） -------------------------------------------------------
+
+const USERS_1000: User[] = Array.from({ length: 1000 }, (_, i) => ({
+  id: i + 1,
+  name: `用户${i + 1}`,
+  age: 25 - (i % 25),
+}));
+
+describe("TableRender 虚拟滚动（virtual）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    virtualMock.instances.length = 0;
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  // cellStyle 见文件级定义
+  it("virtual + height 只渲染可见窗口行（远小于数据总量），配置传导正确", async () => {
+    const { wrapper } = makeTableRender({
+      data: USERS_1000,
+      pageSize: 1000,
+      virtual: true,
+      height: 200,
+    });
+    await flushPromises();
+
+    const instance = virtualMock.instances.at(-1)!;
+    expect(instance.options.count).toBe(1000);
+    expect(instance.options.getScrollElement()).toBeTruthy();
+    expect(instance.options.scrollMargin).toBe(0); // happy-dom 下 thead offsetHeight 恒 0
+    expect(instance.options.getItemKey(5)).toBe("6");
+
+    attachVirtual();
+    await flushPromises();
+
+    const rows = dataRows(wrapper);
+    expect(rows.length).toBeLessThan(20); // 窗口行远小于 1000
+    expect(rows[0]).toEqual(["用户1", "25岁"]);
+
+    // 滚动容器高度传导（数字 → px）与虚拟结构
+    const container = wrapper.find(".overflow-x-auto");
+    expect(container.attributes("style")).toContain("height: 200px");
+    expect(container.attributes("style")).toContain("overflow-y: auto");
+    expect(wrapper.findAll("[data-virtual-pad]")).toHaveLength(2);
+    // measureElement 传导：窗口行全部请求过测量（去重后与行数一致）
+    expect(new Set(instance.measured).size).toBe(rows.length);
+    // 行 key = rowKey（DOM data-index 对应数据下标）
+    expect(wrapper.find("tbody tr[data-index='0']")).toBeTruthy();
+    wrapper.unmount();
+  });
+
+  it("滚动后渲染窗口更新（scroll 事件触发），行内容跟随新窗口", async () => {
+    const { wrapper } = makeTableRender({
+      data: USERS_1000,
+      pageSize: 1000,
+      virtual: true,
+      height: 200,
+    });
+    await flushPromises();
+    const instance = attachVirtual();
+    await flushPromises();
+    expect(dataRows(wrapper)[0]).toEqual(["用户1", "25岁"]);
+
+    const el = instance.options.getScrollElement() as HTMLElement;
+    el.scrollTop = 40_000; // 行高 40 × 1000 行 → 末尾窗口
+    el.dispatchEvent(new Event("scroll"));
+    await flushPromises();
+
+    const rows = dataRows(wrapper);
+    expect(rows.length).toBeLessThan(20);
+    expect(rows[0]).not.toEqual(["用户1", "25岁"]); // 窗口已离开头部
+    expect(rows.at(-1)).toEqual(["用户1000", "1岁"]); // 窗口覆盖末行
+    wrapper.unmount();
+  });
+
+  it("虚拟行与固定列叠加：sticky 样式与 row-click 在虚拟行内保持", async () => {
+    const onRowClick = vi.fn();
+    const { wrapper } = makeTableRender(
+      {
+        data: USERS_1000,
+        pageSize: 1000,
+        virtual: true,
+        height: 200,
+        columns: [
+          { key: "name", title: "姓名", width: 120, fixed: "left" },
+          { key: "age", title: "年龄", width: 100 },
+        ],
+      },
+      { onRowClick },
+    );
+    await flushPromises();
+    attachVirtual();
+    await flushPromises();
+
+    const firstRow = wrapper.findAll("tbody tr:not([data-virtual-pad])")[0]!;
+    const tds = firstRow.findAll("td");
+    expect(cellStyle(tds[0]).position).toBe("sticky");
+    expect(cellStyle(tds[0]).left).toBe("0px");
+    expect(cellStyle(tds[1]).position).toBe("");
+
+    await firstRow.trigger("click");
+    expect(onRowClick).toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("virtual 缺 height：DEV 警告并降级普通渲染", () => {
+    const { wrapper } = makeTableRender({ data: USERS, pageSize: 100, virtual: true });
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("virtual 需要配置 height"));
+    expect(dataRows(wrapper)).toHaveLength(25); // 全量渲染
+    expect(wrapper.find("[data-virtual-pad]").exists()).toBe(false);
+    expect(virtualMock.instances).toHaveLength(0); // 未创建 virtualizer
+    expect(wrapper.find(".overflow-x-auto").attributes("style")).toBeUndefined();
+    wrapper.unmount();
+  });
+
+  it("未开启 virtual 时全量渲染且无虚拟结构", () => {
+    const { wrapper } = makeTableRender({ data: USERS, pageSize: 100 });
+
+    expect(dataRows(wrapper)).toHaveLength(25);
+    expect(wrapper.find("[data-virtual-pad]").exists()).toBe(false);
+    expect(wrapper.find(".overflow-x-auto").attributes("style")).toBeUndefined();
+    expect(virtualMock.instances).toHaveLength(0);
+    wrapper.unmount();
+  });
+});
+
+// ---- 树形数据（tree） -----------------------------------------------------------
+
+interface Dept extends User {
+  children?: Dept[];
+}
+
+const TREE: Dept[] = [
+  {
+    id: 1,
+    name: "总部",
+    age: 40,
+    children: [
+      {
+        id: 11,
+        name: "研发部",
+        age: 30,
+        children: [{ id: 111, name: "前端组", age: 25 }],
+      },
+      { id: 12, name: "市场部", age: 28 },
+    ],
+  },
+  { id: 2, name: "分公司", age: 35 },
+];
+
+describe("TableRender 树形数据（tree）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  /** 首列内层 span（缩进容器；tree 启用时才有） */
+  function indentSpan(tr: ReturnType<typeof mount>["find"] extends never ? never : any) {
+    return tr.find("td span[style]");
+  }
+
+  it("有 children 的行渲染 caret 与 depth 缩进；叶子行无 caret", () => {
+    const { wrapper } = makeTableRender({ data: TREE, pageSize: 100, tree: {} });
+
+    // 默认全收起：总部、分公司
+    expect(dataRows(wrapper)).toHaveLength(2);
+    const rows = wrapper.findAll("tbody tr");
+    // 总部 depth 0：缩进 0，有展开 caret
+    expect(indentSpan(rows[0]).attributes("style")).toContain("margin-left: 0px");
+    expect(rows[0].find('button[aria-label="展开"]').exists()).toBe(true);
+    // 分公司叶子：无任何 button
+    expect(rows[1].find("button").exists()).toBe(false);
+    wrapper.unmount();
+  });
+
+  it("点击展开/收起：aria-expanded 翻转、子行出现/消失", async () => {
+    const { wrapper } = makeTableRender({ data: TREE, pageSize: 100, tree: {} });
+    const caret = () =>
+      wrapper.find('tbody button[aria-label="展开"], tbody button[aria-label="收起"]');
+
+    await caret().trigger("click");
+    expect(dataRows(wrapper)).toHaveLength(4); // + 研发部、市场部
+    expect(caret().attributes("aria-expanded")).toBe("true");
+    expect(caret().attributes("aria-label")).toBe("收起");
+
+    await caret().trigger("click");
+    expect(dataRows(wrapper)).toHaveLength(2);
+    expect(caret().attributes("aria-expanded")).toBe("false");
+    wrapper.unmount();
+  });
+
+  it("defaultExpandAll 初始全展开；每层缩进按 indentSize 累计", () => {
+    const { wrapper } = makeTableRender({
+      data: TREE,
+      pageSize: 100,
+      tree: { defaultExpandAll: true },
+    });
+
+    expect(dataRows(wrapper)).toHaveLength(5); // 总部/研发部/前端组/市场部/分公司
+    const rows = wrapper.findAll("tbody tr");
+    expect(indentSpan(rows[0]).attributes("style")).toContain("margin-left: 0px");
+    expect(indentSpan(rows[1]).attributes("style")).toContain("margin-left: 16px");
+    expect(indentSpan(rows[2]).attributes("style")).toContain("margin-left: 32px");
+    wrapper.unmount();
+  });
+
+  it("childrenKey 自定义子行字段", async () => {
+    const CUSTOM: any[] = [
+      { id: 1, name: "总部", age: 40, subs: [{ id: 11, name: "研发部", age: 30 }] },
+    ];
+    const { wrapper } = makeTableRender({
+      data: CUSTOM,
+      pageSize: 100,
+      tree: { childrenKey: "subs" },
+    });
+
+    expect(dataRows(wrapper)).toHaveLength(1);
+    await wrapper.find('tbody button[aria-label="展开"]').trigger("click");
+    expect(dataRows(wrapper)).toHaveLength(2);
+    expect(dataRows(wrapper)[1]).toEqual(["研发部", "30岁"]);
+    wrapper.unmount();
+  });
+
+  it("caret 点击与 row-click 隔离（stop 修饰），行点击不受影响", async () => {
+    const onRowClick = vi.fn();
+    const { wrapper } = makeTableRender({ data: TREE, pageSize: 100, tree: {} }, { onRowClick });
+
+    await wrapper.find('tbody button[aria-label="展开"]').trigger("click");
+    expect(onRowClick).not.toHaveBeenCalled();
+    expect(dataRows(wrapper)).toHaveLength(4);
+
+    await wrapper.findAll("tbody tr")[0]!.trigger("click");
+    expect(onRowClick).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+
+  it("与 rowSelection 共存：子行独立可选，全选含展开子行", async () => {
+    const { wrapper, def } = makeTableRender({
+      data: TREE,
+      pageSize: 100,
+      tree: { defaultExpandAll: true },
+      rowSelection: "checkbox",
+    });
+
+    // 全选作用本页展开后的全部行（父 + 子）
+    await wrapper.find("thead [data-part='control']").trigger("click");
+    expect(def().selectedKeys.value).toEqual(new Set(["1", "11", "111", "12", "2"]));
+
+    // 单独勾选子行（第 2 行 = 研发部）
+    def().clearSelection();
+    await flushPromises(); // 受控控件 DOM 同步后再交互
+    const controls = wrapper.findAll("tbody tr [data-part='control']");
+    await controls[1]!.trigger("click");
+    expect(def().selectedKeys.value).toEqual(new Set(["11"]));
+    wrapper.unmount();
+  });
+
+  it("与 virtual 叠加：展开后 count 更新、窗口行包含子行", async () => {
+    const data: any[] = USERS_1000.map((u, i) =>
+      i === 0
+        ? {
+            ...u,
+            children: [
+              { id: 10001, name: "子行A", age: 1 },
+              { id: 10002, name: "子行B", age: 2 },
+            ],
+          }
+        : u,
+    );
+    const { wrapper } = makeTableRender({
+      data,
+      pageSize: 1000,
+      virtual: true,
+      height: 200,
+      tree: {},
+    });
+    await flushPromises();
+    const instance = attachVirtual();
+    await flushPromises();
+    expect(instance.options.count).toBe(1000);
+
+    await wrapper.find('tbody button[aria-label="展开"]').trigger("click");
+    await flushPromises();
+    // 行模型 +2 实时传导（getter 实时反映 options computed）
+    const exposedTable = (wrapper.findComponent(TableRender).vm as any).table;
+    const oneCall = exposedTable.getRowModel().rows;
+    // 展开先于分页（paginateExpandedRows 默认 true）：子行挤入分页窗口，
+    // getRowModel().rows 恒为当前页行窗口（count 语义 = 窗口行数，非全树展开总数）
+    expect(oneCall.length).toBe(1000);
+    expect(oneCall.filter((r: any) => r.depth > 0)).toHaveLength(2);
+    // count = 当前页行窗口（分页语义不变），展开的子行在窗口内出现
+    expect(instance.options.count).toBe(1000);
+
+    const rows = dataRows(wrapper);
+    expect(rows.length).toBeLessThan(20); // 窗口行数仍受控
+    expect(rows[1]).toEqual(["子行A", "1岁"]);
+    expect(rows[2]).toEqual(["子行B", "2岁"]);
+    wrapper.unmount();
+  });
+
+  it("与 sticky 首列叠加：缩进在 sticky 单元格内正常渲染", () => {
+    const { wrapper } = makeTableRender({
+      data: TREE,
+      pageSize: 100,
+      tree: { defaultExpandAll: true },
+      columns: [
+        { key: "name", title: "姓名", width: 120, fixed: "left" },
+        { key: "age", title: "年龄" },
+      ],
+    });
+
+    const rows = wrapper.findAll("tbody tr");
+    expect(cellStyle(rows[0].find("td")).position).toBe("sticky");
+    expect(indentSpan(rows[0]).attributes("style")).toContain("margin-left: 0px");
+    expect(indentSpan(rows[1]).attributes("style")).toContain("margin-left: 16px");
+    wrapper.unmount();
+  });
+
+  it("tree 配置无效：DEV 警告并忽略（非对象 / childrenKey 非字符串）", () => {
+    makeTableRender({ data: TREE, pageSize: 100, tree: "no" as never });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("tree 必须是对象"));
+
+    const { wrapper, def } = makeTableRender({
+      data: TREE,
+      pageSize: 100,
+      tree: { childrenKey: 123 as never },
+    });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("tree.childrenKey"));
+    expect(def().tree).toBeUndefined();
+    expect(dataRows(wrapper)).toHaveLength(2);
+    wrapper.unmount();
+  });
+
+  it("服务端模式：children 随行数据返回，展开为纯客户端交互", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(TREE, 2));
+    const { wrapper } = makeServerRender(onLoad, { tree: { defaultExpandAll: true } });
+    await flushPromises();
+
+    expect(dataRows(wrapper)).toHaveLength(5);
+    await wrapper.find('tbody button[aria-label="收起"]').trigger("click");
+    expect(dataRows(wrapper)).toHaveLength(2);
+    expect(onLoad).toHaveBeenCalledTimes(1); // 展开不触发取数
     wrapper.unmount();
   });
 });

@@ -19,5 +19,6 @@ export type {
   TableColumnOptions,
   TableLoadParams,
   TableRenderDefinition,
+  TreeOptions,
   UseTableRenderOptions,
 } from "./types";

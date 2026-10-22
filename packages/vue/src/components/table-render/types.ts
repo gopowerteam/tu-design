@@ -1,4 +1,5 @@
 import type { ColumnRender, ColumnRenders } from "./column-renders";
+import type { FormRenderDefinition } from "../form-render";
 import type { Table as TanstackTable } from "@tanstack/vue-table";
 import type { MaybeRefOrGetter, Ref } from "vue";
 
@@ -29,6 +30,8 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   sortable?: boolean;
   /** 初始排序方向；需 sortable: true，否则 DEV 警告并忽略（R7） */
   defaultSort?: "asc" | "desc";
+  /** 固定列：横向滚动时 sticky 在左/右；须同时提供数字 width，否则 DEV 警告并按普通列渲染 */
+  fixed?: "left" | "right";
 }
 
 export interface PageableOptions {
@@ -47,7 +50,7 @@ export interface SortableOptions {
 
 /** onLoad 入参：数据协议与 x-render 同构，request 生态由调用方自理 */
 export interface TableLoadParams<T extends DataRecord = DataRecord> {
-  /** 搜索表单值，v1 恒 {}（二期接 FormRender） */
+  /** 搜索表单值（来自 options.search 的表单当前值）；未配置 search 时为 {} */
   form: DataRecord;
   page: PageableOptions;
   /** 无排序或已取消排序时为 undefined */
@@ -71,6 +74,29 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   rowSelection?: "radio" | "checkbox" | TableSelectionOptions<T>;
   /** 行主键字段；rowSelection 启用且此值无效时禁用选择（S1） */
   rowKey?: string;
+  /**
+   * 搜索表单（defineForm 返回值）：仅服务端模式生效，每次 onLoad 的 form 参数
+   * 携带 `search.form.state.values` 当前值。静态模式传入时 DEV 警告并忽略。
+   * 泛型为 any：FormRenderDefinition 对 T 不变（FormRenderItem.key 字面量收窄），
+   * DataRecord 版会拒收一切具体 defineForm<Q> 结果（对齐 FormRender.vue prop 约定）。
+   */
+  search?: FormRenderDefinition<any>;
+  /** 虚拟滚动：开启后表体行在当前页行窗口内虚拟化（分页语义不变）；须同时配置 height，否则 DEV 警告并降级普通渲染 */
+  virtual?: boolean;
+  /** 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 virtual: true 时生效 */
+  height?: number | string;
+  /** 树形数据：子行展开/收起（展开按钮在首个业务列内）；配置无效时 DEV 警告并忽略 */
+  tree?: TreeOptions;
+}
+
+/** 树形数据配置（T 系列） */
+export interface TreeOptions {
+  /** 子行字段名，默认 "children" */
+  childrenKey?: string;
+  /** 默认全部展开，默认 false */
+  defaultExpandAll?: boolean;
+  /** 每层缩进 px，默认 16 */
+  indentSize?: number;
 }
 
 /** 行选择配置（S 系列） */
@@ -123,6 +149,16 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   clearSelection: () => void;
   /** 行控件切换：checked 为 false 时移除（radio 受 cancelable 约束，S4） */
   toggleRowSelected: (key: string, checked: boolean) => void;
+  /** 搜索表单定义（options.search 校验后的回传，供 TableRender 渲染搜索区；被忽略时为 undefined） */
+  search: FormRenderDefinition<any> | undefined;
+  /** 内部装配口：definition 未配置 search 时由 TableRender 回填组件 prop（对齐 setRowKey） */
+  setSearch: (search: FormRenderDefinition<any> | undefined) => void;
+  /** 虚拟滚动配置透传（未配置为 undefined），供组件渲染层判定（definition 优先于 prop） */
+  virtual: boolean | undefined;
+  /** 虚拟滚动容器高度配置透传（仅 virtual: true 时被组件使用） */
+  height: number | string | undefined;
+  /** 树形配置（引擎校验后的回传，供组件读取 indentSize；无效配置被忽略时为 undefined） */
+  tree: TreeOptions | undefined;
   /** 内部装配口：拆分式由 TableRender 在 setup 时回填 rowKey（S1） */
   setRowKey: (rowKey: string | undefined) => void;
 }

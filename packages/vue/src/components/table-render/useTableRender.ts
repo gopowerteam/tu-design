@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, readonly, ref, shallowRef, toValue, watc
 import type { Ref } from "vue";
 import {
   getCoreRowModel,
+  getExpandedRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useVueTable,
@@ -12,8 +13,10 @@ import type {
   SortableOptions,
   TableRenderDefinition,
   TableSelectionOptions,
+  TreeOptions,
   UseTableRenderOptions,
 } from "./types";
+import type { FormRenderDefinition } from "../form-render";
 
 const DEFAULT_PAGE_SIZE_OPTS = [10, 20, 50, 100];
 
@@ -38,6 +41,54 @@ export function useTableRender<T extends DataRecord>(
   if (columns.length === 0) warn("columns 为空，表格将没有表头。");
   if (serverMode && options.data !== undefined) {
     warn("onLoad 与 data 不能同时传入，已按 onLoad（服务端模式）处理。");
+  }
+
+  // ---- 树形数据（T 系列） ------------------------------------------------------
+  // 唯一解析点：无效配置 warn 并忽略；解析结果回传供组件读取 indentSize
+  let tree: TreeOptions | undefined;
+  if (options.tree !== undefined) {
+    if (typeof options.tree !== "object" || options.tree === null) {
+      warn("tree 必须是对象配置，已忽略。");
+    } else if (
+      options.tree.childrenKey !== undefined &&
+      typeof options.tree.childrenKey !== "string"
+    ) {
+      warn("tree.childrenKey 必须是字符串，已忽略。");
+    } else {
+      tree = options.tree;
+    }
+  }
+  const childrenKey = tree?.childrenKey ?? "children";
+
+  // ---- 搜索表单（FormRender 联动） -------------------------------------------
+  // any：FormRenderDefinition 对 T 不变，DataRecord 版拒收具体 defineForm<Q> 结果（见 types.ts）
+  let search: FormRenderDefinition<any> | undefined;
+
+  /** search 唯一装配入口：静态模式 / 缺 form·items 时 DEV 警告并忽略 */
+  function applySearch(next: FormRenderDefinition<any> | undefined) {
+    if (next === undefined) {
+      search = undefined;
+      return;
+    }
+    if (!serverMode) {
+      warn("search 仅服务端模式生效（未传 onLoad），已忽略。");
+      search = undefined;
+      return;
+    }
+    if (!next.form || !Array.isArray(next.items)) {
+      warn("search 缺少 form 或 items，已忽略。");
+      search = undefined;
+      return;
+    }
+    search = next;
+  }
+
+  applySearch(options.search);
+
+  /** 拆分式/组件级装配口：definition 未配置 search 时由 TableRender 回填 prop（对齐 setRowKey） */
+  function setSearch(next: FormRenderDefinition<any> | undefined) {
+    if (search || !next) return;
+    applySearch(next);
   }
 
   const page = reactive({
@@ -135,6 +186,13 @@ export function useTableRender<T extends DataRecord>(
       return rows.value;
     },
     getRowId: (originalRow, index) => rowIdOf(originalRow, index),
+    // 树形：子行走 childrenKey（空数组与缺字段都视为叶子）；展开模型接入后
+    // getRowModel() 返回「父行 + 可见子行」的扁平序列，行带 depth/toggleExpanded
+    getSubRows: (originalRow) => {
+      const children = (originalRow as DataRecord)[childrenKey];
+      return Array.isArray(children) ? children : [];
+    },
+    getExpandedRowModel: getExpandedRowModel(),
     columns: columns.map<ColumnDef<T>>((column) => ({
       accessorKey: column.key,
       header: column.title,
@@ -142,6 +200,10 @@ export function useTableRender<T extends DataRecord>(
     })),
     initialState: {
       sorting: sorted ? [{ id: sorted.key, desc: sorted.defaultSort === "desc" }] : [],
+      // 初始 pageSize 须进 TanStack（此前只写对外投影，静态模式初始 pageSize≠10 不生效）
+      pagination: { pageIndex: 0, pageSize: options.pageSize ?? 10 },
+      // defaultExpandAll：true = 全部展开；否则全收起（TanStack expanded 空对象）
+      expanded: tree?.defaultExpandAll === true ? true : {},
     },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -240,7 +302,8 @@ export function useTableRender<T extends DataRecord>(
     loading.value = true;
     try {
       await options.onLoad?.({
-        form: {},
+        // 事件/取数时机读取是安全的（form.state 非响应式但同步）；浅拷贝避免调用方改写真值
+        form: search ? { ...search.form.state.values } : {},
         page: {
           pageIndex: page.pageIndex,
           pageSize: page.pageSize,
@@ -368,6 +431,15 @@ export function useTableRender<T extends DataRecord>(
     setSelection,
     clearSelection,
     toggleRowSelected,
+    // getter 而非快照：setSearch 由 TableRender 在 setup 回填，读取须反映最新值
+    get search() {
+      return search;
+    },
+    setSearch,
+    // 纯配置透传（渲染层消费；不支持运行时切换）
+    virtual: options.virtual,
+    height: options.height,
+    tree,
     setRowKey,
   };
 }

@@ -16,7 +16,7 @@ const ALL: Order[] = Array.from({ length: 137 }, (_, i) => ({
   status: (["paid", "pending", "closed"] as const)[i % 3]!,
 }));
 
-// 搜索条件放在表格之外（v1 的 onLoad 入参 form 恒为 {}，搜索联动属二期 FormRender 集成）
+// 演示手动搜索区的写法；search 接 FormRender 的内置搜索区见 SearchTableDemo
 const keyword = ref("");
 
 /** 模拟服务端：延迟返回 + 按关键词/分页/排序切片 */
