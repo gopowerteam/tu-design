@@ -24,8 +24,8 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   render?: (r: ColumnRenders<T>) => ColumnRender<T>;
   /** 纯数据格式化；render 存在时被忽略 */
   formatter?: (record: T) => string | number | Date | undefined;
-  /** 超宽截断 + 原生 title 提示（R15） */
-  ellipsis?: boolean;
+  /** 超宽截断 + 原生 title 提示（R15）；"tooltip" 形态改用库内 Tooltip（不设原生 title） */
+  ellipsis?: boolean | "tooltip";
   /** 是否可排序（能力开关） */
   sortable?: boolean;
   /** 初始排序方向；需 sortable: true，否则 DEV 警告并忽略（R7） */
@@ -68,7 +68,12 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   data?: T[];
   /** 是否在挂载后自动加载，默认 true；仅服务端模式生效 */
   autoLoad?: boolean;
-  pageSize?: number;
+  /**
+   * 每页条数 / 受控每页条数（D11）。约定：传入（非 undefined）即受控，缺省（undefined）时
+   * 以默认 10 行运行；R9 归位：pageIndex 未受控时内部归位第 1 页并经 update:page-index 通知，
+   * 两个都受控时由父层自行联动。支持传 ref/getter（聚合式受控）
+   */
+  pageSize?: MaybeRefOrGetter<number | undefined>;
   pageSizeOpts?: number[];
   /** 行选择：radio 单选 / checkbox 多选；字符串为简写（S2） */
   rowSelection?: "radio" | "checkbox" | TableSelectionOptions<T>;
@@ -87,6 +92,15 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   height?: number | string;
   /** 树形数据：子行展开/收起（展开按钮在首个业务列内）；配置无效时 DEV 警告并忽略 */
   tree?: TreeOptions;
+  /**
+   * 受控页码（1-based，D11）。约定：传入（非 undefined）即受控，缺省保持非受控；
+   * 内部翻页经 update:page-index 通知，外部变更经受控 watch 同步（语义等值跳过，防回弹循环）
+   */
+  pageIndex?: MaybeRefOrGetter<number | undefined>;
+  /** 受控排序。内部/外部变化均经 sort-change 通知；指向不可排序列时 DEV 警告并忽略 */
+  sort?: MaybeRefOrGetter<SortableOptions | undefined>;
+  /** 受控选中集（数组，与 update:selected-keys 载荷同构）。经 setSelection 写入（S5 过滤/S12 待定 key 继承） */
+  selectedKeys?: MaybeRefOrGetter<Array<string | number> | undefined>;
 }
 
 /** 树形数据配置（T 系列） */
@@ -159,6 +173,8 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   height: number | string | undefined;
   /** 树形配置（引擎校验后的回传，供组件读取 indentSize；无效配置被忽略时为 undefined） */
   tree: TreeOptions | undefined;
+  /** 最近一次 onLoad 失败的 Error（仅服务端模式产生）；下一次 load 开始时清除 */
+  error: Readonly<Ref<Error | undefined>>;
   /** 内部装配口：拆分式由 TableRender 在 setup 时回填 rowKey（S1） */
   setRowKey: (rowKey: string | undefined) => void;
 }

@@ -1,5 +1,6 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
+import type { Ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { defineForm } from "../form-render";
 import type { FormRenderDefinition, FormRenderItem } from "../form-render/types";
@@ -7,7 +8,12 @@ import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
 import type { ColumnRenders } from "./column-renders";
-import type { TableColumnOptions, TableLoadParams, TableRenderDefinition } from "./types";
+import type {
+  SortableOptions,
+  TableColumnOptions,
+  TableLoadParams,
+  TableRenderDefinition,
+} from "./types";
 
 // 虚拟滚动测试策略（务实取舍）：happy-dom 无 ResizeObserver、getBoundingClientRect 恒 0，
 // 真实 virtualizer 的窗口计算不可靠（virtual-core 对缺失 ResizeObserver 静默跳过）。
@@ -115,10 +121,12 @@ function makeTableRender(
   return { wrapper, def: () => box.def! };
 }
 
-/** 数据行（排除骨架行、空态行与虚拟占位行）单元格文本矩阵 */
+/** 数据行（排除骨架行、空态行、错误占位行与虚拟占位行）单元格文本矩阵 */
 function dataRows(wrapper: ReturnType<typeof mount>): string[][] {
   return wrapper
-    .findAll("tbody tr:not([data-skeleton]):not([data-empty]):not([data-virtual-pad])")
+    .findAll(
+      "tbody tr:not([data-skeleton]):not([data-empty]):not([data-error]):not([data-virtual-pad])",
+    )
     .map((tr) => tr.findAll("td").map((td) => td.text()));
 }
 
@@ -353,7 +361,7 @@ describe("TableRender 服务端模式", () => {
     expect(def().page.total).toBe(2);
   });
 
-  it("onLoad 抛错 → console.error 且保持空态，组件不炸（R5）", async () => {
+  it("onLoad 抛错 → console.error 且渲染错误占位，组件不炸（R5）", async () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const onLoad = vi.fn(async () => {
       throw new Error("boom");
@@ -363,6 +371,8 @@ describe("TableRender 服务端模式", () => {
     await flushPromises();
 
     expect(error).toHaveBeenCalled();
+    // 错误态优先于空态：默认占位展示错误信息
+    expect(wrapper.find("[data-error]").text()).toContain("boom");
     expect(dataRows(wrapper)).toHaveLength(0);
   });
 });
@@ -1566,6 +1576,427 @@ describe("TableRender 树形数据（tree）", () => {
     await wrapper.find('tbody button[aria-label="收起"]').trigger("click");
     expect(dataRows(wrapper)).toHaveLength(2);
     expect(onLoad).toHaveBeenCalledTimes(1); // 展开不触发取数
+    wrapper.unmount();
+  });
+});
+
+// ---- 错误态（error / load-error / #error 插槽） --------------------------------
+
+describe("TableRender 错误态（error）", () => {
+  it("onLoad reject：error 投影 + load-error 事件 + 错误占位；重试成功后清除", async () => {
+    let fail = true;
+    const onLoad = vi.fn(async ({ update }: any) => {
+      if (fail) throw new Error("网络错误");
+      update(USERS.slice(0, 2), 2);
+    });
+    const { wrapper, def } = makeServerRender(onLoad);
+    await flushPromises();
+
+    // 投影与事件
+    expect(def().error.value?.message).toBe("网络错误");
+    const table = wrapper.findComponent(TableRender);
+    const emitted = table.emitted("load-error") as unknown[][] | undefined;
+    const firstError = emitted?.[0]?.[0] as Error | undefined;
+    expect(firstError?.message).toBe("网络错误");
+    // 错误占位（error 优先于数据/空态）：默认文案 = 错误 message + 重试按钮
+    expect(wrapper.find("[data-error]").text()).toContain("网络错误");
+    expect(wrapper.find("[data-error]").text()).toContain("重试");
+
+    // 重试 → 新一轮 load 开始时清除 error
+    fail = false;
+    await clickButton(wrapper, "重试");
+    await flushPromises();
+
+    expect(def().error.value).toBeUndefined();
+    expect(wrapper.find("[data-error]").exists()).toBe(false);
+    expect(dataRows(wrapper)).toHaveLength(2);
+    expect(onLoad).toHaveBeenCalledTimes(2);
+    wrapper.unmount();
+  });
+
+  it("error 插槽自定义占位（slot props { error, retry }）", async () => {
+    let fail = true;
+    const onLoad = vi.fn(async ({ update }: any) => {
+      if (fail) throw new Error("超时");
+      update(USERS.slice(0, 1), 1);
+    });
+    const wrapper = mount(TableRender, {
+      props: { rowKey: "id", columns: baseColumns(), onLoad },
+      slots: {
+        error: ({ error, retry }: any) =>
+          h("div", { "data-custom-error": "" }, [
+            h("span", { "data-custom-msg": "" }, error.message),
+            h("button", { "data-custom-retry": "", onClick: retry }, "自定义重试"),
+          ]),
+      },
+      attachTo: document.body,
+    });
+    await flushPromises();
+
+    expect(wrapper.find("[data-custom-error]").exists()).toBe(true);
+    expect(wrapper.find("[data-custom-msg]").text()).toBe("超时");
+    // 插槽替换默认占位内容：按钮只剩插槽里的"自定义重试"
+    const buttons = wrapper.findAll("[data-error] button").map((b) => b.text());
+    expect(buttons).toEqual(["自定义重试"]);
+
+    fail = false;
+    await wrapper.find("[data-custom-retry]").trigger("click");
+    await flushPromises();
+    expect(wrapper.find("[data-custom-error]").exists()).toBe(false);
+    expect(dataRows(wrapper)).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it("非 Error 抛出值归一化为 Error；静态模式不产生 error", async () => {
+    const onLoad = vi.fn(() => Promise.reject("字符串错误"));
+    const { wrapper, def } = makeServerRender(onLoad);
+    await flushPromises();
+
+    expect(def().error.value).toBeInstanceOf(Error);
+    expect(def().error.value?.message).toContain("字符串错误");
+    wrapper.unmount();
+
+    // 静态模式不产生 error
+    const plain = makeTableRender({ data: USERS.slice(0, 3) });
+    expect(plain.def().error.value).toBeUndefined();
+    expect(dataRows(plain.wrapper)).toHaveLength(3);
+    plain.wrapper.unmount();
+  });
+});
+
+// ---- ellipsis: "tooltip" --------------------------------------------------------
+
+describe("TableRender ellipsis tooltip", () => {
+  const tooltipContent = () =>
+    document.querySelector<HTMLElement>('[data-scope="tooltip"][data-part="content"]');
+
+  afterEach(() => {
+    document.body.querySelectorAll('[data-scope="tooltip"]').forEach((n) => n.remove());
+  });
+
+  it("true 形态回归（truncate + title）；tooltip 形态无原生 title 且渲染 Tooltip 结构", async () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", ellipsis: "tooltip" },
+        { key: "age", title: "年龄", formatter: (r: User) => `${r.age}岁`, ellipsis: true },
+        { key: "id", title: "ID" },
+      ],
+    });
+    const tds = wrapper.findAll("tbody tr")[0]!.findAll("td");
+
+    // tooltip 形态：不设原生 title，内容由 Ark Trigger（asChild）承载
+    expect(tds[0]!.attributes("title")).toBeUndefined();
+    expect(tds[0]!.find('[data-part="trigger"]').exists()).toBe(true);
+    // true 形态回归：原生 title
+    expect(tds[1]!.attributes("title")).toBe("25岁");
+    // 未配置：无 title 无 trigger
+    expect(tds[2]!.attributes("title")).toBeUndefined();
+    expect(tds[2]!.find('[data-part="trigger"]').exists()).toBe(false);
+
+    // hover 显示完整文本（Content portal 到 body）
+    await tds[0]!.find('[data-part="trigger"]').trigger("pointermove");
+    await vi.waitFor(() => expect(tooltipContent()?.dataset.state).toBe("open"));
+    expect(tooltipContent()!.textContent).toContain("用户1");
+    wrapper.unmount();
+  });
+
+  it("tooltip 形态的 render 列：cloneVNode 复制渲染正常、交互保持（实测结论：稳定可用）", async () => {
+    const onEdit = vi.fn();
+    const { wrapper } = makeTableRender({
+      columns: [
+        {
+          key: "name",
+          title: "姓名",
+          ellipsis: "tooltip",
+          render: (rr: ColumnRenders<User>) =>
+            rr.render((record: User) =>
+              h("button", { type: "button", onClick: () => onEdit(record) }, `编辑${record.name}`),
+            ),
+        },
+      ],
+    });
+    const td = wrapper.findAll("tbody tr")[0]!.find("td");
+    // cloneVNode 复制进 Trigger：内容正常渲染（无二次挂载告警/报错）
+    const btn = td.find("button");
+    expect(btn.exists()).toBe(true);
+    expect(btn.text()).toBe("编辑用户1");
+    // asChild 行为合并成功：按钮节点带上 Ark trigger 属性
+    expect(btn.attributes("data-part")).toBe("trigger");
+    // 交互保持：点击回调携带原始 record
+    await btn.trigger("click");
+    expect(onEdit).toHaveBeenCalledWith(USERS[0]);
+    wrapper.unmount();
+  });
+
+  it("tooltip 列不再设置原生 title，且截断样式由内部元素承载", () => {
+    const { wrapper } = makeTableRender({
+      columns: [{ key: "name", title: "姓名", ellipsis: "tooltip" }],
+    });
+    const td = wrapper.findAll("tbody tr")[0]!.find("td");
+    expect(td.classes()).not.toContain("truncate"); // td 不再截断
+    expect(td.find("span.truncate").exists()).toBe(true); // 截断在 Trigger 内容上
+    wrapper.unmount();
+  });
+});
+
+// ---- 行事件补齐（row-dblclick / row-contextmenu / cell-click） ------------------
+
+describe("TableRender 行事件补齐", () => {
+  function makeEventProps() {
+    return {
+      onRowClick: vi.fn(),
+      onRowDblclick: vi.fn(),
+      onRowContextmenu: vi.fn(),
+      onCellClick: vi.fn(),
+    };
+  }
+
+  it("普通分支：三事件触发且参数正确；cell-click 与 row-click 冒泡并存", async () => {
+    const evts = makeEventProps();
+    const wrapper = mount(TableRender, {
+      props: { rowKey: "id", columns: baseColumns(), data: USERS.slice(0, 3), ...evts },
+      attachTo: document.body,
+    });
+    const firstRow = wrapper.findAll("tbody tr")[0]!;
+
+    await firstRow.trigger("dblclick");
+    expect(evts.onRowDblclick).toHaveBeenCalledTimes(1);
+    expect(evts.onRowDblclick.mock.calls[0]![0]).toEqual(USERS[0]);
+    expect(evts.onRowDblclick.mock.calls[0]![1]).toBe(0);
+    expect((evts.onRowDblclick.mock.calls[0]![2] as Event).type).toBe("dblclick");
+
+    await firstRow.trigger("contextmenu");
+    expect(evts.onRowContextmenu).toHaveBeenCalledTimes(1);
+    expect((evts.onRowContextmenu.mock.calls[0]![2] as Event).type).toBe("contextmenu");
+
+    await firstRow.findAll("td")[0]!.trigger("click");
+    expect(evts.onCellClick).toHaveBeenCalledTimes(1);
+    expect(evts.onCellClick.mock.calls[0]!.slice(0, 3)).toEqual([USERS[0], "name", 0]);
+    // 冒泡并存（预期）：cell 触发时 row-click 同步触发
+    expect(evts.onRowClick).toHaveBeenCalledTimes(1);
+
+    wrapper.unmount();
+  });
+
+  it("虚拟分支：三事件同样触发且参数正确", async () => {
+    const evts = makeEventProps();
+    const { wrapper } = makeTableRender(
+      { data: USERS_1000, pageSize: 1000, virtual: true, height: 200 },
+      evts,
+    );
+    await flushPromises();
+    attachVirtual();
+    await flushPromises();
+
+    const firstRow = wrapper.findAll("tbody tr:not([data-virtual-pad])")[0]!;
+    await firstRow.trigger("dblclick");
+    await firstRow.trigger("contextmenu");
+    await firstRow.findAll("td")[0]!.trigger("click");
+
+    expect(evts.onRowDblclick).toHaveBeenCalledTimes(1);
+    expect(evts.onRowDblclick.mock.calls[0]![0]).toEqual(USERS_1000[0]);
+    expect(evts.onRowContextmenu).toHaveBeenCalledTimes(1);
+    expect(evts.onCellClick.mock.calls[0]!.slice(0, 3)).toEqual([USERS_1000[0], "name", 0]);
+    expect(evts.onRowClick).toHaveBeenCalledTimes(1);
+    wrapper.unmount();
+  });
+});
+
+// ---- 受控模式（v-model，D11） ----------------------------------------------------
+
+describe("TableRender 受控模式（v-model）", () => {
+  /** 受控 Host：四个受控 ref + v-model 回写闭环（服务端模式便于 onLoad 计数） */
+  function makeControlledRender(
+    onLoad: (params: TableLoadParams<User>) => void | Promise<unknown>,
+    extra: Record<string, unknown> = {},
+  ) {
+    const state = {
+      pageIndex: ref(1),
+      pageSize: ref(10),
+      sort: ref(undefined) as Ref<SortableOptions | undefined>,
+      selectedKeys: ref([]) as Ref<Array<string | number>>,
+    };
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          onLoad,
+          pageIndex: state.pageIndex,
+          pageSize: state.pageSize,
+          sort: state.sort,
+          selectedKeys: state.selectedKeys,
+          ...extra,
+        });
+        return () =>
+          h(TableRender, {
+            rowKey: "id",
+            definition: box.def,
+            pageIndex: state.pageIndex.value,
+            "onUpdate:page-index": (v: number) => {
+              state.pageIndex.value = v;
+            },
+            pageSize: state.pageSize.value,
+            "onUpdate:page-size": (v: number) => {
+              state.pageSize.value = v;
+            },
+            sort: state.sort.value,
+            selectedKeys: state.selectedKeys.value,
+            "onUpdate:selected-keys": (keys: Array<string | number>) => {
+              state.selectedKeys.value = keys;
+            },
+            ...extra,
+          });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    return { wrapper, def: () => box.def!, state };
+  }
+
+  it("受控 pageIndex 外部变更 → 页面迁移 + 服务端模式触发重载", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 3), 100));
+    const { wrapper, def, state } = makeControlledRender(onLoad);
+    await flushPromises();
+
+    expect(onLoad).toHaveBeenCalledTimes(1);
+    expect(onLoad.mock.calls[0]![0].page.pageIndex).toBe(1);
+
+    state.pageIndex.value = 2;
+    await flushPromises();
+
+    expect(def().page.pageIndex).toBe(2);
+    expect(onLoad).toHaveBeenCalledTimes(2);
+    expect(onLoad.mock.calls[1]![0].page.pageIndex).toBe(2);
+    wrapper.unmount();
+  });
+
+  it("双向闭环：内部翻页 emit → 父层回写，无重复 onLoad、无事件重复", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { wrapper, state } = makeControlledRender(onLoad);
+    await flushPromises();
+    expect(onLoad).toHaveBeenCalledTimes(1);
+
+    // 内部交互：分页条点击「下一页」
+    await clickButton(wrapper, "下一页");
+    await flushPromises();
+
+    expect(state.pageIndex.value).toBe(2); // 父层收到通知并回写
+    expect(onLoad).toHaveBeenCalledTimes(2); // 仅翻页重载一次
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("update:page-index")).toHaveLength(1); // 无「动作 + 回弹」双发
+    wrapper.unmount();
+  });
+
+  it("受控 selectedKeys 外部变更 → 勾选 UI 更新；selectable 过滤生效；内部交互回写闭环", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 5), 5));
+    const { wrapper, def, state } = makeControlledRender(onLoad, {
+      rowSelection: { type: "checkbox", selectable: (r: User) => r.id % 2 === 1 },
+    });
+    await flushPromises();
+
+    // 外部勾选（含偶数 id=2，应被 S5 selectable 过滤）
+    state.selectedKeys.value = ["1", "2"];
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+
+    const controls = () => wrapper.findAll("tbody tr [data-part='control']");
+    expect(controls()[0]!.attributes("data-state")).toBe("checked"); // UI 同步
+
+    // 内部交互（第 3 行 id=3 可选）→ 父层回写闭环
+    await controls()[2]!.trigger("click");
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["1", "3"]));
+    expect(state.selectedKeys.value).toEqual(["1", "3"]);
+    wrapper.unmount();
+  });
+
+  it("受控 sort 外部变更 → 排序应用 + 服务端重载归位第 1 页（R8）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 3), 100));
+    const { wrapper, def, state } = makeControlledRender(onLoad);
+    await flushPromises();
+    expect(onLoad).toHaveBeenCalledTimes(1);
+
+    def().setPageIndex(3);
+    await flushPromises();
+    expect(onLoad.mock.calls.at(-1)![0].page.pageIndex).toBe(3);
+
+    state.sort.value = { key: "age", direction: "desc" };
+    await flushPromises();
+
+    expect(def().sort.value).toEqual({ key: "age", direction: "desc" });
+    const last = onLoad.mock.calls.at(-1)![0];
+    expect(last.sort).toEqual({ key: "age", direction: "desc" });
+    expect(last.page.pageIndex).toBe(1); // 排序变化归位
+    wrapper.unmount();
+  });
+
+  it("受控 sort 指向不可排序列：DEV 警告并忽略", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onLoad = vi.fn(({ update }: any) => update([], 0));
+    const { def, state } = makeControlledRender(onLoad);
+    await flushPromises();
+
+    state.sort.value = { key: "name", direction: "asc" }; // baseColumns 的 name 列不可排序
+    await flushPromises();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("不可排序列"));
+    expect(def().sort.value).toBeUndefined();
+  });
+
+  it("混用：pageSize 受控、pageIndex 非受控 → R9 内部归位 + update:page-index 通知", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 20), 100));
+    const pageSize = ref(10);
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          onLoad,
+          pageSize, // 仅 pageSize 受控；pageIndex 保持非受控
+        });
+        return () =>
+          h(TableRender, {
+            rowKey: "id",
+            definition: box.def,
+            pageSize: pageSize.value,
+            "onUpdate:page-size": (v: number) => {
+              pageSize.value = v;
+            },
+          });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    box.def!.setPageIndex(3);
+    await flushPromises();
+    expect(box.def!.page.pageIndex).toBe(3);
+
+    pageSize.value = 20;
+    await flushPromises();
+
+    expect(box.def!.page.pageSize).toBe(20);
+    expect(box.def!.page.pageIndex).toBe(1); // R9：pageIndex 未受控时内部归位
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("update:page-index")?.at(-1)).toEqual([1]); // 归位事件通知
+    wrapper.unmount();
+  });
+
+  it("prop 缺省：非受控行为不变（翻页/排序/选择冒烟）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { wrapper, def } = makeServerRender(onLoad);
+    await flushPromises();
+
+    def().setPageIndex(2);
+    await flushPromises();
+    expect(def().page.pageIndex).toBe(2);
+
+    def().toggleSort("age");
+    await flushPromises();
+    // R8：排序变化归位第 1 页
+    expect(def().page.pageIndex).toBe(1);
+    expect(def().sort.value).toEqual({ key: "age", direction: "asc" });
+    expect(onLoad).toHaveBeenCalledTimes(3); // 初始 + 翻页 + 排序（无重复）
     wrapper.unmount();
   });
 });

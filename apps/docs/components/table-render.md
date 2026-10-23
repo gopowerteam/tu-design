@@ -34,6 +34,10 @@
 
 <DemoPreview file="table-render/TreeTableDemo.vue" />
 
+错误态（onLoad 抛错进入占位 + 重试；`#error` 插槽自定义）：
+
+<DemoPreview file="table-render/ErrorRetryDemo.vue" />
+
 行选择（checkbox 多选 + `selectable` 行级过滤 + 跨页保留；radio 单选 + 再点取消）：
 
 <DemoPreview file="table-render/RowSelectionDemo.vue" />
@@ -220,6 +224,10 @@ const table = defineTable<Order>({
 | `virtual?`      | `boolean`                                         | —                | 表体行虚拟化渲染（当前页行窗口内，分页语义不变）；须同时配置 `height`，否则 DEV 警告并降级 |
 | `height?`       | `number \| string`                                | —                | 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 `virtual: true` 时生效                         |
 | `tree?`         | `TreeOptions`                                     | —                | 树形数据（子行展开/收起）；配置无效时 DEV 警告并忽略，见[树形数据](#树形数据)              |
+| `pageIndex?`    | `number`                                          | —                | 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 `update:page-index` 通知           |
+| `pageSize?`     | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时 R9 归位内部处理并通知                       |
+| `sort?`         | `SortableOptions`                                 | —                | 受控排序：传入即受控；内部/外部变化均经 `sort-change` 通知                                 |
+| `selectedKeys?` | `(string \| number)[]`                            | —                | 受控选中集（数组，与 `update:selected-keys` 载荷同构）；传入即受控                         |
 
 返回 `TableRenderDefinition<T>`：
 
@@ -256,7 +264,7 @@ const table = defineTable<Order>({
 | `emptyText`                 | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                              |
 | `search`                    | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告） |
 
-事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）、`selection-change`（`(rows)`）、`update:selected-keys`（`(keys)`）、`search` / `reset`（`(values)`，搜索表单联动，见下节）。
+事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）、`row-dblclick` / `row-contextmenu`（`(record, index, event)`，contextmenu 不主动 preventDefault）、`cell-click`（`(record, columnKey, index, event)`，与 `row-click` 冒泡并存——cell 触发时 row-click 也会触发）、`selection-change`（`(rows)`）、`update:selected-keys`（`(keys)`）、`search` / `reset`（`(values)`，搜索表单联动）、`load-error`（`(error)`，服务端模式 onLoad 失败）。
 插槽：`empty`（空态）、以及列 `render` 返回的任意 VNode（完全自定义逃逸口）。
 拆分式 props：`rowSelection`（仅拆分式生效；聚合式请在 `defineTable` 配置，同时传入时按 definition 为准并 DEV 警告）。
 
@@ -264,18 +272,18 @@ const table = defineTable<Order>({
 
 #### `TableColumnOptions<T>`
 
-| 字段           | 类型                                               | 说明                                                                     |
-| -------------- | -------------------------------------------------- | ------------------------------------------------------------------------ |
-| `key`          | `string`                                           | 列标识，同时作为默认取值字段                                             |
-| `title`        | `string`                                           | 表头文本                                                                 |
-| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐                                                               |
-| `width?`       | `number \| string`                                 | 列宽                                                                     |
-| `render?`      | `(record: T, index: number, column) => VNodeChild` | 自定义单元格；优先于 `formatter`；第三参 `column` 供内置渲染器读取字段值 |
-| `formatter?`   | `(record: T) => string \| number \| Date`          | 纯数据格式化                                                             |
-| `ellipsis?`    | `boolean`                                          | 超宽截断 + 原生 `title` 提示                                             |
-| `sortable?`    | `boolean`                                          | 是否可排序（渲染为 `<button>`，带 `aria-sort`）                          |
-| `defaultSort?` | `"asc" \| "desc"`                                  | 初始排序方向；须同时 `sortable: true`                                    |
-| `fixed?`       | `"left" \| "right"`                                | 固定列方向；须同时提供数字 `width`（见[固定列](#固定列)）                |
+| 字段           | 类型                                               | 说明                                                                                                 |
+| -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `key`          | `string`                                           | 列标识，同时作为默认取值字段                                                                         |
+| `title`        | `string`                                           | 表头文本                                                                                             |
+| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐                                                                                           |
+| `width?`       | `number \| string`                                 | 列宽                                                                                                 |
+| `render?`      | `(record: T, index: number, column) => VNodeChild` | 自定义单元格；优先于 `formatter`；第三参 `column` 供内置渲染器读取字段值                             |
+| `formatter?`   | `(record: T) => string \| number \| Date`          | 纯数据格式化                                                                                         |
+| `ellipsis?`    | `boolean \| "tooltip"`                             | 截断处理：`true` = truncate + 原生 title；`"tooltip"` = 库内 Tooltip（无原生 title），见下方行为细则 |
+| `sortable?`    | `boolean`                                          | 是否可排序（渲染为 `<button>`，带 `aria-sort`）                                                      |
+| `defaultSort?` | `"asc" \| "desc"`                                  | 初始排序方向；须同时 `sortable: true`                                                                |
+| `fixed?`       | `"left" \| "right"`                                | 固定列方向；须同时提供数字 `width`（见[固定列](#固定列)）                                            |
 
 取值优先级：`render` > `formatter` > `record[key]`（`null`/`undefined` 显示为空）。
 
@@ -505,6 +513,91 @@ const table = defineTable<Dept>({
 - **与其他能力叠加**：固定列（缩进在 sticky 首列内正常渲染）、虚拟滚动（展开后行数变化自动传导虚拟窗口）、行选择均可组合
 - **配置防御**：`tree` 非对象或 `childrenKey` 非字符串时 DEV 警告并按普通表格渲染
 - **不做**：父子级联勾选、受控 expanded（程序化展开/收起 API）、详情展开行（expandable detail row，独立二期）、懒加载子树
+
+## 受控模式（v-model）
+
+`pageIndex` / `pageSize` / `sort` / `selectedKeys` 四个 prop（或 `defineTable` 同名字段，支持传 ref）传入即进入**受控模式**：外部是这些状态的唯一真相源，表格内部变化经既有事件（`update:page-index` / `update:page-size` / `sort-change` / `update:selected-keys`）通知父层回写——标准 v-model 闭环。缺省保持既有非受控行为，完全向后兼容。
+
+<DemoPreview file="table-render/ControlledDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { defineTable } from "@tu-design/vue";
+
+const pageIndex = ref(1);
+const pageSize = ref(10);
+const sort = ref<SortableOptions | undefined>(undefined);
+
+const table = defineTable<User>({
+  pageIndex, // 传 ref 即受控（defineTable / 拆分式 prop 均可）
+  pageSize,
+  sort,
+  columns: [/* ... */],
+});
+</script>
+
+<template>
+  <TButton size="sm" @click="pageIndex = 1">外部跳页</TButton>
+  <TableRender
+    :definition="table"
+    row-key="id"
+    :page-index="pageIndex"
+    @update:page-index="pageIndex = $event"
+    :page-size="pageSize"
+    @update:page-size="pageSize = $event"
+    :sort="sort"
+    @sort-change="sort = $event"
+  />
+</template>
+```
+
+| 受控 prop      | 同步行为                                                                                      | 事件通知                                    |
+| -------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------- |
+| `pageIndex`    | 经受控 watch 同步 TanStack（1-based，最小归 1）                                               | `update:page-index`                         |
+| `pageSize`     | 同步容量；**R9 归位**：`pageIndex` 未受控时内部归位第 1 页并通知，两方都受控时由父层自行联动  | `update:page-size` / `update:page-index`    |
+| `sort`         | 经排序管线应用（服务端模式归位第 1 页 + 触发重载，不漏取数）；指向不可排序列时 DEV 警告并忽略 | `sort-change`（内部交互时）                 |
+| `selectedKeys` | 经 `setSelection` 写入（S5 `selectable` 过滤、S12 待定 key 语义继承）                         | `selection-change` / `update:selected-keys` |
+
+细则：
+
+- **传 prop 即受控**：非 `undefined` 才受控；四个 prop 可任意混用（如仅受控 `pageSize`，页码保持内部自治）
+- **等值守卫**：内部先行（动作已生效）或父层回写回弹时同步为空操作——不会死循环、不会重复 onLoad
+- **事件不重复**：受控模式下内部交互仍只发一次通知；受控 `pageSize` 触发的 R9 归位会额外发一次 `update:page-index`（页码归位需要让父层知道）
+- **服务端模式**：受控翻页/排序按既有语义重载（每次状态变化回调 `onLoad`）；初始受控值直接决定首次取数参数，不会先取第 1 页再跳转
+- **`loading` / `virtual` / `tree` 等**其余 prop 不受受控模式影响，保持既有语义
+
+## 加载失败与错误态
+
+服务端模式下 `onLoad` 抛错（或返回的 Promise rejects）时，表格进入**错误态**：表体区域渲染错误占位（默认 = 错误信息 + 「重试」按钮），优先于数据与空态；点击重试触发 `reload()`，**新一轮 load 开始时清除错误**。错误同时通过 `error` 投影（`Ref<Error | undefined>`）与 `load-error` 事件对外暴露，便于埋点上报。静态模式不产生错误。
+
+<DemoPreview file="table-render/ErrorRetryDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { defineTable } from "@tu-design/vue";
+
+const table = defineTable<Order>({
+  columns: [/* ... */],
+  onLoad: async ({ page, update }) => {
+    const res = await fetchOrders(page); // 可能 rejects
+    update(res.list, res.total);
+  },
+});
+</script>
+
+<template>
+  <!-- 默认占位 = 错误信息 + 重试按钮；#error 插槽可完全自定义 -->
+  <TableRender :definition="table" row-key="id" @load-error="report" />
+</template>
+```
+
+行为细则：
+
+- **判定顺序**：loading（骨架）优先，其次 error（占位），最后才是数据/空态；load 开始时旧错误即被清除，因此 loading 期间不会闪现错误占位
+- **自定义占位**：`#error` 插槽（slot props `{ error, retry }`）替换默认占位内容；`retry` 即 `reload()`
+- **实例出口**：`def().error`（只读投影）与组件 `expose.error` 供程序化读取；非 Error 抛出值（字符串等）会归一化为 `Error`
+- **错误占位为整表单元格**（colspan 全列，不虚拟化）；`render` 列/选择列等在错误态不渲染
 
 ## 内置列渲染器
 
@@ -770,5 +863,7 @@ const table = defineTable<Task>({
 - **固定列需要数字 `width`**：`fixed` 列缺数字宽度时 DEV 警告并按普通列渲染（sticky 偏移无法从字符串/百分比宽度推算）；固定列是纯渲染层 sticky，不写 TanStack pinning 状态。
 - **虚拟滚动需要 `height`**：`virtual: true` 缺容器高度时 DEV 警告并降级普通渲染；大分页（如 `pageSize: 10000`）配合虚拟化使用，避免窗口外行进入 DOM。
 - **树形数据的展开是纯客户端状态**：children 随行数据返回即可；`tree` 配置无效（非对象 / `childrenKey` 非字符串）时 DEV 警告并忽略。父子级联勾选、受控 expanded、详情展开行属二期。
+- **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
+- **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。
 - 二期规划：列显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。

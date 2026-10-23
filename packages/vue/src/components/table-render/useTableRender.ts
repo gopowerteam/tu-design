@@ -20,6 +20,11 @@ import type { FormRenderDefinition } from "../form-render";
 
 const DEFAULT_PAGE_SIZE_OPTS = [10, 20, 50, 100];
 
+/** 数值配置防御：受控 getter（组件层）与数值配置（defineTable 层）同字段共存时只认数字 */
+function numericOption(value: unknown): number | undefined {
+  return typeof value === "number" ? value : undefined;
+}
+
 /** DEV 兜底提示：生产构建静默，只留可读的降级行为（R1–R7） */
 function warn(message: string) {
   if (import.meta.env.DEV) console.warn(`[tu-design] <TableRender> ${message}`);
@@ -42,6 +47,14 @@ export function useTableRender<T extends DataRecord>(
   if (serverMode && options.data !== undefined) {
     warn("onLoad 与 data 不能同时传入，已按 onLoad（服务端模式）处理。");
   }
+
+  // ---- 受控模式（v-model，D11） ------------------------------------------------
+  // 约定：options 字段传入（非 undefined）即受控；受控值经 watch 同步进 TanStack，
+  // 内部交互仍走既有动作路径（emit 由组件负责）。等值守卫防「父回写 → 同步 → 回弹」循环。
+  const controlledPageIndex = () => toValue(options.pageIndex);
+  const controlledPageSize = () => toValue(options.pageSize);
+  const controlledSort = () => toValue(options.sort);
+  const controlledSelectedKeys = () => toValue(options.selectedKeys);
 
   // ---- 树形数据（T 系列） ------------------------------------------------------
   // 唯一解析点：无效配置 warn 并忽略；解析结果回传供组件读取 indentSize
@@ -93,7 +106,7 @@ export function useTableRender<T extends DataRecord>(
 
   const page = reactive({
     pageIndex: 1,
-    pageSize: options.pageSize ?? 10,
+    pageSize: controlledPageSize() ?? numericOption(options.pageSize) ?? 10,
     total: 0,
     pageSizeOpts: options.pageSizeOpts ?? DEFAULT_PAGE_SIZE_OPTS,
   });
@@ -106,10 +119,14 @@ export function useTableRender<T extends DataRecord>(
     warn(`列 "${defaults[0].key}" 的 defaultSort 需要同时开启 sortable，已忽略。`);
   }
   const sorted = defaults.find((column) => column.sortable === true);
+
+  // 初始值合并：受控初值优先于 defaultSort / pageSize 配置（避免 mount 后二次跳转与重复 load）
+  const initialSort = controlledSort();
   const sort = ref<SortableOptions | undefined>(
-    sorted ? { key: sorted.key, direction: sorted.defaultSort! } : undefined,
+    initialSort ?? (sorted ? { key: sorted.key, direction: sorted.defaultSort! } : undefined),
   );
   const loading = ref(false);
+  const error = ref<Error | undefined>(undefined);
   const rows = shallowRef<T[]>([]);
 
   // ---- 行选择（S 系列） ------------------------------------------------------
@@ -199,9 +216,14 @@ export function useTableRender<T extends DataRecord>(
       enableSorting: column.sortable === true,
     })),
     initialState: {
-      sorting: sorted ? [{ id: sorted.key, desc: sorted.defaultSort === "desc" }] : [],
-      // 初始 pageSize 须进 TanStack（此前只写对外投影，静态模式初始 pageSize≠10 不生效）
-      pagination: { pageIndex: 0, pageSize: options.pageSize ?? 10 },
+      // 排序从投影初值构造（覆盖 defaultSort 与受控 sort 两种来源）
+      sorting: sort.value ? [{ id: sort.value.key, desc: sort.value.direction === "desc" }] : [],
+      // 初始 pageSize 须进 TanStack（此前只写对外投影，静态模式初始 pageSize≠10 不生效）；
+      // 受控初值优先（组件层受控 getter 未传时返回 undefined，须防御性取数值配置）
+      pagination: {
+        pageIndex: Math.max(0, (controlledPageIndex() ?? 1) - 1),
+        pageSize: controlledPageSize() ?? numericOption(options.pageSize) ?? 10,
+      },
       // defaultExpandAll：true = 全部展开；否则全收起（TanStack expanded 空对象）
       expanded: tree?.defaultExpandAll === true ? true : {},
     },
@@ -279,6 +301,16 @@ export function useTableRender<T extends DataRecord>(
     table.setPageIndex(0);
   }
 
+  /** 排序应用的唯一管线：服务端模式归位第 1 页（R8）+ 投影落值 + TanStack setSorting。
+   * 受控 sort 的外部同步与此共用（直接 setSorting 会漏服务端重载） */
+  function applySort(next: SortableOptions | undefined) {
+    // 服务端模式按新排序取数，必须先归位到首页（R8）
+    if (serverMode && page.pageIndex !== 1) setPageIndex(1);
+    // 同步落值：对外投影不能等 watcher（emit 需要立即读到新排序）
+    sort.value = next;
+    table.setSorting(next ? [{ id: next.key, desc: next.direction === "desc" }] : []);
+  }
+
   /** 排序三态：无 → asc → desc → 取消；非 sortable 列为空操作（R8） */
   function toggleSort(key: string) {
     if (!columns.some((column) => column.key === key && column.sortable === true)) return;
@@ -287,11 +319,7 @@ export function useTableRender<T extends DataRecord>(
     const direction =
       current?.key !== key ? "asc" : current.direction === "asc" ? "desc" : undefined;
 
-    // 服务端模式按新排序取数，必须先归位到首页（R8）
-    if (serverMode && page.pageIndex !== 1) setPageIndex(1);
-    // 同步落值：对外投影不能等 watcher（emit 需要立即读到新排序）
-    sort.value = direction ? { key, direction } : undefined;
-    table.setSorting(direction ? [{ id: key, desc: direction === "desc" }] : []);
+    applySort(direction ? { key, direction } : undefined);
   }
 
   // 服务端模式：请求序号守卫，乱序返回的旧响应直接丢弃（R6）
@@ -300,6 +328,8 @@ export function useTableRender<T extends DataRecord>(
   async function load() {
     const id = ++requestId;
     loading.value = true;
+    // 下一次 load 开始时清除上一次的错误（无论该 load 是否为当前请求）
+    error.value = undefined;
     try {
       await options.onLoad?.({
         // 事件/取数时机读取是安全的（form.state 非响应式但同步）；浅拷贝避免调用方改写真值
@@ -318,8 +348,13 @@ export function useTableRender<T extends DataRecord>(
           if (typeof total === "number") page.total = total;
         },
       });
-    } catch (error) {
-      if (id === requestId) console.error("[tu-design] <TableRender> onLoad 执行失败：", error);
+    } catch (err) {
+      // 乱序旧请求的失败直接丢弃（R6 同款守卫）
+      if (id === requestId) {
+        const normalized = err instanceof Error ? err : new Error(String(err));
+        error.value = normalized;
+        console.error("[tu-design] <TableRender> onLoad 执行失败：", normalized);
+      }
     } finally {
       if (id === requestId) loading.value = false;
     }
@@ -331,6 +366,54 @@ export function useTableRender<T extends DataRecord>(
     () => {
       void load();
     },
+  );
+
+  // ---- 受控同步（D11）：外部变更 → TanStack -------------------------------------
+  // 各 watch 均带语义等值守卫：内部先行（动作已生效）或父回写回弹时跳过，
+  // 严禁死循环与重复 onLoad（load watch 绑定投影，投影等值守卫兜底）。
+
+  // pageIndex 受控（1-based；最小归 1）
+  watch(controlledPageIndex, (next) => {
+    if (next === undefined || page.pageIndex === next) return;
+    table.setPageIndex(Math.max(0, next - 1));
+  });
+
+  // pageSize 受控：同步容量；pageIndex 未受控时保持 R9 归位第 1 页（两方都受控由父层联动）
+  watch(controlledPageSize, (next) => {
+    if (next === undefined || page.pageSize === next) return;
+    table.setPageSize(next);
+    if (controlledPageIndex() === undefined) table.setPageIndex(0);
+  });
+
+  // sort 受控：经 applySort 管线（服务端归位 + 重载不漏）；不可排序列警告并忽略
+  watch(controlledSort, (next) => {
+    if (next === undefined && sort.value === undefined) return;
+    if (
+      next &&
+      sort.value &&
+      next.key === sort.value.key &&
+      next.direction === sort.value.direction
+    ) {
+      return;
+    }
+    if (next && !columns.some((c) => c.key === next.key && c.sortable === true)) {
+      warn(`sort 受控值指向不可排序列 "${next.key}"，已忽略。`);
+      return;
+    }
+    applySort(next);
+  });
+
+  // selectedKeys 受控：经 setSelection 写入（S5 selectable 过滤 / S12 待定 key 语义继承）
+  watch(
+    controlledSelectedKeys,
+    (next) => {
+      if (next === undefined) return;
+      const current = selectedKeys.value;
+      // 语义等值（内容而非引用）：内部勾选先行或父回写回弹时跳过，防 Set 重建触发的事件回环
+      if (next.length === current.size && next.every((key) => current.has(key))) return;
+      setSelection(next);
+    },
+    { immediate: true },
   );
 
   onMounted(() => {
@@ -409,6 +492,7 @@ export function useTableRender<T extends DataRecord>(
     page: readonly(page),
     sort: readonly(sort),
     loading: readonly(loading),
+    error: readonly(error),
     reload,
     toggleSort,
     setPageIndex,

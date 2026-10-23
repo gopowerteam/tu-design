@@ -2,10 +2,12 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { computed, isVNode, onMounted, ref, watch } from "vue";
+import { cloneVNode, computed, h, isVNode, onMounted, ref, watch } from "vue";
+import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
 import { Skeleton } from "@/components/skeleton";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
 import TablePagination from "./TablePagination.vue";
 import type {
   DataRecord,
@@ -32,6 +34,7 @@ const props = defineProps({
   },
   data: { type: Array as PropType<DataRecord[]> },
   autoLoad: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 每页条数 / 受控每页条数（D11）：传入即受控（pageIndex 未受控时 R9 归位内部处理并通知） */
   pageSize: { type: Number },
   pageSizeOpts: { type: Array as PropType<number[]> },
   loading: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -49,6 +52,12 @@ const props = defineProps({
   height: { type: [Number, String] as PropType<number | string> },
   /** 树形数据（子行展开/收起）；拆分式直接传，聚合式请在 defineTable 配置 */
   tree: { type: Object as PropType<TreeOptions> },
+  /** 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 update:page-index 通知 */
+  pageIndex: { type: Number },
+  /** 受控排序：传入即受控；内部/外部变化均经 sort-change 通知 */
+  sort: { type: Object as PropType<SortableOptions> },
+  /** 受控选中集（数组，与 update:selected-keys 载荷同构）：传入即受控 */
+  selectedKeys: { type: Array as PropType<Array<string | number>> },
 });
 
 const emit = defineEmits<{
@@ -56,15 +65,27 @@ const emit = defineEmits<{
   "update:page-size": [pageSize: number];
   "sort-change": [sort: SortableOptions | undefined];
   "row-click": [record: DataRecord, index: number, event: MouseEvent];
+  /** 行双击（与 row-click 独立，双击会先后触发 click 两次，属预期） */
+  "row-dblclick": [record: DataRecord, index: number, event: MouseEvent];
+  /** 行右键；不主动 preventDefault */
+  "row-contextmenu": [record: DataRecord, index: number, event: MouseEvent];
+  /** 单元格点击（columnKey 定位列）；冒泡并存——cell-click 触发时 row-click 也会触发 */
+  "cell-click": [record: DataRecord, columnKey: string, index: number, event: MouseEvent];
   "selection-change": [rows: DataRecord[]];
   "update:selected-keys": [keys: Array<string | number>];
   /** 搜索：FormRender 校验通过后触发；载荷为当前表单值 */
   search: [values: DataRecord];
   /** 重置：FormRender 已重置为 defaults 后触发；载荷为重置后的表单值 */
   reset: [values: DataRecord];
+  /** 服务端模式 onLoad 抛错/ rejects 时触发；下一次 load 开始时 error 投影清除 */
+  "load-error": [error: Error];
 }>();
 
-defineSlots<{ empty?: () => VNodeChild }>();
+defineSlots<{
+  empty?: () => VNodeChild;
+  /** 错误态占位（服务端模式 onLoad 失败时渲染，优先于数据区） */
+  error?: (props: { error: Error | undefined; retry: () => void }) => VNodeChild;
+}>();
 
 /** 加载态骨架行数（R14） */
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
@@ -89,7 +110,6 @@ const instance =
     onLoad: props.onLoad,
     data: () => props.data,
     autoLoad: props.autoLoad,
-    pageSize: props.pageSize,
     pageSizeOpts: props.pageSizeOpts,
     rowKey: props.rowKey,
     rowSelection: props.rowSelection,
@@ -97,6 +117,10 @@ const instance =
     virtual: props.virtual,
     height: props.height,
     tree: props.tree,
+    pageIndex: () => props.pageIndex,
+    pageSize: () => props.pageSize,
+    sort: () => props.sort,
+    selectedKeys: () => props.selectedKeys,
   });
 // 拆分式已传 rowKey；聚合式由组件回填（S1：选择引擎依赖 rowKey 就绪）
 instance.setRowKey(props.rowKey);
@@ -138,6 +162,19 @@ const rows = computed(() => instance.table.getRowModel().rows);
 /** 内部加载态 ∪ 外部受控加载态（R14） */
 const loading = computed(() => props.loading === true || instance.loading.value);
 const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
+
+// ---- 错误态（服务端模式 onLoad 失败） ----------------------------------------
+// loading 判定优先；error 优先于正常数据（load 开始时引擎已清除旧错误，loading 期间 error 恒空）
+const loadError = computed(() => instance.error.value);
+const showError = computed(() => !loading.value && loadError.value !== undefined);
+
+watch(loadError, (err) => {
+  if (err) emit("load-error", err);
+});
+
+function retry() {
+  instance.reload();
+}
 
 // ---- 行选择（S 系列） -------------------------------------------------------
 const selection = computed(() => instance.selection);
@@ -367,16 +404,71 @@ function onSort(key: string) {
 
 function onPageIndex(pageIndex: number) {
   instance.setPageIndex(pageIndex);
+  lastEmittedPage.pageIndex = pageIndex;
   emit("update:page-index", pageIndex);
 }
 
 function onPageSize(pageSize: number) {
   instance.setPageSize(pageSize);
+  lastEmittedPage.pageSize = pageSize;
   emit("update:page-size", pageSize);
+}
+
+// ---- 受控模式（v-model）：page 投影 → update:* 通知 ---------------------------
+// 仅 page-index/page-size 至少一方受控时安装；lastEmittedPage 去重——
+// 动作路径已 emit 过的值不再重复发（受控回写/内部归位只通知「未通知过的」变化）
+const pageControlled = () => props.pageIndex !== undefined || props.pageSize !== undefined;
+const lastEmittedPage = {
+  pageIndex: undefined as number | undefined,
+  pageSize: undefined as number | undefined,
+};
+
+if (pageControlled()) {
+  watch(
+    () => [instance.page.pageIndex, instance.page.pageSize] as const,
+    ([pageIndex, pageSize]) => {
+      if (pageIndex !== lastEmittedPage.pageIndex) {
+        lastEmittedPage.pageIndex = pageIndex;
+        emit("update:page-index", pageIndex);
+      }
+      if (pageSize !== lastEmittedPage.pageSize) {
+        lastEmittedPage.pageSize = pageSize;
+        emit("update:page-size", pageSize);
+      }
+    },
+  );
 }
 
 function onRowClick(record: DataRecord, index: number, event: MouseEvent) {
   emit("row-click", record, index, event);
+}
+
+function onRowDblclick(record: DataRecord, index: number, event: MouseEvent) {
+  emit("row-dblclick", record, index, event);
+}
+
+function onRowContextmenu(record: DataRecord, index: number, event: MouseEvent) {
+  emit("row-contextmenu", record, index, event);
+}
+
+function onCellClick(record: DataRecord, columnKey: string, index: number, event: MouseEvent) {
+  emit("cell-click", record, columnKey, index, event);
+}
+
+/** ellipsis: "tooltip" 的单元格内容：Trigger 承载截断内容，Content 显示完整文本。
+ * VNode（render 工厂）单元格经 cloneVNode 复制进 Trigger（VNode 不可二次挂载）。 */
+function tooltipCell(value: VNodeChild, text: string): VNodeChild {
+  const trigger = isVNode(value) ? cloneVNode(value) : h("span", { class: "block truncate" }, text);
+  return h(
+    Tooltip,
+    { delayDuration: 0 },
+    {
+      default: () => [
+        h(TooltipTrigger, { asChild: true }, { default: () => [trigger] }),
+        h(TooltipContent, null, { default: () => text }),
+      ],
+    },
+  );
 }
 
 defineExpose({
@@ -384,6 +476,7 @@ defineExpose({
   page: instance.page,
   sort: instance.sort,
   loading: instance.loading,
+  error: instance.error,
   reload: instance.reload,
   toggleSort: onSort,
   setPageIndex: onPageIndex,
@@ -458,7 +551,7 @@ defineExpose({
         </thead>
 
         <tbody class="[&_tr:last-child]:border-0">
-          <!-- 加载态：固定 5 行骨架（R14）；选择列一并占位（S8）；骨架不虚拟化 -->
+          <!-- 加载态：固定 5 行骨架（R14）；选择列一并占位（S8）；骨架不虚拟化；loading 判定优先 -->
           <template v-if="loading">
             <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>
               <td
@@ -481,6 +574,20 @@ defineExpose({
             </tr>
           </template>
 
+          <!-- 错误态：error 优先于正常数据；插槽可自定义（slot props { error, retry }） -->
+          <template v-else-if="showError">
+            <tr data-error>
+              <td :colspan="columnCount" class="p-8 text-center text-muted-foreground">
+                <slot name="error" :error="loadError" :retry="retry">
+                  <div class="flex flex-col items-center gap-3">
+                    <p>{{ loadError?.message ?? "加载失败" }}</p>
+                    <Button variant="outline" size="sm" @click="retry">重试</Button>
+                  </div>
+                </slot>
+              </td>
+            </tr>
+          </template>
+
           <!-- 虚拟滚动：窗口行 + 前后占位行（总高撑开滚动区间；行高经 measureElement 动态测量） -->
           <template v-else-if="virtualEnabled">
             <tr aria-hidden="true" data-virtual-pad :style="{ height: `${padTop}px` }">
@@ -493,6 +600,8 @@ defineExpose({
               :data-index="item.row.index"
               class="border-b transition-colors hover:bg-muted/50"
               @click="onRowClick(item.line.record, item.line.index, $event)"
+              @dblclick="onRowDblclick(item.line.record, item.line.index, $event)"
+              @contextmenu="onRowContextmenu(item.line.record, item.line.index, $event)"
             >
               <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
               <td
@@ -523,12 +632,16 @@ defineExpose({
                 v-for="(value, index) in item.line.cells"
                 :key="columns[index].key"
                 class="p-2 align-middle"
-                :class="[stickyClass(columns[index].key), { truncate: columns[index].ellipsis }]"
-                :title="columns[index].ellipsis ? cellText(item.line, index) : undefined"
+                :class="[
+                  stickyClass(columns[index].key),
+                  { truncate: columns[index].ellipsis === true },
+                ]"
+                :title="columns[index].ellipsis === true ? cellText(item.line, index) : undefined"
                 :style="[
                   { textAlign: columns[index].align },
                   stickyStyle(columns[index].key, false),
                 ]"
+                @click="onCellClick(item.line.record, columns[index].key, item.line.index, $event)"
               >
                 <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
                 <span
@@ -563,6 +676,11 @@ defineExpose({
                   <component :is="value" v-if="isVNode(value)" />
                   <span v-else class="min-w-0 truncate">{{ value }}</span>
                 </span>
+                <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
+                <component
+                  :is="tooltipCell(value, cellText(item.line, index))"
+                  v-else-if="columns[index].ellipsis === 'tooltip'"
+                />
                 <template v-else>
                   <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
                   <component :is="value" v-if="isVNode(value)" />
@@ -581,6 +699,8 @@ defineExpose({
               :key="line.key"
               class="border-b transition-colors hover:bg-muted/50"
               @click="onRowClick(line.record, line.index, $event)"
+              @dblclick="onRowDblclick(line.record, line.index, $event)"
+              @contextmenu="onRowContextmenu(line.record, line.index, $event)"
             >
               <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
               <td
@@ -611,12 +731,16 @@ defineExpose({
                 v-for="(value, index) in line.cells"
                 :key="columns[index].key"
                 class="p-2 align-middle"
-                :class="[stickyClass(columns[index].key), { truncate: columns[index].ellipsis }]"
-                :title="columns[index].ellipsis ? cellText(line, index) : undefined"
+                :class="[
+                  stickyClass(columns[index].key),
+                  { truncate: columns[index].ellipsis === true },
+                ]"
+                :title="columns[index].ellipsis === true ? cellText(line, index) : undefined"
                 :style="[
                   { textAlign: columns[index].align },
                   stickyStyle(columns[index].key, false),
                 ]"
+                @click="onCellClick(line.record, columns[index].key, line.index, $event)"
               >
                 <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
                 <span
@@ -651,6 +775,11 @@ defineExpose({
                   <component :is="value" v-if="isVNode(value)" />
                   <span v-else class="min-w-0 truncate">{{ value }}</span>
                 </span>
+                <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
+                <component
+                  :is="tooltipCell(value, cellText(line, index))"
+                  v-else-if="columns[index].ellipsis === 'tooltip'"
+                />
                 <template v-else>
                   <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
                   <component :is="value" v-if="isVNode(value)" />
@@ -660,8 +789,8 @@ defineExpose({
             </tr>
           </template>
 
-          <!-- 空态：横跨全列的单单元格，不虚拟化 -->
-          <tr v-if="!loading && body.length === 0" data-empty>
+          <!-- 空态：横跨全列的单单元格，不虚拟化；错误态优先 -->
+          <tr v-if="!loading && !showError && body.length === 0" data-empty>
             <td :colspan="columnCount" class="p-8 text-center text-muted-foreground">
               <slot name="empty">{{ emptyText ?? "暂无数据" }}</slot>
             </td>
