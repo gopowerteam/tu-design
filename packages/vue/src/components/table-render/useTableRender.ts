@@ -55,6 +55,7 @@ export function useTableRender<T extends DataRecord>(
   const controlledPageSize = () => toValue(options.pageSize);
   const controlledSort = () => toValue(options.sort);
   const controlledSelectedKeys = () => toValue(options.selectedKeys);
+  const controlledVisibleKeys = () => toValue(options.visibleKeys);
 
   // ---- 树形数据（T 系列） ------------------------------------------------------
   // 唯一解析点：无效配置 warn 并忽略；解析结果回传供组件读取 indentSize
@@ -371,7 +372,6 @@ export function useTableRender<T extends DataRecord>(
   // ---- 受控同步（D11）：外部变更 → TanStack -------------------------------------
   // 各 watch 均带语义等值守卫：内部先行（动作已生效）或父回写回弹时跳过，
   // 严禁死循环与重复 onLoad（load watch 绑定投影，投影等值守卫兜底）。
-
   // pageIndex 受控（1-based；最小归 1）
   watch(controlledPageIndex, (next) => {
     if (next === undefined || page.pageIndex === next) return;
@@ -415,6 +415,54 @@ export function useTableRender<T extends DataRecord>(
     },
     { immediate: true },
   );
+
+  // ---- 列显隐（column visibility，R20–R24） -------------------------------------
+  // 统一投影：受控初值 > defaultVisibleKeys（拆分式/聚合式 R26） > 全部可见。
+  // 列显隐只动本 ref——不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）。
+  let emptyVisibleWarned = false;
+
+  /** 规范化：未知 key 静默忽略、按 columns 原序、空数组钳制为首列（R24，warn 一次） */
+  function normalizeVisibleKeys(keys: readonly string[]): string[] {
+    const known = columns.filter((column) => keys.includes(column.key)).map((column) => column.key);
+    if (known.length > 0) return known;
+    if (columns.length > 0) {
+      if (!emptyVisibleWarned) {
+        warn("可见列不能为空，已钳制为首列可见。");
+        emptyVisibleWarned = true;
+      }
+      return [columns[0]!.key];
+    }
+    return [];
+  }
+
+  function sameVisibleKeys(a: readonly string[], b: readonly string[]): boolean {
+    return a.length === b.length && a.every((key, index) => key === b[index]);
+  }
+
+  const parsedDefaultVisibleKeys = (() => {
+    const raw = toValue(options.defaultVisibleKeys) ?? options.columnVisibility?.defaultVisibleKeys;
+    return raw ? normalizeVisibleKeys(raw) : undefined;
+  })();
+
+  const visibleKeysInternal = ref<string[]>(
+    controlledVisibleKeys()
+      ? normalizeVisibleKeys(controlledVisibleKeys()!)
+      : (parsedDefaultVisibleKeys ?? columns.map((column) => column.key)),
+  );
+
+  /** 列显隐动作（面板交互/程序化）：规范化后更新统一投影 */
+  function setVisibleKeys(keys: string[]) {
+    visibleKeysInternal.value = normalizeVisibleKeys(keys);
+  }
+
+  // visibleKeys 受控：外部变更同步投影（规范化后语义等值跳过，防回弹）
+  watch(controlledVisibleKeys, (next) => {
+    console.log("DBG vk watch fired:", JSON.stringify(next));
+    if (next === undefined) return;
+    const normalized = normalizeVisibleKeys(next);
+    if (sameVisibleKeys(normalized, visibleKeysInternal.value)) return;
+    visibleKeysInternal.value = normalized;
+  });
 
   onMounted(() => {
     if (serverMode && (options.autoLoad ?? true)) void load();
@@ -524,6 +572,11 @@ export function useTableRender<T extends DataRecord>(
     virtual: options.virtual,
     height: options.height,
     tree,
+    // 列显隐（R20–R24）：统一投影 + 动作 + 重置基准
+    visibleKeys: readonly(visibleKeysInternal),
+    setVisibleKeys,
+    defaultVisibleKeys: parsedDefaultVisibleKeys,
+    columnVisibility: options.columnVisibility,
     setRowKey,
   };
 }

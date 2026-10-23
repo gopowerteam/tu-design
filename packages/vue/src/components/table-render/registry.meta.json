@@ -1,6 +1,6 @@
 {
-  "description": "配置驱动表格渲染器：defineTable 聚合 TanStack Table 实例与列配置，静态/服务端双模式（onLoad 回写分页排序），搜索表单联动（search 接 FormRender），左右固定列 sticky 横向滚动，表体虚拟滚动（virtual + height，TanStack Virtual 动态测量行高），树形数据（tree：子行展开/收起、depth 缩进、caret 位于首列），错误态占位与重试（#error 插槽 + load-error），ellipsis 支持 tooltip 形态，Ark Pagination 分页条 + 原生 select 每页条数，排序表头 aria-sort、加载骨架与空态插槽，语义化 table + Tailwind tokens。",
-  "registryDependencies": ["form-render", "skeleton"],
+  "description": "配置驱动表格渲染器：defineTable 聚合 TanStack Table 实例与列配置，静态/服务端双模式（onLoad 回写分页排序），搜索表单联动（search 接 FormRender），左右固定列 sticky 横向滚动，表体虚拟滚动（virtual + height，TanStack Virtual 动态测量行高），树形数据（tree：子行展开/收起、depth 缩进、caret 位于首列），列显隐（columnSettings 面板 + visibleKeys 受控），错误态占位与重试（#error 插槽 + load-error），ellipsis 支持 tooltip 形态，v-model 受控（pageIndex/pageSize/sort/selectedKeys），Ark Pagination 分页条 + 原生 select 每页条数，排序表头 aria-sort、加载骨架与空态插槽，语义化 table + Tailwind tokens。",
+  "registryDependencies": ["button", "form-render", "popover", "separator", "skeleton", "tooltip"],
   "dependencies": {
     "@ark-ui/vue": "catalog:",
     "@tanstack/vue-table": "catalog:",

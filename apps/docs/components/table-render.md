@@ -38,6 +38,10 @@
 
 <DemoPreview file="table-render/ErrorRetryDemo.vue" />
 
+列显隐（`columnSettings` 面板：fixed 偏移重算 + 树形共存）：
+
+<DemoPreview file="table-render/ColumnVisibilityDemo.vue" />
+
 行选择（checkbox 多选 + `selectable` 行级过滤 + 跨页保留；radio 单选 + 再点取消）：
 
 <DemoPreview file="table-render/RowSelectionDemo.vue" />
@@ -210,24 +214,28 @@ const table = defineTable<Order>({
 
 `defineTable` 是 `useTableRender` 的聚合别名（后者供「已有内核、动态切换数据源」的场景）。两者均须在组件 `setup` 中调用。
 
-| config 字段     | 类型                                              | 默认             | 说明                                                                                       |
-| --------------- | ------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------ |
-| `columns`       | `TableColumnOptions<T>[]`                         | —                | 列配置；`key` 为取值字段                                                                   |
-| `data?`         | `T[] \| Ref \| () => T[]`                         | —                | 静态模式数据源；ref/getter 自动跟随                                                        |
-| `onLoad?`       | `(params: TableLoadParams<T>) => void \| Promise` | —                | 服务端模式数据源；与 `data` 冲突时以此为准                                                 |
-| `autoLoad?`     | `boolean`                                         | `true`           | 挂载后是否自动取数（仅服务端模式生效）                                                     |
-| `pageSize?`     | `number`                                          | `10`             | 每页条数                                                                                   |
-| `pageSizeOpts?` | `number[]`                                        | `[10,20,50,100]` | 每页条数下拉选项                                                                           |
-| `rowSelection?` | `"radio" \| "checkbox" \| TableSelectionOptions`  | —                | 行选择；字符串为简写（S2）                                                                 |
-| `rowKey?`       | `string`                                          | —                | 行主键字段；rowSelection 依赖（S1）                                                        |
-| `search?`       | `FormRenderDefinition`                            | —                | 搜索表单（`defineForm` 返回值）；仅服务端模式生效，静态模式传入时 DEV 警告并忽略           |
-| `virtual?`      | `boolean`                                         | —                | 表体行虚拟化渲染（当前页行窗口内，分页语义不变）；须同时配置 `height`，否则 DEV 警告并降级 |
-| `height?`       | `number \| string`                                | —                | 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 `virtual: true` 时生效                         |
-| `tree?`         | `TreeOptions`                                     | —                | 树形数据（子行展开/收起）；配置无效时 DEV 警告并忽略，见[树形数据](#树形数据)              |
-| `pageIndex?`    | `number`                                          | —                | 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 `update:page-index` 通知           |
-| `pageSize?`     | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时 R9 归位内部处理并通知                       |
-| `sort?`         | `SortableOptions`                                 | —                | 受控排序：传入即受控；内部/外部变化均经 `sort-change` 通知                                 |
-| `selectedKeys?` | `(string \| number)[]`                            | —                | 受控选中集（数组，与 `update:selected-keys` 载荷同构）；传入即受控                         |
+| config 字段           | 类型                                              | 默认             | 说明                                                                                                  |
+| --------------------- | ------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
+| `columns`             | `TableColumnOptions<T>[]`                         | —                | 列配置；`key` 为取值字段                                                                              |
+| `data?`               | `T[] \| Ref \| () => T[]`                         | —                | 静态模式数据源；ref/getter 自动跟随                                                                   |
+| `onLoad?`             | `(params: TableLoadParams<T>) => void \| Promise` | —                | 服务端模式数据源；与 `data` 冲突时以此为准                                                            |
+| `autoLoad?`           | `boolean`                                         | `true`           | 挂载后是否自动取数（仅服务端模式生效）                                                                |
+| `pageSize?`           | `number`                                          | `10`             | 每页条数                                                                                              |
+| `pageSizeOpts?`       | `number[]`                                        | `[10,20,50,100]` | 每页条数下拉选项                                                                                      |
+| `rowSelection?`       | `"radio" \| "checkbox" \| TableSelectionOptions`  | —                | 行选择；字符串为简写（S2）                                                                            |
+| `rowKey?`             | `string`                                          | —                | 行主键字段；rowSelection 依赖（S1）                                                                   |
+| `search?`             | `FormRenderDefinition`                            | —                | 搜索表单（`defineForm` 返回值）；仅服务端模式生效，静态模式传入时 DEV 警告并忽略                      |
+| `virtual?`            | `boolean`                                         | —                | 表体行虚拟化渲染（当前页行窗口内，分页语义不变）；须同时配置 `height`，否则 DEV 警告并降级            |
+| `height?`             | `number \| string`                                | —                | 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 `virtual: true` 时生效                                    |
+| `tree?`               | `TreeOptions`                                     | —                | 树形数据（子行展开/收起）；配置无效时 DEV 警告并忽略，见[树形数据](#树形数据)                         |
+| `columnVisibility?`   | `ColumnVisibilityOptions`                         | —                | 聚合式列显隐：`{ defaultVisibleKeys?: string[] }`（R21 重置基准）；未知 key 静默忽略                  |
+| `pageIndex?`          | `number`                                          | —                | 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 `update:page-index` 通知                      |
+| `pageSize?`           | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时 R9 归位内部处理并通知                                  |
+| `sort?`               | `SortableOptions`                                 | —                | 受控排序：传入即受控；内部/外部变化均经 `sort-change` 通知                                            |
+| `selectedKeys?`       | `(string \| number)[]`                            | —                | 受控选中集（数组，与 `update:selected-keys` 载荷同构）；传入即受控                                    |
+| `visibleKeys?`        | `string[]`                                        | —                | 受控可见列 key（columns 原序子集）：传入即受控；内部显隐经 `update:visible-keys` 通知                 |
+| `defaultVisibleKeys?` | `string[]`                                        | —                | 拆分式默认可见列集；与聚合式 `columnVisibility.defaultVisibleKeys` 同传时 DEV 警告（definition 优先） |
+| `columnSettings?`     | `boolean`                                         | `true`           | 列设置触发器/面板开关；`false` 时不渲染 UI，受控 API 不受影响                                         |
 
 返回 `TableRenderDefinition<T>`：
 
@@ -264,7 +272,7 @@ const table = defineTable<Order>({
 | `emptyText`                 | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                              |
 | `search`                    | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告） |
 
-事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）、`row-dblclick` / `row-contextmenu`（`(record, index, event)`，contextmenu 不主动 preventDefault）、`cell-click`（`(record, columnKey, index, event)`，与 `row-click` 冒泡并存——cell 触发时 row-click 也会触发）、`selection-change`（`(rows)`）、`update:selected-keys`（`(keys)`）、`search` / `reset`（`(values)`，搜索表单联动）、`load-error`（`(error)`，服务端模式 onLoad 失败）。
+事件：`update:page-index` / `update:page-size`（单向通知，非受控）、`sort-change`、`row-click`（`(record, index, event)`）、`row-dblclick` / `row-contextmenu`（`(record, index, event)`，contextmenu 不主动 preventDefault）、`cell-click`（`(record, columnKey, index, event)`，与 `row-click` 冒泡并存——cell 触发时 row-click 也会触发）、`selection-change`（`(rows)`）、`update:selected-keys`（`(keys)`）、`search` / `reset`（`(values)`，搜索表单联动）、`load-error`（`(error)`，服务端模式 onLoad 失败）、`update:visible-keys` / `column-visibility-change`（`(keys)`，列显隐——前者支持 v-model，后者受控/非受控均触发供持久化）。
 插槽：`empty`（空态）、以及列 `render` 返回的任意 VNode（完全自定义逃逸口）。
 拆分式 props：`rowSelection`（仅拆分式生效；聚合式请在 `defineTable` 配置，同时传入时按 definition 为准并 DEV 警告）。
 
@@ -567,6 +575,61 @@ const table = defineTable<User>({
 - **服务端模式**：受控翻页/排序按既有语义重载（每次状态变化回调 `onLoad`）；初始受控值直接决定首次取数参数，不会先取第 1 页再跳转
 - **`loading` / `virtual` / `tree` 等**其余 prop 不受受控模式影响，保持既有语义
 
+## 列显隐
+
+`columnSettings`（默认开启）在表格右上角提供「列设置」触发器（Popover 面板）：勾选控制列的显隐、支持**最少一列**（R20）、「重置」恢复默认可见集（R21）。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框（R23）。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）。
+
+<DemoPreview file="table-render/ColumnVisibilityDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { defineTable } from "@tu-design/vue";
+
+const table = defineTable<Dept>({
+  columnVisibility: { defaultVisibleKeys: ["name", "lead"] }, // 聚合式默认可见集（R21 重置基准）
+  columns: [
+    { key: "name", title: "部门", fixed: "left" },
+    { key: "lead", title: "负责人" },
+    // ...
+  ],
+});
+
+// 可选：受控可见集（v-model:visible-keys），载荷可持久化
+const visibleKeys = ref(["name", "lead"]);
+</script>
+
+<template>
+  <TButton size="sm" @click="visibleKeys = ['name']">只看部门列</TButton>
+  <TableRender
+    :definition="table"
+    row-key="id"
+    :visible-keys="visibleKeys"
+    @update:visible-keys="visibleKeys = $event"
+    @column-visibility-change="persist"
+  />
+</template>
+```
+
+### 配置与受控
+
+| 入口                                               | 位置               | 说明                                                             |
+| -------------------------------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `columnVisibility.defaultVisibleKeys`              | `defineTable` 配置 | 聚合式默认可见集（R21 重置基准）；未知 key 静默忽略              |
+| `defaultVisibleKeys`（prop）                       | `<TableRender>`    | 拆分式默认可见集；与聚合式同传时 DEV 警告 definition 优先（R26） |
+| `visibleKeys`（prop）                              | `<TableRender>`    | 受控可见列（columns 原序子集）；传入即受控                       |
+| `columnSettings`（prop）                           | `<TableRender>`    | 触发器/面板开关，默认 `true`                                     |
+| `update:visible-keys` / `column-visibility-change` | 事件               | 可见列 key 有序数组；后者受控/非受控均触发，供持久化             |
+
+行为细则：
+
+- **面板**：清单 = 业务列（columns 原序，**排除选择列**，R22）；列 title 超长 truncate；有效 fixed 列（数字 width）带 Pin 标识；项高 h-8 整行可点
+- **最少一列（R20）**：最后一枚选中项 Checkbox disabled；「全选」已全选时 disabled；禁止 0 列
+- **展开控件跟随可见首列**：树形 caret 在首个可见业务列内（首列隐藏时顺延），选择列/展开控件恒可见不进清单（R22）
+- **受控空数组**：钳制为首列可见 + DEV 警告一次（R24）；未知 key 静默忽略
+- **面板 a11y**：Tab 遍历 + Space 切换（Checkbox 原生语义）；Esc 关闭（Ark 内建）后焦点归还触发器
+- **不做**：列顺序拖拽调整、显隐持久化（业务用 `column-visibility-change` 自存）、列宽调整、分组子列
+
 ## 加载失败与错误态
 
 服务端模式下 `onLoad` 抛错（或返回的 Promise rejects）时，表格进入**错误态**：表体区域渲染错误占位（默认 = 错误信息 + 「重试」按钮），优先于数据与空态；点击重试触发 `reload()`，**新一轮 load 开始时清除错误**。错误同时通过 `error` 投影（`Ref<Error | undefined>`）与 `load-error` 事件对外暴露，便于埋点上报。静态模式不产生错误。
@@ -863,6 +926,7 @@ const table = defineTable<Task>({
 - **固定列需要数字 `width`**：`fixed` 列缺数字宽度时 DEV 警告并按普通列渲染（sticky 偏移无法从字符串/百分比宽度推算）；固定列是纯渲染层 sticky，不写 TanStack pinning 状态。
 - **虚拟滚动需要 `height`**：`virtual: true` 缺容器高度时 DEV 警告并降级普通渲染；大分页（如 `pageSize: 10000`）配合虚拟化使用，避免窗口外行进入 DOM。
 - **树形数据的展开是纯客户端状态**：children 随行数据返回即可；`tree` 配置无效（非对象 / `childrenKey` 非字符串）时 DEV 警告并忽略。父子级联勾选、受控 expanded、详情展开行属二期。
+- **列显隐基于可见列集**：隐藏 fixed 列后 sticky 偏移自动重算（组空无残留边框）；`columnSettings: false` 只隐藏 UI，受控 `visibleKeys` 不受影响；显隐不触发 onLoad、不重置分页/排序/选择（R25）。
 - **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。

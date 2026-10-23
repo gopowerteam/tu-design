@@ -6,10 +6,13 @@ import { cloneVNode, computed, h, isVNode, onMounted, ref, watch } from "vue";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
+import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
 import TablePagination from "./TablePagination.vue";
 import type {
+  ColumnVisibilityOptions,
   DataRecord,
   SortableOptions,
   TableColumnOptions,
@@ -58,6 +61,12 @@ const props = defineProps({
   sort: { type: Object as PropType<SortableOptions> },
   /** 受控选中集（数组，与 update:selected-keys 载荷同构）：传入即受控 */
   selectedKeys: { type: Array as PropType<Array<string | number>> },
+  /** 受控可见列 key（columns 原序子集）：传入即受控；内部显隐经 update:visible-keys 通知 */
+  visibleKeys: { type: Array as PropType<string[]> },
+  /** 拆分式默认可见列集；与聚合式 columnVisibility.defaultVisibleKeys 同传时 DEV 警告（R26，definition 优先） */
+  defaultVisibleKeys: { type: Array as PropType<string[]> },
+  /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
+  columnSettings: { type: Boolean as PropType<boolean | undefined>, default: undefined },
 });
 
 const emit = defineEmits<{
@@ -79,6 +88,10 @@ const emit = defineEmits<{
   reset: [values: DataRecord];
   /** 服务端模式 onLoad 抛错/ rejects 时触发；下一次 load 开始时 error 投影清除 */
   "load-error": [error: Error];
+  /** 可见列变化（受控回写通知 / v-model:visible-keys） */
+  "update:visible-keys": [keys: string[]];
+  /** 列显隐变化（受控/非受控均触发，供业务持久化；载荷 = 可见列 key 有序数组，columns 原序） */
+  "column-visibility-change": [keys: string[]];
 }>();
 
 defineSlots<{
@@ -121,6 +134,9 @@ const instance =
     pageSize: () => props.pageSize,
     sort: () => props.sort,
     selectedKeys: () => props.selectedKeys,
+    columnVisibility: props.definition?.columnVisibility,
+    defaultVisibleKeys: () => props.defaultVisibleKeys,
+    visibleKeys: () => props.visibleKeys,
   });
 // 拆分式已传 rowKey；聚合式由组件回填（S1：选择引擎依赖 rowKey 就绪）
 instance.setRowKey(props.rowKey);
@@ -139,6 +155,31 @@ if (props.definition && props.search) {
 }
 // search 不支持运行时切换（与 FormRender definition/form 同款约定），setup 期定版即可
 const search = instance.search;
+
+// 列设置触发器的 Tooltip 受控开合（TooltipTrigger 与 PopoverTrigger 双 asChild 嵌套会吞点击）
+const settingsTipOpen = ref(false);
+
+// ---- 列显隐（column visibility，R20–R26） ------------------------------------
+// R26：聚合式（columnVisibility.defaultVisibleKeys 经引擎解析回传）与拆分式 prop 同传 → definition 优先。
+// 引擎是唯一解析点；聚合式受控回填经 setVisibleKeys（normalize 等值守卫防回弹）；
+// 拆分式由引擎受控 watch 直接同步（源 = props getter）
+if (
+  props.definition &&
+  instance.defaultVisibleKeys !== undefined &&
+  props.defaultVisibleKeys !== undefined &&
+  import.meta.env.DEV
+) {
+  console.warn(
+    "[tu-design] <TableRender> 聚合式下 defaultVisibleKeys 已在 columnVisibility 配置，组件 prop 已忽略。",
+  );
+}
+watch(
+  () => props.visibleKeys,
+  (next) => {
+    if (props.definition && next !== undefined) instance.setVisibleKeys(next);
+  },
+  { immediate: true },
+);
 
 /** 当前搜索表单值快照（浅拷贝；无 search 时为空对象） */
 function searchValues(): DataRecord {
@@ -180,8 +221,56 @@ function retry() {
 const selection = computed(() => instance.selection);
 const selectedKeys = instance.selectedKeys;
 const hasSelection = computed(() => selection.value.enabled);
-/** 总列数 = 业务列 + 选择列（空态 colspan 与骨架行，S8） */
-const columnCount = computed(() => columns.value.length + (hasSelection.value ? 1 : 0));
+
+// ---- 列显隐（column visibility，R20–R26） -------------------------------------
+const visibleKeySet = computed(() => new Set(instance.visibleKeys.value));
+/** 可见业务列（columns 原序子集）：header/body/骨架/colspan/sticky 全部基于此渲染（R23/R25） */
+const visibleColumns = computed(() =>
+  columns.value.filter((column) => visibleKeySet.value.has(column.key)),
+);
+/** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
+const showColumnSettings = computed(() => props.columnSettings ?? true);
+
+function isColumnVisible(key: string): boolean {
+  return visibleKeySet.value.has(key);
+}
+
+/** 最少一列（R20）：唯一可见列不可隐藏 */
+function canHideColumn(key: string): boolean {
+  return !(instance.visibleKeys.value.length <= 1 && visibleKeySet.value.has(key));
+}
+
+function toggleColumnVisible(key: string) {
+  if (!canHideColumn(key)) return;
+  instance.setVisibleKeys(
+    isColumnVisible(key)
+      ? instance.visibleKeys.value.filter((k) => k !== key)
+      : [...instance.visibleKeys.value, key],
+  );
+}
+
+const allColumnsVisible = computed(
+  () => columns.value.length > 0 && visibleColumns.value.length === columns.value.length,
+);
+
+function selectAllColumns() {
+  if (allColumnsVisible.value) return;
+  instance.setVisibleKeys(columns.value.map((column) => column.key));
+}
+
+function resetColumns() {
+  // R21：恢复 defaultVisibleKeys；未配置 = 全部可见
+  instance.setVisibleKeys(instance.defaultVisibleKeys ?? columns.value.map((column) => column.key));
+}
+
+// 受控/非受控均通知：统一投影变化 → 双事件（载荷 = columns 原序可见 key）
+watch(instance.visibleKeys, (keys) => {
+  emit("update:visible-keys", [...keys]);
+  emit("column-visibility-change", [...keys]);
+});
+
+/** 总列数 = 可见业务列 + 选择列（空态 colspan 与骨架行，S8/R23） */
+const columnCount = computed(() => visibleColumns.value.length + (hasSelection.value ? 1 : 0));
 
 // ---- 固定列（sticky） --------------------------------------------------------
 
@@ -200,15 +289,16 @@ for (const column of columns.value) {
 /** sticky 单元格映射（纯渲染层 computed，不进 TanStack pinning state）：
  * 选择列视作最左 fixed 列参与累计（offset 0）；fixed-left 按列序累加，
  * fixed-right 从最右列反向累计。edge = 该 sticky 组朝滚动方向的交界列（加分隔边框）。
+ * 全部基于**可见集**（R23）：sticky 组因隐藏变空则无该组输出（不输出边框）。
  */
 const stickyOf = computed(() => {
   const map = new Map<string, { side: "left" | "right"; offset: number; edge: boolean }>();
   // instance.columns 是联合数组（聚合式 any / 拆分式 DataRecord），联合上的 filter
   // 类型谓词重载解析不可靠，故 map 提取时以断言收窄 width（条件已含 typeof 守卫）
-  const lefts = columns.value
+  const lefts = visibleColumns.value
     .filter((column) => column.fixed === "left" && typeof column.width === "number")
     .map((column) => ({ key: column.key, width: column.width as number }));
-  const rights = columns.value
+  const rights = visibleColumns.value
     .filter((column) => column.fixed === "right" && typeof column.width === "number")
     .map((column) => ({ key: column.key, width: column.width as number }));
 
@@ -300,7 +390,8 @@ const body = computed(() => {
     record: row.original,
     /** 行级可选过滤（S5）：selectable 谓词交由引擎 enableRowSelection 判定 */
     canSelect: row.getCanSelect(),
-    cells: columns.value.map((column): VNodeChild => {
+    // 可见列的值矩阵（列显隐只裁剪列；R25 状态不受影响）
+    cells: visibleColumns.value.map((column): VNodeChild => {
       const render = renderFns.get(column);
       if (render) return render(row.original, row.index, column);
       if (column.formatter) return column.formatter(row.original) as VNodeChild;
@@ -477,6 +568,8 @@ defineExpose({
   sort: instance.sort,
   loading: instance.loading,
   error: instance.error,
+  visibleKeys: instance.visibleKeys,
+  setVisibleKeys: instance.setVisibleKeys,
   reload: instance.reload,
   toggleSort: onSort,
   setPageIndex: onPageIndex,
@@ -490,15 +583,109 @@ defineExpose({
 
 <template>
   <div class="w-full">
-    <!-- 搜索区：FormRender 校验通过才发 search；重置按钮缺省跟随 searchable -->
-    <FormRender
-      v-if="search"
-      class="mb-4"
-      :definition="search"
-      searchable
-      @search="onSearch"
-      @reset="onReset"
-    />
+    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方 -->
+    <div v-if="search || showColumnSettings" class="mb-2 flex items-end justify-between gap-2">
+      <FormRender
+        v-if="search"
+        class="min-w-0 flex-1"
+        :definition="search"
+        searchable
+        @search="onSearch"
+        @reset="onReset"
+      />
+
+      <!-- 列设置：Popover 面板（R20 最少一列 / R21 重置 / R22 不含选择列）；
+           Tooltip 受控开合（TooltipTrigger 与 PopoverTrigger 双 asChild 嵌套会吞点击，故手动控制） -->
+      <Popover v-if="showColumnSettings">
+        <PopoverTrigger as-child>
+          <Button
+            variant="ghost"
+            size="icon"
+            aria-label="列设置"
+            aria-haspopup="true"
+            @pointerenter="settingsTipOpen = true"
+            @pointerleave="settingsTipOpen = false"
+          >
+            <!-- lucide Settings2（内联 SVG，跟随项目图标现状） -->
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="size-4"
+              aria-hidden="true"
+            >
+              <path d="M20 7h-9" />
+              <path d="M14 17H5" />
+              <circle cx="17" cy="17" r="3" />
+              <circle cx="7" cy="7" r="3" />
+            </svg>
+          </Button>
+        </PopoverTrigger>
+        <Tooltip :open="settingsTipOpen">
+          <TooltipContent>列设置</TooltipContent>
+        </Tooltip>
+
+        <PopoverContent align="end" class="w-56 p-0">
+          <div class="flex items-center justify-end gap-3 px-3 py-2">
+            <button
+              type="button"
+              class="text-muted-foreground hover:text-foreground cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-50"
+              :disabled="allColumnsVisible"
+              @click="selectAllColumns"
+            >
+              全选
+            </button>
+            <button
+              type="button"
+              class="text-muted-foreground hover:text-foreground cursor-pointer text-xs"
+              @click="resetColumns"
+            >
+              重置
+            </button>
+          </div>
+          <Separator />
+          <div class="max-h-64 overflow-y-auto py-1">
+            <div
+              v-for="column in columns"
+              :key="column.key"
+              data-column-item
+              :data-column-key="column.key"
+              class="hover:bg-accent/50 flex h-8 cursor-pointer items-center gap-2 px-3"
+              @click="toggleColumnVisible(column.key)"
+            >
+              <Checkbox
+                :checked="isColumnVisible(column.key)"
+                :disabled="!canHideColumn(column.key)"
+                @click.stop
+              />
+              <span class="min-w-0 flex-1 truncate">{{ column.title }}</span>
+              <!-- 有效 fixed 列（数字 width）标识 -->
+              <svg
+                v-if="column.fixed !== undefined && typeof column.width === 'number'"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                class="text-muted-foreground size-3 shrink-0"
+                aria-hidden="true"
+              >
+                <path d="M12 17v5" />
+                <path
+                  d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"
+                />
+              </svg>
+            </div>
+          </div>
+        </PopoverContent>
+      </Popover>
+    </div>
 
     <!-- 滚动容器：横向滚动时 fixed 列 sticky 生效；virtual 模式兼任纵向滚动（分页条不参与滚动） -->
     <div
@@ -525,7 +712,7 @@ defineExpose({
               />
             </th>
             <th
-              v-for="column in columns"
+              v-for="column in visibleColumns"
               :key="column.key"
               scope="col"
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
@@ -563,7 +750,7 @@ defineExpose({
                 <Skeleton class="size-4" />
               </td>
               <td
-                v-for="column in columns"
+                v-for="column in visibleColumns"
                 :key="column.key"
                 class="p-2 align-middle"
                 :class="stickyClass(column.key)"
@@ -630,18 +817,22 @@ defineExpose({
               </td>
               <td
                 v-for="(value, index) in item.line.cells"
-                :key="columns[index].key"
+                :key="visibleColumns[index].key"
                 class="p-2 align-middle"
                 :class="[
-                  stickyClass(columns[index].key),
-                  { truncate: columns[index].ellipsis === true },
+                  stickyClass(visibleColumns[index].key),
+                  { truncate: visibleColumns[index].ellipsis === true },
                 ]"
-                :title="columns[index].ellipsis === true ? cellText(item.line, index) : undefined"
+                :title="
+                  visibleColumns[index].ellipsis === true ? cellText(item.line, index) : undefined
+                "
                 :style="[
-                  { textAlign: columns[index].align },
-                  stickyStyle(columns[index].key, false),
+                  { textAlign: visibleColumns[index].align },
+                  stickyStyle(visibleColumns[index].key, false),
                 ]"
-                @click="onCellClick(item.line.record, columns[index].key, item.line.index, $event)"
+                @click="
+                  onCellClick(item.line.record, visibleColumns[index].key, item.line.index, $event)
+                "
               >
                 <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
                 <span
@@ -679,7 +870,7 @@ defineExpose({
                 <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
                 <component
                   :is="tooltipCell(value, cellText(item.line, index))"
-                  v-else-if="columns[index].ellipsis === 'tooltip'"
+                  v-else-if="visibleColumns[index].ellipsis === 'tooltip'"
                 />
                 <template v-else>
                   <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
@@ -729,18 +920,18 @@ defineExpose({
               </td>
               <td
                 v-for="(value, index) in line.cells"
-                :key="columns[index].key"
+                :key="visibleColumns[index].key"
                 class="p-2 align-middle"
                 :class="[
-                  stickyClass(columns[index].key),
-                  { truncate: columns[index].ellipsis === true },
+                  stickyClass(visibleColumns[index].key),
+                  { truncate: visibleColumns[index].ellipsis === true },
                 ]"
-                :title="columns[index].ellipsis === true ? cellText(line, index) : undefined"
+                :title="visibleColumns[index].ellipsis === true ? cellText(line, index) : undefined"
                 :style="[
-                  { textAlign: columns[index].align },
-                  stickyStyle(columns[index].key, false),
+                  { textAlign: visibleColumns[index].align },
+                  stickyStyle(visibleColumns[index].key, false),
                 ]"
-                @click="onCellClick(line.record, columns[index].key, line.index, $event)"
+                @click="onCellClick(line.record, visibleColumns[index].key, line.index, $event)"
               >
                 <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
                 <span
@@ -778,7 +969,7 @@ defineExpose({
                 <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
                 <component
                   :is="tooltipCell(value, cellText(line, index))"
-                  v-else-if="columns[index].ellipsis === 'tooltip'"
+                  v-else-if="visibleColumns[index].ellipsis === 'tooltip'"
                 />
                 <template v-else>
                   <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->

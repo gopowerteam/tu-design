@@ -101,6 +101,21 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   sort?: MaybeRefOrGetter<SortableOptions | undefined>;
   /** 受控选中集（数组，与 update:selected-keys 载荷同构）。经 setSelection 写入（S5 过滤/S12 待定 key 继承） */
   selectedKeys?: MaybeRefOrGetter<Array<string | number> | undefined>;
+  /**
+   * 列显隐：默认可见列集（R21「重置」基准；未知 key 静默忽略；未传 = 全部可见）。
+   * 列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）
+   */
+  columnVisibility?: ColumnVisibilityOptions;
+  /**
+   * 受控可见列 key（columns 原序子集）。约定：传入（非 undefined）即受控；
+   * 内部显隐经 update:visible-keys 通知；空数组钳制为首列可见（R24，warn 一次）
+   */
+  visibleKeys?: MaybeRefOrGetter<string[] | undefined>;
+  /**
+   * 拆分式默认可见列集；与聚合式 columnVisibility.defaultVisibleKeys 同传时
+   * DEV 警告 definition 优先（R26）
+   */
+  defaultVisibleKeys?: MaybeRefOrGetter<string[] | undefined>;
 }
 
 /** 树形数据配置（T 系列） */
@@ -111,6 +126,12 @@ export interface TreeOptions {
   defaultExpandAll?: boolean;
   /** 每层缩进 px，默认 16 */
   indentSize?: number;
+}
+
+/** 列显隐配置（R20–R24） */
+export interface ColumnVisibilityOptions {
+  /** 默认可见列 key 列表（R21「重置」基准）；未知 key 静默忽略；未传 = 全部可见 */
+  defaultVisibleKeys?: string[];
 }
 
 /** 行选择配置（S 系列） */
@@ -175,6 +196,14 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   tree: TreeOptions | undefined;
   /** 最近一次 onLoad 失败的 Error（仅服务端模式产生）；下一次 load 开始时清除 */
   error: Readonly<Ref<Error | undefined>>;
+  /** 可见列 key（columns 原序子集）；受控/非受控统一投影 */
+  visibleKeys: Readonly<Ref<readonly string[]>>;
+  /** 列显隐动作：规范化（未知忽略、columns 原序、空钳制为首列 R24）后更新 */
+  setVisibleKeys: (keys: string[]) => void;
+  /** 解析后的默认可见集（R21 重置基准；未配置为 undefined = 全部可见） */
+  defaultVisibleKeys: string[] | undefined;
+  /** 聚合式列显隐配置回传（拆分式为 undefined） */
+  columnVisibility: ColumnVisibilityOptions | undefined;
   /** 内部装配口：拆分式由 TableRender 在 setup 时回填 rowKey（S1） */
   setRowKey: (rowKey: string | undefined) => void;
 }

@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import type { Ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
-import { defineForm } from "../form-render";
+import { defineForm, FormRender } from "../form-render";
 import type { FormRenderDefinition, FormRenderItem } from "../form-render/types";
 import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
@@ -1014,8 +1014,8 @@ describe("TableRender 搜索表单联动（search）", () => {
 
     expect(warn).toHaveBeenCalledWith(expect.stringContaining("search 仅服务端模式生效"));
     expect(def().search).toBeUndefined();
-    // 搜索区不渲染：静态表格无任何 input
-    expect(wrapper.find("input").exists()).toBe(false);
+    // 搜索区不渲染：FormRender 组件未挂载（列设置面板的 Checkbox hidden input 不算搜索输入框）
+    expect(wrapper.findComponent(FormRender).exists()).toBe(false);
     wrapper.unmount();
   });
 
@@ -1667,8 +1667,15 @@ describe("TableRender 错误态（error）", () => {
 // ---- ellipsis: "tooltip" --------------------------------------------------------
 
 describe("TableRender ellipsis tooltip", () => {
-  const tooltipContent = () =>
-    document.querySelector<HTMLElement>('[data-scope="tooltip"][data-part="content"]');
+  // 表格单元格与列设置触发器各有 Tooltip——按 content 文本定位目标实例
+  const tooltipContents = () =>
+    Array.from(
+      document.querySelectorAll<HTMLElement>('[data-scope="tooltip"][data-part="content"]'),
+    );
+  const openCellTooltip = () =>
+    tooltipContents().find(
+      (el) => el.dataset.state === "open" && el.textContent?.includes("用户1"),
+    );
 
   afterEach(() => {
     document.body.querySelectorAll('[data-scope="tooltip"]').forEach((n) => n.remove());
@@ -1695,8 +1702,8 @@ describe("TableRender ellipsis tooltip", () => {
 
     // hover 显示完整文本（Content portal 到 body）
     await tds[0]!.find('[data-part="trigger"]').trigger("pointermove");
-    await vi.waitFor(() => expect(tooltipContent()?.dataset.state).toBe("open"));
-    expect(tooltipContent()!.textContent).toContain("用户1");
+    await vi.waitFor(() => expect(openCellTooltip()).toBeTruthy());
+    expect(openCellTooltip()!.textContent).toContain("用户1");
     wrapper.unmount();
   });
 
