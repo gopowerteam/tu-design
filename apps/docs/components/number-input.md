@@ -1,18 +1,37 @@
+---
+title: NumberInput 数字输入
+description: 数字输入框：内置加减步进按钮与数值边界，值以 number | null 受控（空值归一为 null）。
+---
+
 # NumberInput
 
 数字输入框：内置加减步进按钮与数值边界，值以 `number | null` 受控（空值归一为 `null`）。
 
-## 演示
-
-<DemoPreview file="number-input/NumberInputDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add number-input
 ```
 
-## Props / v-model
+## 基础用法
+
+`min`/`max` 夹取边界，`step` 供按钮与键盘 ↑↓ 共用：
+
+<DemoPreview file="number-input/NumberInputDemo.vue" />
+
+## 格式化展示
+
+`formatOptions` 接受任意 `Intl.NumberFormatOptions`，如百分比样式（仅影响展示，存储值不变）：
+
+<DemoPreview file="number-input/NumberInputFormat.vue" />
+
+## 禁用与校验态
+
+<DemoPreview file="number-input/NumberInputStates.vue" />
+
+## API
+
+### Props
 
 | 项              | 类型                       | 说明                                            |
 | --------------- | -------------------------- | ----------------------------------------------- |
@@ -24,47 +43,25 @@ npx tu-design add number-input
 | `invalid`       | `boolean`                  | 校验失败态（`data-invalid` + destructive 样式） |
 | `class`         | `string`                   | 追加/覆盖样式（经 `cn` 合并）                   |
 
-## 插槽
+除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部真实 `input`，供 `TFormLabel`/`TFormControl` 关联。
+
+### Events
+
+| 事件                | 载荷                      | 说明                               |
+| ------------------- | ------------------------- | ---------------------------------- |
+| `update:modelValue` | `(value: number \| null)` | 值变化；空输入/非法输入归一 `null` |
+
+`focus`、`blur` 等原生事件随 attrs 透传到内部真实 `input`。
+
+### Slots
 
 | 插槽        | 作用域 | 说明                            |
 | ----------- | ------ | ------------------------------- |
 | `decrement` | —      | 减号按钮内容（默认内置 − 图标） |
 | `increment` | —      | 加号按钮内容（默认内置 + 图标） |
 
-除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部真实 `input`，供 `TFormLabel`/`TFormControl` 关联。
-
-## 用法
-
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-
-const value = ref<number | null>(42);
-</script>
-
-<template>
-  <TNumberInput v-model="value" :min="0" :max="100" :step="1" />
-</template>
-```
-
 ## 与表单集成
 
 经 `TFormControl` 包装对接 `TFormField`（`id` 自动落到内部 input）：
 
-```vue
-<TFormField name="age" v-slot="{ field }">
-  <TFormItem>
-    <TFormLabel>年龄</TFormLabel>
-    <TFormControl>
-      <TNumberInput
-        :model-value="field.state.value"
-        :min="1"
-        :max="120"
-        @update:model-value="field.handleChange"
-        @blur="field.handleBlur"
-      />
-    </TFormControl>
-    <TFormMessage />
-  </TFormItem>
-</TFormField>
-```
+<DemoPreview file="number-input/NumberInputFormDemo.vue" />

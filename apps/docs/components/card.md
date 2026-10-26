@@ -1,55 +1,62 @@
+---
+title: Card 卡片
+description: 卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。
+---
+
 # Card
 
-卡片容器族：Header/Title/Description/Content/Footer。
+卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。
 
-## 演示
-
-<DemoPreview file="card/CardDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add card
 ```
 
-## 组件与 Slots
+## 基础用法
 
-| 组件              | 渲染元素 | 说明                                                  |
-| ----------------- | -------- | ----------------------------------------------------- |
-| `Card`            | `div`    | 容器：`rounded-xl border bg-card shadow-sm`，默认插槽 |
-| `CardHeader`      | `div`    | 头部：`flex flex-col gap-1.5 p-6`，默认插槽           |
-| `CardTitle`       | `h3`     | 标题：`font-semibold leading-none`，默认插槽          |
-| `CardDescription` | `p`      | 描述文字，默认插槽                                    |
-| `CardContent`     | `div`    | 内容区 `p-6`，默认插槽                                |
-| `CardFooter`      | `div`    | 底部 `flex items-center p-6`，默认插槽                |
+<DemoPreview file="card/CardDemo.vue" />
 
-以上组件均接受 `class` prop 追加/覆盖样式（经 `cn` 合并）。
+## 组件结构
 
-## 用法
+| 组件              | 渲染元素 | 说明                                                                     |
+| ----------------- | -------- | ------------------------------------------------------------------------ |
+| `Card`            | `div`    | 容器，`data-slot="card"`，经 `cardVariants` 提供尺寸与视觉变体，默认插槽 |
+| `CardHeader`      | `div`    | 头部，`data-slot="card-header"`；含 `CardAction` 时自动切换为两栏 grid   |
+| `CardTitle`       | `h3`     | 标题：`font-semibold leading-none tracking-tight`，默认插槽              |
+| `CardDescription` | `p`      | 描述文字，默认插槽                                                       |
+| `CardAction`      | `div`    | 头部右侧操作区（需置于 `CardHeader` 内），默认插槽                       |
+| `CardCover`       | `div`    | 顶部媒体区，负 margin 贴边 + 圆角裁剪，默认插槽                          |
+| `CardContent`     | `div`    | 内容区 `p-6 pt-0`，默认插槽                                              |
+| `CardFooter`      | `div`    | 底部 `flex items-center p-6 pt-0`，默认插槽                              |
 
-```vue
-<script setup lang="ts">
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-</script>
+所有分区均带 `data-slot` 属性；`Card` 的 `size` 与 `segmented` 通过 CSS 选择器作用于分区。
 
-<template>
-  <TCard class="w-80">
-    <CardHeader>
-      <CardTitle>创建项目</CardTitle>
-      <CardDescription>一键部署你的应用。</CardDescription>
-    </CardHeader>
-    <CardContent>这里放表单或内容。</CardContent>
-    <CardFooter>
-      <TButton>确认创建</TButton>
-    </CardFooter>
-  </TCard>
-</template>
-```
+## API
+
+### Card Props
+
+| Prop          | 类型                        | 默认值      | 说明                                                     |
+| ------------- | --------------------------- | ----------- | -------------------------------------------------------- |
+| `size`        | `"sm" \| "default" \| "lg"` | `"default"` | 卡片尺寸，联动圆角、字级与分区 padding                   |
+| `bordered`    | `boolean`                   | `true`      | 是否显示边框；关闭时同时移除阴影基底                     |
+| `hoverable`   | `boolean`                   | `false`     | 悬浮时提升阴影                                           |
+| `interactive` | `boolean`                   | `false`     | 可点击卡片：hover 提升 + `cursor-pointer` + 按压回落     |
+| `embedded`    | `boolean`                   | `false`     | 嵌入式背景（`bg-muted/30`）                              |
+| `segmented`   | `boolean`                   | `false`     | 分区之间显示分隔线（不含 Cover，并自动补偿分区顶部间距） |
+| `closable`    | `boolean`                   | `false`     | 右上角显示关闭按钮（内联 SVG，`aria-label="关闭"`）      |
+| `class`       | `string`                    | —           | 追加/覆盖样式（经 `cn` 合并）                            |
+
+### Events
+
+| 事件    | 说明                                     |
+| ------- | ---------------------------------------- |
+| `close` | 点击关闭按钮时触发；显隐由使用者自行控制 |
+
+### 子组件 Props
+
+其余子组件均仅接受 `class`。
+
+### Slots
+
+全部组件均只提供默认插槽。

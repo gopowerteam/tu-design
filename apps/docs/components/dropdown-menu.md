@@ -1,39 +1,47 @@
+---
+title: DropdownMenu 下拉菜单
+description: 基于 Ark UI Menu 的下拉菜单，内置键盘导航、类型ahead 高亮与选中回调。
+---
+
 # DropdownMenu
 
 下拉菜单：基于 Ark UI Menu 原语，内置键盘导航、类型ahead 高亮与选中回调。`TDropdownMenuTrigger` 支持 `asChild`。
 
-## 演示
-
-<DemoPreview file="dropdown-menu/DropdownMenuDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add dropdown-menu
 ```
 
-## 用法
+## 基础用法
 
-```vue
-<template>
-  <TDropdownMenu>
-    <TDropdownMenuTrigger as-child>
-      <TButton>打开菜单</TButton>
-    </TDropdownMenuTrigger>
-    <TDropdownMenuContent>
-      <TDropdownMenuLabel>操作分组</TDropdownMenuLabel>
-      <TDropdownMenuItem value="edit" @select="onSelect">编辑</TDropdownMenuItem>
-      <TDropdownMenuItem value="share" @select="onSelect">分享</TDropdownMenuItem>
-      <TDropdownMenuSeparator />
-      <TDropdownMenuItem value="delete" disabled>删除（禁用）</TDropdownMenuItem>
-    </TDropdownMenuContent>
-  </TDropdownMenu>
-</template>
-```
+`TDropdownMenu`（根，状态容器）+ `TDropdownMenuTrigger`（打开）+ `TDropdownMenuContent`（面板），菜单项用 `TDropdownMenuItem`，配合 `TDropdownMenuLabel` / `TDropdownMenuSeparator` 分组。
 
-## Props
+<DemoPreview file="dropdown-menu/DropdownMenuDemo.vue" />
 
-### TDropdownMenu
+## 选中事件
+
+`select` 挂在 `TDropdownMenu` 根组件上，菜单项被选中（点击或键盘 Enter）时回传 `{ value }`：
+
+<DemoPreview file="dropdown-menu/DropdownMenuSelect.vue" />
+
+## 组件结构
+
+| 组件                     | 说明                                 |
+| ------------------------ | ------------------------------------ |
+| `TDropdownMenu`          | 根组件，状态容器（`v-model:open`）   |
+| `TDropdownMenuTrigger`   | 触发打开，支持 `asChild`             |
+| `TDropdownMenuContent`   | 菜单面板                             |
+| `TDropdownMenuItem`      | 菜单项                               |
+| `TDropdownMenuLabel`     | 分组标题（纯视觉）                   |
+| `TDropdownMenuSeparator` | 分隔线                               |
+| `TDropdownMenuGroup`     | 可访问分组（`label` 提供可访问名称） |
+
+## API
+
+### Props
+
+#### TDropdownMenu
 
 | Prop                             | 类型      | 默认值  | 说明                   |
 | -------------------------------- | --------- | ------- | ---------------------- |
@@ -41,13 +49,7 @@ npx tu-design add dropdown-menu
 | `default-open`                   | `boolean` | `false` | 非受控时的初始状态     |
 | `lazy-mount` / `unmount-on-exit` | `boolean` | `false` | 内容挂载策略           |
 
-### 事件
-
-| 事件     | 载荷                | 说明                                   |
-| -------- | ------------------- | -------------------------------------- |
-| `select` | `{ value: string }` | 菜单项被选中（点击或键盘 Enter）时触发 |
-
-### TDropdownMenuItem
+#### TDropdownMenuItem
 
 | Prop       | 类型      | 默认值   | 说明                 |
 | ---------- | --------- | -------- | -------------------- |
@@ -55,9 +57,28 @@ npx tu-design add dropdown-menu
 | `disabled` | `boolean` | `false`  | 禁用项               |
 | `class`    | `string`  | —        | 追加/覆盖样式        |
 
-### TDropdownMenuTrigger / 其他
+#### TDropdownMenuGroup
 
-`asChild` 用法同 Dialog；`TDropdownMenuLabel`（分组标题）、`TDropdownMenuSeparator`（分隔线）、`TDropdownMenuGroup`（可访问分组）均为轻量包装。
+| Prop    | 类型     | 默认值 | 说明             |
+| ------- | -------- | ------ | ---------------- |
+| `label` | `string` | —      | 分组的可访问名称 |
+
+#### TDropdownMenuTrigger / 其他
+
+`asChild` 用法同 Dialog；`TDropdownMenuLabel`（分组标题）、`TDropdownMenuSeparator`（分隔线）均为轻量包装并接受 `class` 追加/覆盖样式，`TDropdownMenuContent` 同样接受 `class`。
+
+### Events
+
+`select` 挂在 `TDropdownMenu` 根组件上；`TDropdownMenuItem` 自身未声明事件，`@select` 会经 attrs 透传到 Ark 原语 `Item`（同样可用，不带载荷）：
+
+| 事件          | 载荷                           | 说明                                   |
+| ------------- | ------------------------------ | -------------------------------------- |
+| `update:open` | `(open: boolean)`              | 开关状态变化（`v-model:open`）         |
+| `select`      | `(details: { value: string })` | 菜单项被选中（点击或键盘 Enter）时触发 |
+
+### Slots
+
+全部子组件均只提供默认插槽，内容直接写在标签内，无命名插槽。
 
 ## 说明
 

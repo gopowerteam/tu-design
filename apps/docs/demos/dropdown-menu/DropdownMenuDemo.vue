@@ -1,13 +1,13 @@
 <template>
   <div class="flex justify-center py-24">
-    <TDropdownMenu>
+    <TDropdownMenu @select="(details) => log(details.value)">
       <TDropdownMenuTrigger as-child>
         <TButton>打开菜单</TButton>
       </TDropdownMenuTrigger>
       <TDropdownMenuContent>
         <TDropdownMenuLabel>操作分组</TDropdownMenuLabel>
-        <TDropdownMenuItem value="edit" @select="log('edit')"> 编辑 </TDropdownMenuItem>
-        <TDropdownMenuItem value="share" @select="log('share')"> 分享 </TDropdownMenuItem>
+        <TDropdownMenuItem value="edit"> 编辑 </TDropdownMenuItem>
+        <TDropdownMenuItem value="share"> 分享 </TDropdownMenuItem>
         <TDropdownMenuSeparator />
         <TDropdownMenuItem value="delete" disabled> 删除（禁用） </TDropdownMenuItem>
       </TDropdownMenuContent>

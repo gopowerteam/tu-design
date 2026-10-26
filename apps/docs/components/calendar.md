@@ -1,3 +1,8 @@
+---
+title: Calendar 日历
+description: 紧凑日历卡，standalone 独立与 embedded 内嵌双形态。
+---
+
 # Calendar
 
 日历（`TCalendar`）：紧凑日历卡，**双形态**——
@@ -5,21 +10,19 @@
 - **`standalone` 独立形态**：独立使用，自带日历状态与 `v-model`，恒开展示，适合筛选面板、侧边栏等场景；
 - **`embedded` 内嵌形态**：`TDatePicker` / `TDateRangePicker` 弹层内的卡片内核，自动挂靠宿主（零配置）。
 
-## 演示
-
-<DemoPreview file="calendar/CalendarDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add calendar
 ```
 
-## 形态判定
+## 基础用法
 
-组件内部自动探测：渲染在 Picker 弹层内 → **`embedded` 内嵌形态**（纯卡片内核，不自建弹层，值域归宿主 Picker）；否则 → **`standalone` 独立形态**（自建日历状态，`v-model` 可用）。两种形态无需任何配置切换。
+<DemoPreview file="calendar/CalendarDemo.vue" />
 
-## Props / v-model
+## API
+
+### Props
 
 | 项                  | 类型                           | 默认值    | 说明                                                                |
 | ------------------- | ------------------------------ | --------- | ------------------------------------------------------------------- |
@@ -30,9 +33,18 @@ npx tu-design add calendar
 | `min` / `max`       | `string`                       | —         | 可选边界（`"yyyy-MM-dd"`，含当日）。**仅 standalone**               |
 | `isDateUnavailable` | `(date: DateValue) => boolean` | —         | 不可选日期谓词。**仅 standalone**                                   |
 | `locale`            | `string`                       | `"zh-CN"` | 文案与周起点。**仅 standalone**；embedded 随宿主 Picker             |
+| `week`              | `boolean`                      | `false`   | 周选择形态：日视图下整周高亮（与 `TWeekPicker` 配套）               |
 | `class`             | `string`                       | —         | 追加/覆盖样式（经 `cn` 合并，落在卡片外壳，如 `rounded-md border`） |
 
-事件：`update:modelValue`（仅 standalone 发出）。
+### Events
+
+| 事件                | 载荷                      | 说明                                                                  |
+| ------------------- | ------------------------- | --------------------------------------------------------------------- |
+| `update:modelValue` | `(value: string \| null)` | 选中值变化（`"yyyy-MM-dd"`，空值归一 `null`）。**仅 standalone 发出** |
+
+## 形态判定
+
+组件内部自动探测：渲染在 Picker 弹层内 → **`embedded` 内嵌形态**（纯卡片内核，不自建弹层，值域归宿主 Picker）；否则 → **`standalone` 独立形态**（自建日历状态，`v-model` 可用）。两种形态无需任何配置切换。
 
 ## mode 双语义
 

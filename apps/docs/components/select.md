@@ -1,59 +1,55 @@
+---
+title: Select 选择器
+description: 下拉选择框：基于 Ark UI Select 原语，内置键盘导航、选中回显与勾选指示，Trigger 支持 asChild。
+---
+
 # Select
 
 下拉选择框：基于 Ark UI Select 原语，内置键盘导航、选中回显与勾选指示。`TSelectTrigger` 支持 `asChild`。
 
-## 演示
-
-<DemoPreview file="select/SelectDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add select
 ```
 
-## 用法
+## 基础用法
 
-`TSelect` 通过 `items` 声明选项（用于键盘导航与回显的 collection），面板内用 `TSelectItem` 逐项渲染：
+`items` 声明选项（用于键盘导航与回显的 collection），面板内用 `TSelectItem` 逐项渲染：
 
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
+<DemoPreview file="select/SelectDemo.vue" />
 
-const framework = ref();
-const frameworks = [
-  { label: "Vue", value: "vue" },
-  { label: "React", value: "react" },
-  { label: "Svelte", value: "svelte" },
-];
-</script>
+## 字符串与禁用项
 
-<template>
-  <TSelect v-model="framework" :items="frameworks" class="w-48">
-    <TSelectTrigger>
-      <TSelectValueText placeholder="选择框架" />
-    </TSelectTrigger>
-    <TSelectContent>
-      <TSelectItem v-for="item in frameworks" :key="item.value" :item="item" />
-    </TSelectContent>
-  </TSelect>
-</template>
-```
+`items` 也接受字符串数组（label 与 value 相同）；对象项可带 `disabled`：
 
-`items` 也接受字符串数组（label 与 value 相同）。
+<DemoPreview file="select/SelectStrings.vue" />
 
-## Props
+## 组件结构
 
-### TSelect
+| 组件               | 说明                                          |
+| ------------------ | --------------------------------------------- |
+| `TSelect`          | 根组件，`items` 构建 collection，管理值与开合 |
+| `TSelectTrigger`   | 触发器（内置 chevron，支持 `asChild`）        |
+| `TSelectValueText` | 选中回显（自含渲染，不接收插槽内容）          |
+| `TSelectContent`   | 弹层面板容器                                  |
+| `TSelectItem`      | 选项（文本取自 `item`，右侧勾选指示）         |
+
+## API
+
+### Props
+
+#### TSelect
 
 | Prop                             | 类型                                        | 默认值  | 说明                 |
 | -------------------------------- | ------------------------------------------- | ------- | -------------------- |
 | `items`                          | `(string \| { label, value, disabled? })[]` | 必填    | 选项列表             |
 | `v-model`                        | `string`                                    | —       | 当前值；不传为非受控 |
 | `default-value`                  | `string`                                    | —       | 非受控时的初始值     |
+| `open` / `default-open`          | `boolean`                                   | —       | 弹层开合             |
 | `lazy-mount` / `unmount-on-exit` | `boolean`                                   | `false` | 内容挂载策略         |
 
-### TSelectTrigger / TSelectItem
+#### TSelectTrigger / TSelectItem
 
 | Prop                  | 类型                         | 默认值  | 说明               |
 | --------------------- | ---------------------------- | ------- | ------------------ |
@@ -61,8 +57,24 @@ const frameworks = [
 | `item`（Item）        | `string \| { label, value }` | 必填    | 对应选项           |
 | `class`               | `string`                     | —       | 追加/覆盖样式      |
 
+### Events
+
+| 事件                | 载荷              | 说明       |
+| ------------------- | ----------------- | ---------- |
+| `update:modelValue` | `(value: string)` | 选中值变化 |
+| `update:open`       | `(open: boolean)` | 弹层开合   |
+
+### Slots
+
+| 组件                               | 插槽      | 说明                                                 |
+| ---------------------------------- | --------- | ---------------------------------------------------- |
+| `TSelect`                          | `default` | 组装 `TSelectTrigger` 与 `TSelectContent`            |
+| `TSelectTrigger`                   | `default` | 触发器内容（`asChild` 时不渲染内置 chevron）         |
+| `TSelectContent`                   | `default` | 选项列表                                             |
+| `TSelectItem` / `TSelectValueText` | —         | 无插槽：Item 文本取自 `item`，ValueText 自含选中回显 |
+
 ## 说明
 
-- 单选语义：`v-model` 为 `string`（zag 内部以数组表示，包装层已转换）
+- 单选语义：`v-model` 为 `string`（Ark 内部以数组表示，包装层已转换）
 - `TSelectValueText` 自含选中回显，不要向其传插槽内容
 - 键盘 `↑`/`↓` 高亮、`Enter` 选中、`Escape` 关闭

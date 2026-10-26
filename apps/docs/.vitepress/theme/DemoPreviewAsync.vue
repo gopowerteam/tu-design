@@ -2,7 +2,12 @@
 import { defineAsyncComponent, ref } from "vue";
 import { getHighlighter } from "./shiki";
 
-const props = defineProps<{ file: string }>();
+const props = defineProps<{
+  file: string;
+  /** 可选卡片标题/描述，渲染在演示区上方（有页面 H3 标题时不必传） */
+  title?: string;
+  description?: string;
+}>();
 
 const demoModules = import.meta.glob("../../demos/**/*.vue");
 const demoSources = import.meta.glob("../../demos/**/*.vue", {
@@ -43,6 +48,10 @@ function copyCode() {
 <template>
   <div v-if="missing" class="tu-demo-missing">[DemoPreview] demo 不存在: {{ props.file }}</div>
   <div v-else class="tu-demo-container">
+    <div v-if="props.title || props.description" class="tu-demo-header">
+      <div v-if="props.title" class="tu-demo-title">{{ props.title }}</div>
+      <div v-if="props.description" class="tu-demo-description">{{ props.description }}</div>
+    </div>
     <div class="tu-demo">
       <component :is="demo" />
     </div>
@@ -75,6 +84,22 @@ function copyCode() {
   padding: 32px;
   background-color: var(--vp-c-bg);
   min-height: 96px;
+}
+
+.tu-demo-header {
+  padding: 12px 16px 0;
+}
+
+.tu-demo-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--vp-c-text-1);
+}
+
+.tu-demo-description {
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--vp-c-text-2);
 }
 
 .tu-demo-toolbar {

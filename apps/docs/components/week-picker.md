@@ -1,18 +1,25 @@
+---
+title: "WeekPicker 周选择"
+description: 周选择器：输入框 + 日历弹层，点任意可选日归一到所在周并整周高亮。
+---
+
 # WeekPicker
 
 周选择器（`TWeekPicker`）：输入框 + 日历弹层。点任意可选日归一到所在周并**整周高亮**，值以 `"yyyy-MM-dd"`（所在周起始日）字符串受控，弹层卡片由 [`TCalendar`](/components/calendar) embedded 内嵌形态渲染（自动挂靠，零配置）。
 
-## 演示
-
-<DemoPreview file="week-picker/WeekPickerDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add week-picker
 ```
 
-## Props / v-model
+## 基础用法
+
+<DemoPreview file="week-picker/WeekPickerDemo.vue" />
+
+## API
+
+### Props
 
 | 项                  | 类型                           | 默认值       | 说明                                                          |
 | ------------------- | ------------------------------ | ------------ | ------------------------------------------------------------- |
@@ -30,7 +37,14 @@ npx tu-design add week-picker
 | `locale`            | `string`                       | `"zh-CN"`    | 文案与**周起点**跟随 locale（zh-CN 周一起始、en-US 周日起始） |
 | `class`             | `string`                       | —            | 追加/覆盖样式（经 `cn` 合并，落在 Control 容器）              |
 
-事件：`update:modelValue`、`update:open`。attrs（`id`/`aria-*`）转发给真实 input。
+### Events
+
+| 事件                 | 载荷             | 说明                                                    |
+| -------------------- | ---------------- | ------------------------------------------------------- |
+| `update:model-value` | `string \| null` | 值变化；`"yyyy-MM-dd"`（所在周起始日），空值归一 `null` |
+| `update:open`        | `boolean`        | 弹层开合                                                |
+
+attrs（`id`/`aria-*`）转发给真实 input，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 语义说明
 

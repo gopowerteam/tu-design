@@ -1,85 +1,36 @@
+---
+title: RadioGroup 单选组
+description: 单选组：基于 Ark UI Radio Group 原语，键盘 ↑/↓ 导航，支持 options 声明式渲染。
+---
+
 # RadioGroup
 
 单选组：基于 Ark UI Radio Group 原语，键盘 `↑`/`↓` 导航。
 
-## 演示
-
-<DemoPreview file="radio-group/RadioGroupDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add radio-group
 ```
 
-## 用法
+## 基础用法
 
-### 基础（v-model）
+`v-model:value` 受控（或 `default-value` 非受控）；支持 `options` 声明式渲染（与默认插槽同传时插槽优先）、`orientation` 水平排列、`invalid` 校验态：
 
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
+<DemoPreview file="radio-group/RadioGroupDemo.vue" />
 
-const plan = ref("weekly");
-</script>
+## 组件结构
 
-<template>
-  <TRadioGroup v-model:value="plan">
-    <TRadioGroupItem value="weekly">每周</TRadioGroupItem>
-    <TRadioGroupItem value="monthly">每月</TRadioGroupItem>
-  </TRadioGroup>
-</template>
-```
+| 组件              | 说明                                  |
+| ----------------- | ------------------------------------- |
+| `TRadioGroup`     | 单选组根组件，管理选中值与键盘导航    |
+| `TRadioGroupItem` | 单个选项（圆点控件 + 隐藏原生 input） |
 
-### options 声明式渲染
+## API
 
-不写默认插槽、直接传 `options`，内部自动渲染选项；与默认插槽同时提供时插槽优先。
+### Props
 
-```vue
-<template>
-  <TRadioGroup
-    v-model:value="interval"
-    :options="[
-      { label: '每天', value: 'daily' },
-      { label: '每周', value: 'weekly', disabled: true },
-      '从不',
-    ]"
-  />
-</template>
-```
-
-### 水平排列与禁用
-
-```vue
-<template>
-  <TRadioGroup default-value="zh" orientation="horizontal">
-    <TRadioGroupItem value="zh">中文</TRadioGroupItem>
-    <TRadioGroupItem value="en" disabled>English</TRadioGroupItem>
-  </TRadioGroup>
-</template>
-```
-
-### 表单集成与校验态
-
-`name` 写入隐藏 input 供原生表单提交；`invalid` 时控件与选中圆点变红（zag 级联 `data-invalid`）。
-
-```vue
-<template>
-  <FormField name="notify">
-    <FormItem>
-      <FormLabel>通知方式</FormLabel>
-      <FormControl>
-        <TRadioGroup v-model:value="notify" name="notify" invalid :options="notifyOptions" />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  </FormField>
-</template>
-```
-
-## Props
-
-### TRadioGroup
+#### TRadioGroup
 
 | Prop            | 类型                                        | 默认值       | 说明                                        |
 | --------------- | ------------------------------------------- | ------------ | ------------------------------------------- |
@@ -94,11 +45,28 @@ const plan = ref("weekly");
 | `read-only`     | `boolean`                                   | `false`      | 只读                                        |
 | `invalid`       | `boolean`                                   | `false`      | 校验无效态（级联 `data-invalid`）           |
 
-### TRadioGroupItem
+#### TRadioGroupItem
 
 | Prop       | 类型      | 默认值  | 说明           |
 | ---------- | --------- | ------- | -------------- |
 | `value`    | `string`  | 必填    | 选中后写入组值 |
 | `disabled` | `boolean` | `false` | 禁用该项       |
 
-默认插槽作为选项文本渲染（zag `ItemText`，自动关联可访问性）。
+### Events
+
+| 事件           | 载荷              | 说明       |
+| -------------- | ----------------- | ---------- |
+| `update:value` | `(value: string)` | 选中值变化 |
+
+### Slots
+
+| 组件              | 插槽      | 说明                                                |
+| ----------------- | --------- | --------------------------------------------------- |
+| `TRadioGroup`     | `default` | 自定义选项列表；未提供时回退到 `options` 声明式渲染 |
+| `TRadioGroupItem` | `default` | 选项文本（Ark `ItemText`，自动关联可访问性）        |
+
+## 与表单集成
+
+经 `TFormControl` 包装对接 `TFormField`；`name` 写入隐藏 input 供原生表单提交：
+
+<DemoPreview file="radio-group/RadioGroupFormDemo.vue" />

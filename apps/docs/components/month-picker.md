@@ -1,18 +1,25 @@
+---
+title: "MonthPicker 月份选择"
+description: 月份选择器：输入框 + 锁定月视图的日历弹层，值以 yyyy-MM 字符串受控。
+---
+
 # MonthPicker
 
 月份选择器（`TMonthPicker`）：输入框 + 锁定月视图的日历弹层。值以 `"yyyy-MM"` 字符串受控，弹层卡片由 [`TCalendar`](/components/calendar) embedded 内嵌形态渲染（自动挂靠，零配置）。
 
-## 演示
-
-<DemoPreview file="month-picker/MonthPickerDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add month-picker
 ```
 
-## Props / v-model
+## 基础用法
+
+<DemoPreview file="month-picker/MonthPickerDemo.vue" />
+
+## API
+
+### Props
 
 | 项              | 类型                   | 默认值         | 说明                                             |
 | --------------- | ---------------------- | -------------- | ------------------------------------------------ |
@@ -29,7 +36,14 @@ npx tu-design add month-picker
 | `locale`        | `string`               | `"zh-CN"`      | 月名文案跟随 locale                              |
 | `class`         | `string`               | —              | 追加/覆盖样式（经 `cn` 合并，落在 Control 容器） |
 
-事件：`update:modelValue`、`update:open`。attrs（`id`/`aria-*`）转发给真实 input。
+### Events
+
+| 事件                 | 载荷             | 说明                                 |
+| -------------------- | ---------------- | ------------------------------------ |
+| `update:model-value` | `string \| null` | 值变化；`"yyyy-MM"`，空值归一 `null` |
+| `update:open`        | `boolean`        | 弹层开合                             |
+
+attrs（`id`/`aria-*`）转发给真实 input，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 语义说明
 

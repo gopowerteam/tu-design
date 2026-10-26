@@ -1,50 +1,33 @@
+---
+title: TreeSelect 树选择
+description: 树形下拉选择：一站式 props 驱动，支持单/多选、勾选级联（checkStrategy）、键盘导航、搜索过滤与多标签折叠。
+---
+
 # TreeSelect
 
 树形下拉选择：一站式 props 驱动，支持单/多选、勾选级联（checkStrategy）、键盘导航、搜索过滤与多标签折叠。
 
-## 演示
-
-<DemoPreview file="tree-select/TreeSelectDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add tree-select
 ```
 
-## 用法
+## 基础用法
 
-`options` 声明树形数据（`key` 必填，`label` 展示名，`children` 子级）：
+`options` 声明树形数据（`key` 必填，`label` 展示名，`children` 子级）；`checkable` + `cascade` 勾选级联（值恒为数组），`filterable`/`clearable` 开启搜索与清空：
 
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-import type { TreeOption } from "@tu-design/vue";
+<DemoPreview file="tree-select/TreeSelectDemo.vue" />
 
-const region = ref();
-const regions: TreeOption[] = [
-  {
-    key: "zj",
-    label: "浙江省",
-    children: [{ key: "hz", label: "杭州市", children: [{ key: "xh", label: "西湖区" }] }],
-  },
-];
-</script>
+## 多选与标签折叠
 
-<template>
-  <TTreeSelect v-model="region" :options="regions" class="w-56" />
-</template>
-```
+`multiple` 多选，`max-tag-count` 折叠超出标签：
 
-勾选级联（值恒为数组）：
+<DemoPreview file="tree-select/TreeSelectMultiple.vue" />
 
-```vue
-<TTreeSelect v-model="checked" :options="regions" checkable cascade />
-```
+## API
 
-## Props
-
-### TTreeSelect
+### Props
 
 | Prop                    | 类型                           | 默认值     | 说明                                |
 | ----------------------- | ------------------------------ | ---------- | ----------------------------------- |
@@ -61,12 +44,12 @@ const regions: TreeOption[] = [
 | `placeholder`           | `string`                       | `"请选择"` | 占位文案                            |
 | `max-tag-count`         | `number`                       | —          | 多选标签折叠阈值                    |
 | `expanded-keys`         | `Key[]`                        | —          | 受控展开                            |
-| `default-expanded-keys` | `Key[]`                        | —          | 非受控初始展开                      |
+| `default-expanded-keys` | `Key[]`                        | `[]`       | 非受控初始展开                      |
 | `default-expand-all`    | `boolean`                      | `false`    | 默认展开全部                        |
 | `open` / `default-open` | `boolean`                      | —          | 弹层开合                            |
 | `class`                 | `string`                       | —          | 追加/覆盖样式                       |
 
-## Events
+### Events
 
 | 事件                   | 载荷                        | 说明                                        |
 | ---------------------- | --------------------------- | ------------------------------------------- |
@@ -80,4 +63,4 @@ const regions: TreeOption[] = [
 - 单选可点任意非禁用节点；勾选值由 `cascade` + `check-strategy` 计算父子联动
 - 键盘：`↑`/`↓` 移动、`→` 展开、`←` 折叠回父级、`Enter` 选中、`Escape` 关闭
 - `options` 变更后残留的失效 key 会被静默忽略（不回显、不报错）
-- 安装时自动携带 `tree-shared`（树数据层）依赖
+- 安装时自动携带 `tree-shared`（树数据层）/ `utils` / `date-shared` 依赖

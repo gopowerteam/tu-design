@@ -1,64 +1,27 @@
+---
+title: "DatePicker 日期选择"
+description: 日期选择器：输入框 + 日历弹层（月/年视图切换），支持手动键入、清空、`min`/`max` 边界与不可选日期谓词。
+---
+
 # DatePicker
 
 日期选择器：输入框 + 日历弹层（月/年视图切换），支持手动键入、清空、`min`/`max` 边界与不可选日期谓词。`v-model` 为 `"yyyy-MM-dd"` 字符串，空值归一 `null`。
 
-## 演示
-
-<DemoPreview file="date-picker/DatePickerDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add date-picker
 ```
 
-## Props / v-model
+## 基础用法
 
-| 项                  | 类型                           | 默认值         | 说明                                            |
-| ------------------- | ------------------------------ | -------------- | ----------------------------------------------- |
-| `v-model`           | `string \| null`               | `null`         | `"yyyy-MM-dd"`；空值归一 `null`                 |
-| `defaultValue`      | `string`                       | —              | 非受控初值                                      |
-| `open`              | `boolean`                      | —              | 弹层开合受控（配合 `@update:open`）             |
-| `defaultOpen`       | `boolean`                      | `false`        | 弹层初始展开                                    |
-| `placeholder`       | `string`                       | `"请选择日期"` | 输入框占位符                                    |
-| `disabled`          | `boolean`                      | —              | 禁用态                                          |
-| `invalid`           | `boolean`                      | —              | 校验失败态（`data-invalid` + destructive 样式） |
-| `readOnly`          | `boolean`                      | —              | 只读态                                          |
-| `min` / `max`       | `string`                       | —              | 可选边界（`"yyyy-MM-dd"`，含当日）              |
-| `isDateUnavailable` | `(date: DateValue) => boolean` | —              | 不可选日期谓词                                  |
-| `closeOnSelect`     | `boolean`                      | `true`         | 选中后是否自动关弹层                            |
-| `locale`            | `string`                       | `"zh-CN"`      | 文案与周起点跟随 locale（中文默认周一起始）     |
-| `class`             | `string`                       | —              | 追加/覆盖样式（经 `cn` 合并）                   |
+<DemoPreview file="date-picker/DatePickerDemo.vue" />
 
-事件：`update:modelValue`、`update:open`。
+## min/max 边界
 
-除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部 `input`，供 `TFormLabel`/`TFormControl` 关联。
+`min`/`max` 为 `"yyyy-MM-dd"` 字符串（含当日），边界外与 `isDateUnavailable` 命中的格子呈禁用态，点击不产生值：
 
-## 值与换算
-
-- 输入框手动键入与回显默认走 **ISO 格式**（`yyyy-MM-dd`）：内部以 `format`/`parse` 钩子收敛，不随 locale 漂移。键入时须用 locale 分隔符（zag 按其清洗字符，zh-CN 为 `/`，如 `2026/10/09`），提交与 `v-model` 值仍为 ISO。
-- 换算基于 `@internationalized/date` 纯日历解析，无时区参与；非法字符串（如 `"abc"`）被忽略，不产生脏值。
-- 不可选日期（越界 / `isDateUnavailable` 命中）格子呈现禁用态，点击不产生值。
-
-`isDateUnavailable` 的参数类型 `DateValue` 来自 `@ark-ui/vue` 的传递依赖：
-
-```ts
-import type { DateValue } from "@ark-ui/vue/date-picker";
-```
-
-## 用法
-
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-
-const date = ref<string | null>("2026-10-09");
-</script>
-
-<template>
-  <TDatePicker v-model="date" :min="'2026-01-01'" :max="'2026-12-31'" />
-</template>
-```
+<DemoPreview file="date-picker/DatePickerMinMax.vue" />
 
 ## 表单集成
 
@@ -84,6 +47,47 @@ const date = ref<string | null>("2026-10-09");
 
 ```ts
 startDate: v.pipe(v.string(), v.isoDate("请选择有效日期")),
+```
+
+## API
+
+### Props
+
+| 项                  | 类型                           | 默认值         | 说明                                            |
+| ------------------- | ------------------------------ | -------------- | ----------------------------------------------- |
+| `v-model`           | `string \| null`               | `null`         | `"yyyy-MM-dd"`；空值归一 `null`                 |
+| `defaultValue`      | `string`                       | —              | 非受控初值                                      |
+| `open`              | `boolean`                      | —              | 弹层开合受控（配合 `@update:open`）             |
+| `defaultOpen`       | `boolean`                      | `false`        | 弹层初始展开                                    |
+| `placeholder`       | `string`                       | `"请选择日期"` | 输入框占位符                                    |
+| `disabled`          | `boolean`                      | —              | 禁用态                                          |
+| `invalid`           | `boolean`                      | —              | 校验失败态（`data-invalid` + destructive 样式） |
+| `readOnly`          | `boolean`                      | —              | 只读态                                          |
+| `min` / `max`       | `string`                       | —              | 可选边界（`"yyyy-MM-dd"`，含当日）              |
+| `isDateUnavailable` | `(date: DateValue) => boolean` | —              | 不可选日期谓词                                  |
+| `closeOnSelect`     | `boolean`                      | `true`         | 选中后是否自动关弹层                            |
+| `locale`            | `string`                       | `"zh-CN"`      | 文案与周起点跟随 locale（中文默认周一起始）     |
+| `class`             | `string`                       | —              | 追加/覆盖样式（经 `cn` 合并）                   |
+
+### Events
+
+| 事件                 | 载荷             | 说明                                    |
+| -------------------- | ---------------- | --------------------------------------- |
+| `update:model-value` | `string \| null` | 值变化；`"yyyy-MM-dd"`，空值归一 `null` |
+| `update:open`        | `boolean`        | 弹层开合                                |
+
+除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部 `input`，供 `TFormLabel`/`TFormControl` 关联。
+
+## 值与换算
+
+- 输入框手动键入与回显默认走 **ISO 格式**（`yyyy-MM-dd`）：内部以 `format`/`parse` 钩子收敛，不随 locale 漂移。键入时须用 locale 分隔符（zag 按其清洗字符，zh-CN 为 `/`，如 `2026/10/09`），提交与 `v-model` 值仍为 ISO。
+- 换算基于 `@internationalized/date` 纯日历解析，无时区参与；非法字符串（如 `"abc"`）被忽略，不产生脏值。
+- 不可选日期（越界 / `isDateUnavailable` 命中）格子呈现禁用态，点击不产生值。
+
+`isDateUnavailable` 的参数类型 `DateValue` 来自 `@ark-ui/vue` 的传递依赖：
+
+```ts
+import type { DateValue } from "@ark-ui/vue/date-picker";
 ```
 
 ## 路线图

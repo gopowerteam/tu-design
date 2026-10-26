@@ -1,32 +1,31 @@
+---
+title: Textarea 文本域
+description: 多行文本输入：纯样式封装（无需原语），支持 invalid 校验态与原生属性透传。
+---
+
 # Textarea
 
 多行文本输入：纯样式封装（无需原语），支持 invalid 校验态与原生属性透传。
 
-## 演示
-
-<DemoPreview file="textarea/TextareaDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add textarea
 ```
 
-## 用法
+## 基础用法
 
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
+<DemoPreview file="textarea/TextareaDemo.vue" />
 
-const bio = ref("");
-</script>
+## 受控用法
 
-<template>
-  <TTextarea v-model="bio" placeholder="个人简介" />
-</template>
-```
+`v-model` 双向绑定输入值：
 
-## Props
+<DemoPreview file="textarea/TextareaControlled.vue" />
+
+## API
+
+### Props
 
 | Prop      | 类型               | 默认值 | 说明                                            |
 | --------- | ------------------ | ------ | ----------------------------------------------- |
@@ -35,3 +34,7 @@ const bio = ref("");
 | `class`   | `string`           | —      | 追加/覆盖根样式                                 |
 
 其余原生属性（`placeholder`/`rows`/`disabled` 等）经透传直接生效。
+
+### Events
+
+Textarea 未声明额外事件：`v-model` 对应 `update:modelValue`；`focus`、`blur` 等原生事件随 attrs 透传到根 `<textarea>`。

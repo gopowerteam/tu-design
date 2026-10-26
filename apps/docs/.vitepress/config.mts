@@ -79,7 +79,7 @@ export default defineConfig({
     search: { provider: "local" },
     nav: [
       { text: "指南", link: "/guide/introduction", activeMatch: "/guide/" },
-      { text: "组件", link: "/components/button", activeMatch: "/components/" },
+      { text: "组件", link: "/components/", activeMatch: "/components/" },
       { text: "GitHub", link: "https://github.com/gopowerteam/tu-design" },
     ],
     sidebar: {
@@ -96,56 +96,120 @@ export default defineConfig({
         },
       ],
       "/components/": [
+        { text: "总览", link: "/components/" },
         {
           text: "基础组件",
           items: [
-            { text: "Avatar", link: "/components/avatar" },
-            { text: "Badge", link: "/components/badge" },
-            { text: "Button", link: "/components/button" },
-            { text: "Calendar", link: "/components/calendar" },
-            { text: "Card", link: "/components/card" },
-            { text: "Separator", link: "/components/separator" },
-            { text: "Skeleton", link: "/components/skeleton" },
+            { text: "头像 <span class='sidebar-en'>Avatar</span>", link: "/components/avatar" },
+            {
+              text: "头像组 <span class='sidebar-en'>AvatarGroup</span>",
+              link: "/components/avatar-group",
+            },
+            { text: "徽章 <span class='sidebar-en'>Badge</span>", link: "/components/badge" },
+            { text: "按钮 <span class='sidebar-en'>Button</span>", link: "/components/button" },
+            { text: "日历 <span class='sidebar-en'>Calendar</span>", link: "/components/calendar" },
+            { text: "卡片 <span class='sidebar-en'>Card</span>", link: "/components/card" },
+            {
+              text: "分隔线 <span class='sidebar-en'>Separator</span>",
+              link: "/components/separator",
+            },
+            {
+              text: "骨架屏 <span class='sidebar-en'>Skeleton</span>",
+              link: "/components/skeleton",
+            },
           ],
         },
         {
           text: "表单组件",
           items: [
-            { text: "Form", link: "/components/form" },
-            { text: "Cascader", link: "/components/cascader" },
-            { text: "Checkbox", link: "/components/checkbox" },
-            { text: "CurrencyInput", link: "/components/currency-input" },
-            { text: "DatePicker", link: "/components/date-picker" },
-            { text: "DateRangePicker", link: "/components/date-range-picker" },
-            { text: "MonthPicker", link: "/components/month-picker" },
-            { text: "WeekPicker", link: "/components/week-picker" },
-            { text: "YearPicker", link: "/components/year-picker" },
-            { text: "Input", link: "/components/input" },
-            { text: "Label", link: "/components/label" },
-            { text: "NumberInput", link: "/components/number-input" },
-            { text: "PasswordInput", link: "/components/password-input" },
-            { text: "PinInput", link: "/components/pin-input" },
-            { text: "RadioGroup", link: "/components/radio-group" },
-            { text: "Select", link: "/components/select" },
-            { text: "Slider", link: "/components/slider" },
-            { text: "Switch", link: "/components/switch" },
-            { text: "Textarea", link: "/components/textarea" },
-            { text: "TreeSelect", link: "/components/tree-select" },
+            { text: "表单 <span class='sidebar-en'>Form</span>", link: "/components/form" },
+            {
+              text: "级联选择 <span class='sidebar-en'>Cascader</span>",
+              link: "/components/cascader",
+            },
+            {
+              text: "多选框 <span class='sidebar-en'>Checkbox</span>",
+              link: "/components/checkbox",
+            },
+            {
+              text: "金额输入 <span class='sidebar-en'>CurrencyInput</span>",
+              link: "/components/currency-input",
+            },
+            {
+              text: "日期选择 <span class='sidebar-en'>DatePicker</span>",
+              link: "/components/date-picker",
+            },
+            {
+              text: "日期范围选择 <span class='sidebar-en'>DateRangePicker</span>",
+              link: "/components/date-range-picker",
+            },
+            {
+              text: "月份选择 <span class='sidebar-en'>MonthPicker</span>",
+              link: "/components/month-picker",
+            },
+            {
+              text: "周选择 <span class='sidebar-en'>WeekPicker</span>",
+              link: "/components/week-picker",
+            },
+            {
+              text: "年份选择 <span class='sidebar-en'>YearPicker</span>",
+              link: "/components/year-picker",
+            },
+            { text: "输入框 <span class='sidebar-en'>Input</span>", link: "/components/input" },
+            { text: "标签 <span class='sidebar-en'>Label</span>", link: "/components/label" },
+            {
+              text: "数字输入 <span class='sidebar-en'>NumberInput</span>",
+              link: "/components/number-input",
+            },
+            {
+              text: "密码输入 <span class='sidebar-en'>PasswordInput</span>",
+              link: "/components/password-input",
+            },
+            {
+              text: "验证码输入 <span class='sidebar-en'>PinInput</span>",
+              link: "/components/pin-input",
+            },
+            {
+              text: "单选组 <span class='sidebar-en'>RadioGroup</span>",
+              link: "/components/radio-group",
+            },
+            { text: "选择器 <span class='sidebar-en'>Select</span>", link: "/components/select" },
+            { text: "滑块 <span class='sidebar-en'>Slider</span>", link: "/components/slider" },
+            { text: "开关 <span class='sidebar-en'>Switch</span>", link: "/components/switch" },
+            {
+              text: "文本域 <span class='sidebar-en'>Textarea</span>",
+              link: "/components/textarea",
+            },
+            {
+              text: "树选择 <span class='sidebar-en'>TreeSelect</span>",
+              link: "/components/tree-select",
+            },
           ],
         },
         {
           text: "交互组件",
           items: [
-            { text: "Dialog", link: "/components/dialog" },
-            { text: "DropdownMenu", link: "/components/dropdown-menu" },
-            { text: "Popover", link: "/components/popover" },
-            { text: "Tabs", link: "/components/tabs" },
-            { text: "Tooltip", link: "/components/tooltip" },
+            { text: "对话框 <span class='sidebar-en'>Dialog</span>", link: "/components/dialog" },
+            {
+              text: "下拉菜单 <span class='sidebar-en'>DropdownMenu</span>",
+              link: "/components/dropdown-menu",
+            },
+            { text: "气泡 <span class='sidebar-en'>Popover</span>", link: "/components/popover" },
+            { text: "标签页 <span class='sidebar-en'>Tabs</span>", link: "/components/tabs" },
+            {
+              text: "文字提示 <span class='sidebar-en'>Tooltip</span>",
+              link: "/components/tooltip",
+            },
           ],
         },
         {
           text: "高阶组件",
-          items: [{ text: "FormRender", link: "/components/form-render" }],
+          items: [
+            {
+              text: "表单渲染器 <span class='sidebar-en'>FormRender</span>",
+              link: "/components/form-render",
+            },
+          ],
         },
       ],
     },

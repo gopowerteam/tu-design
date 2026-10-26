@@ -77,3 +77,10 @@ html.dark .shiki span {
   font-weight: var(--shiki-dark-font-weight) !important;
   text-decoration: var(--shiki-dark-text-decoration) !important;
 }
+
+/* 侧边栏组件名中英文双色（对齐 Naive UI：中文正常、英文弱化） */
+.VPSidebar .sidebar-en {
+  margin-left: 0.25em;
+  font-size: 0.9em;
+  color: var(--vp-c-text-3) !important;
+}

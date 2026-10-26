@@ -1,18 +1,31 @@
+---
+title: "DateRangePicker 日期范围选择"
+description: 日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点。
+---
+
 # DateRangePicker
 
 日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点。`v-model` 为 `["yyyy-MM-dd", "yyyy-MM-dd"]` **有序元组**（start ≤ end），空值归一 `null`。与 `TDatePicker` 同享值域约定与视觉规范。
 
-## 演示
-
-<DemoPreview file="date-range-picker/DateRangePickerDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add date-range-picker
 ```
 
-## Props / v-model
+## 基础用法
+
+<DemoPreview file="date-range-picker/DateRangePickerDemo.vue" />
+
+## min/max 边界
+
+`min`/`max` 为 `"yyyy-MM-dd"` 字符串（含当日），边界外与 `isDateUnavailable` 命中的格子呈禁用态，点击不产生值：
+
+<DemoPreview file="date-range-picker/DateRangePickerMinMax.vue" />
+
+## API
+
+### Props
 
 | 项                  | 类型                           | 默认值             | 说明                                            |
 | ------------------- | ------------------------------ | ------------------ | ----------------------------------------------- |
@@ -31,7 +44,12 @@ npx tu-design add date-range-picker
 | `locale`            | `string`                       | `"zh-CN"`          | 文案与周起点跟随 locale（中文默认周一起始）     |
 | `class`             | `string`                       | —                  | 追加/覆盖样式（经 `cn` 合并）                   |
 
-事件：`update:modelValue`、`update:open`。
+### Events
+
+| 事件                 | 载荷                       | 说明                                                  |
+| -------------------- | -------------------------- | ----------------------------------------------------- |
+| `update:model-value` | `[string, string] \| null` | 值变化；有序 ISO 元组（start ≤ end），空值归一 `null` |
+| `update:open`        | `boolean`                  | 弹层开合                                              |
 
 除声明 props 外，`id`、`aria-*` 等 attrs 会透传到内部 `input`，供 `TFormLabel`/`TFormControl` 关联。
 
@@ -47,20 +65,6 @@ npx tu-design add date-range-picker
 
 ```ts
 import type { DateValue } from "@ark-ui/vue/date-picker";
-```
-
-## 用法
-
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
-
-const range = ref<[string, string] | null>(["2026-10-01", "2026-10-15"]);
-</script>
-
-<template>
-  <TDateRangePicker v-model="range" :min="'2026-01-01'" :max="'2026-12-31'" />
-</template>
 ```
 
 ## 注意事项

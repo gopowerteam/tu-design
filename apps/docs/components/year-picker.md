@@ -1,18 +1,25 @@
+---
+title: "YearPicker 年份选择"
+description: 年份选择器：输入框 + 锁定年视图的日历弹层（decade 网格），值以 yyyy 字符串受控。
+---
+
 # YearPicker
 
 年份选择器（`TYearPicker`）：输入框 + 锁定年视图的日历弹层（decade 网格）。值以 `"yyyy"` 字符串受控，弹层卡片由 [`TCalendar`](/components/calendar) embedded 内嵌形态渲染（自动挂靠，零配置）。
 
-## 演示
-
-<DemoPreview file="year-picker/YearPickerDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add year-picker
 ```
 
-## Props / v-model
+## 基础用法
+
+<DemoPreview file="year-picker/YearPickerDemo.vue" />
+
+## API
+
+### Props
 
 | 项              | 类型                   | 默认值         | 说明                                             |
 | --------------- | ---------------------- | -------------- | ------------------------------------------------ |
@@ -29,7 +36,14 @@ npx tu-design add year-picker
 | `locale`        | `string`               | `"zh-CN"`      | 年份文案跟随 locale                              |
 | `class`         | `string`               | —              | 追加/覆盖样式（经 `cn` 合并，落在 Control 容器） |
 
-事件：`update:modelValue`、`update:open`。attrs（`id`/`aria-*`）转发给真实 input。
+### Events
+
+| 事件                 | 载荷             | 说明                              |
+| -------------------- | ---------------- | --------------------------------- |
+| `update:model-value` | `string \| null` | 值变化；`"yyyy"`，空值归一 `null` |
+| `update:open`        | `boolean`        | 弹层开合                          |
+
+attrs（`id`/`aria-*`）转发给真实 input，供 `TFormLabel`/`TFormControl` 关联。
 
 ## 语义说明
 

@@ -1,12 +1,13 @@
+---
+title: Form 表单
+description: 基于 TanStack Form 的表单状态与校验家族，provide/inject 自动接线 aria 无障碍属性。
+---
+
 # Form
 
 表单状态与校验家族：基于 **TanStack Form**（`@tanstack/vue-form`）管理字段状态，配合 **Valibot**（Standard Schema）声明式校验，`FormLabel/FormControl/FormMessage` 经 provide/inject 自动接线 `id`、`aria-invalid`、`aria-describedby`，无需手动管理无障碍属性。
 
-## 演示
-
-<DemoPreview file="form/FormDemo.vue" />
-
-## 安装
+安装：
 
 ```bash
 npx tu-design add form
@@ -14,50 +15,9 @@ npx tu-design add form
 
 会自动安装 `@tanstack/vue-form` 与 `valibot`。组件本体不依赖 valibot，任何 Standard Schema 兼容校验器（zod / arktype 等）均可直接传入 `validators`。
 
-## 用法
+## 基础用法
 
-```vue
-<script setup lang="ts">
-import * as v from "valibot";
-import { useForm } from "@tanstack/vue-form";
-
-const form = useForm({
-  defaultValues: { email: "", password: "" },
-  validators: {
-    onSubmit: v.object({
-      email: v.pipe(v.string(), v.email("邮箱格式不正确")),
-      password: v.pipe(v.string(), v.minLength(8, "至少 8 位")),
-    }),
-  },
-  onSubmit: async ({ value }) => {
-    console.log(value);
-  },
-});
-</script>
-
-<template>
-  <TForm :form="form">
-    <TFormField name="email" v-slot="{ field }">
-      <TFormLabel>邮箱</TFormLabel>
-      <TFormControl>
-        <TInput
-          :model-value="field.state.value"
-          @update:model-value="field.handleChange"
-          @blur="field.handleBlur"
-        />
-      </TFormControl>
-      <TFormDescription>我们不会公开你的邮箱</TFormDescription>
-      <TFormMessage />
-    </TFormField>
-
-    <TFormSubscribe v-slot="{ canSubmit, isSubmitting }">
-      <TButton type="submit" :disabled="!canSubmit">
-        {{ isSubmitting ? "提交中…" : "提交" }}
-      </TButton>
-    </TFormSubscribe>
-  </TForm>
-</template>
-```
+<DemoPreview file="form/FormDemo.vue" />
 
 ## 校验时机与写法
 
@@ -98,11 +58,46 @@ validators: {
 }
 ```
 
-## 组件与 Props
+### 校验时机对比
 
-### TForm
+用户名失焦触发字段级 `onBlur` 校验，提交时由表单级 `onSubmit` schema 兜底——两处错误都会经 `TFormMessage` 渲染：
 
-表单容器：拦截原生 `submit`（`novalidate`）并调用 `form.handleSubmit()`。
+<DemoPreview file="form/FormValidationDemo.vue" />
+
+要点：`validators` 键不同互不影响；点击「提交」不满足条件时，先见失焦错误，提交后追加表单级错误。
+
+## 异步提交
+
+`onSubmit` 返回 Promise 期间 `isSubmitting` 为真，`canSubmit` 同时转假禁用按钮，天然防重复提交：
+
+<DemoPreview file="form/FormAsyncSubmitDemo.vue" />
+
+## 编辑回填与重置
+
+异步取数后 `form.setFieldValue()` 逐字段回填；`form.reset()` 恢复到 `defaultValues`：
+
+<DemoPreview file="form/FormBackfillDemo.vue" />
+
+要点：回填后可声明 `onMount` 校验器做预校验；重置按钮直接调 `form.reset()`，无需自行清空。
+
+## 组件结构
+
+| 组件               | 说明                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `TForm`            | 表单容器：拦截原生 `submit`（`novalidate`）并调用 `form.handleSubmit()`                                              |
+| `TFormField`       | 字段作用域：渲染 TanStack `form.Field` 并向下提供字段上下文                                                          |
+| `TFormItem`        | 字段布局容器：为子组件提供 `controlId`、`descriptionId`、`messageId` 上下文；校验错误时根元素带 `data-invalid`       |
+| `TFormLabel`       | 字段标签：`for` 自动指向字段控件，校验错误时变红                                                                     |
+| `TFormControl`     | 控件包装：把 `id`、`aria-invalid`、`aria-describedby` 合并到唯一子元素（多个子元素时开发期告警）                     |
+| `TFormDescription` | 辅助说明：挂载即被 `aria-describedby` 关联，卸载自动收缩                                                             |
+| `TFormMessage`     | 错误提示：默认渲染首个校验错误文案（兼容 `string` 与 `{ message }` 对象两种形态）；仅在有错误或传入 `message` 时渲染 |
+| `TFormSubscribe`   | 提交状态订阅，配合 `type="submit"` 按钮使用                                                                          |
+
+## API
+
+### Props
+
+#### TForm
 
 ```vue
 <TForm :form="form">…</TForm>
@@ -113,34 +108,27 @@ validators: {
 | `form`  | `FormInstance`（`useForm()` 返回值） | —      | 表单实例，**必填** |
 | `class` | `string`                             | —      | 追加/覆盖根样式    |
 
-插槽：default——放置 `TFormField` 与 `TFormSubscribe`。
-
-### TFormField
-
-字段作用域：渲染 TanStack `form.Field` 并向下提供字段上下文。
+#### TFormField
 
 ```vue
 <TFormField name="email" v-slot="{ field }">…</TFormField>
 ```
 
-| Prop         | 类型                        | 默认值 | 说明                                                                         |
-| ------------ | --------------------------- | ------ | ---------------------------------------------------------------------------- |
-| `name`       | `string`                    | —      | 字段名，**必填**；控件 `id` 由它派生                                         |
-| `validators` | `Record<string, validator>` | —      | 字段级校验：值为函数或 Standard Schema（如 valibot），按 `onChange` 等键声明 |
+| Prop         | 类型                        | 默认值    | 说明                                                                         |
+| ------------ | --------------------------- | --------- | ---------------------------------------------------------------------------- |
+| `name`       | `string`                    | —         | 字段名，**必填**；控件 `id` 由它派生                                         |
+| `validators` | `Record<string, validator>` | —         | 字段级校验：值为函数或 Standard Schema（如 valibot），按 `onChange` 等键声明 |
+| `mode`       | `'value' \| 'array'`        | `'value'` | 字段模式：`array` 数组字段，解锁 `pushValue` / `removeValue` 等行操作        |
 
-作用域插槽 default：`{ field, state }`——`field.state.value` 取值、`field.handleChange` 写值、`field.handleBlur` 失焦、`field.state.meta.errors` 错误列表。
+#### TFormItem
 
-### TFormItem
-
-字段布局容器（无 Props）：为子组件提供 `controlId`、`descriptionId`、`messageId` 上下文；校验错误时根元素带 `data-invalid`。
+无 Props。
 
 ```vue
 <TFormItem>…</TFormItem>
 ```
 
-### TFormLabel
-
-字段标签：`for` 自动指向字段控件，校验错误时变红。
+#### TFormLabel
 
 ```vue
 <TFormLabel>邮箱</TFormLabel>
@@ -150,9 +138,7 @@ validators: {
 | ------- | -------- | ------ | ------------- |
 | `class` | `string` | —      | 追加/覆盖样式 |
 
-### TFormControl
-
-控件包装：把 `id`、`aria-invalid`、`aria-describedby` 合并到唯一子元素（多个子元素时开发期告警）。
+#### TFormControl
 
 ```vue
 <TFormControl>
@@ -164,9 +150,7 @@ validators: {
 | ------- | -------- | ------ | ------------------- |
 | `class` | `string` | —      | 追加/覆盖子元素样式 |
 
-### TFormDescription
-
-辅助说明：挂载即被 `aria-describedby` 关联，卸载自动收缩。
+#### TFormDescription
 
 ```vue
 <TFormDescription>我们不会公开你的邮箱</TFormDescription>
@@ -176,9 +160,7 @@ validators: {
 | ------- | -------- | ------ | ------------- |
 | `class` | `string` | —      | 追加/覆盖样式 |
 
-### TFormMessage
-
-错误提示：默认渲染首个校验错误文案（兼容 `string` 与 `{ message }` 对象两种形态）；仅在有错误或传入 `message` 时渲染。
+#### TFormMessage
 
 ```vue
 <TFormMessage />
@@ -189,9 +171,9 @@ validators: {
 | `message` | `string` | —      | 静态覆盖文案：传入后即使无错误也渲染（不走 aria-errormessage） |
 | `class`   | `string` | —      | 追加/覆盖样式                                                  |
 
-### TFormSubscribe
+#### TFormSubscribe
 
-提交状态订阅（无 Props），配合 `type="submit"` 按钮使用。
+无 Props。
 
 ```vue
 <TFormSubscribe v-slot="{ canSubmit, isSubmitting }">
@@ -201,31 +183,28 @@ validators: {
 </TFormSubscribe>
 ```
 
-作用域插槽 default：`{ canSubmit, isSubmitting }`。
+### Events
 
-## 场景化示例
+Form 家族不声明自定义事件。`TForm` 内部拦截原生 `submit`（`novalidate`）并调用 `form.handleSubmit()`；其余原生事件随 attrs 透传到根 `form` 元素：
 
-### 校验时机对比
+```vue
+<template>
+  <TForm :form="form" @focus="…">…</TForm>
+</template>
+```
 
-用户名失焦触发字段级 `onBlur` 校验，提交时由表单级 `onSubmit` schema 兜底——两处错误都会经 `TFormMessage` 渲染：
+### Slots
 
-<DemoPreview file="form/FormValidationDemo.vue" />
-
-要点：`validators` 键不同互不影响；点击「提交」不满足条件时，先见失焦错误，提交后追加表单级错误。
-
-### 异步提交
-
-`onSubmit` 返回 Promise 期间 `isSubmitting` 为真，`canSubmit` 同时转假禁用按钮，天然防重复提交：
-
-<DemoPreview file="form/FormAsyncSubmitDemo.vue" />
-
-### 编辑回填与重置
-
-异步取数后 `form.setFieldValue()` 逐字段回填；`form.reset()` 恢复到 `defaultValues`：
-
-<DemoPreview file="form/FormBackfillDemo.vue" />
-
-要点：回填后可声明 `onMount` 校验器做预校验；重置按钮直接调 `form.reset()`，无需自行清空。
+| 组件               | 插槽                | 说明                                                                                                                                 |
+| ------------------ | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `TForm`            | `default`           | 放置 `TFormField` 与 `TFormSubscribe`                                                                                                |
+| `TFormField`       | `default`（作用域） | `{ field, state }`——`field.state.value` 取值、`field.handleChange` 写值、`field.handleBlur` 失焦、`field.state.meta.errors` 错误列表 |
+| `TFormItem`        | `default`           | 字段布局内容（`TFormLabel` / `TFormControl` / `TFormDescription` / `TFormMessage`）                                                  |
+| `TFormLabel`       | `default`           | 标签文本                                                                                                                             |
+| `TFormControl`     | `default`           | 需且仅需一个子元素（多个子元素时开发期告警）                                                                                         |
+| `TFormDescription` | `default`           | 说明文本                                                                                                                             |
+| `TFormMessage`     | —                   | 无插槽，渲染错误文案                                                                                                                 |
+| `TFormSubscribe`   | `default`（作用域） | `{ canSubmit, isSubmitting }`                                                                                                        |
 
 ## FAQ
 
