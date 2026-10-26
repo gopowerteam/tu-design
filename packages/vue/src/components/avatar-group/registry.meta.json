@@ -1,0 +1,4 @@
+{
+  "description": "头像组，数量折叠、悬停展开与垂直排列。",
+  "registryDependencies": ["utils", "avatar"]
+}

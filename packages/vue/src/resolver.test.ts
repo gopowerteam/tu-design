@@ -27,8 +27,11 @@ describe("TuDesignResolver", () => {
     // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身、form-render API
     const nonComponentExports = new Set([
       "cn",
+      "avatarVariants",
+      "avatarGroupKey",
       "badgeVariants",
       "buttonVariants",
+      "cardVariants",
       "COMPONENT_NAMES",
       "TuDesignResolver",
       "numberOrNull",

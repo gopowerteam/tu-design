@@ -1,5 +1,5 @@
 {
-  "description": "头像，含图片加载与回退（Ark UI）。",
+  "description": "头像，支持尺寸/形状、加载占位与失败回退（Ark UI）。",
   "registryDependencies": ["utils"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "avatar-group",
+  "type": "registry:ui",
+  "description": "头像组，数量折叠、悬停展开与垂直排列。",
+  "registryDependencies": ["utils", "avatar"],
+  "files": [
+    {
+      "path": "avatar-group/AvatarGroup.vue",
+      "type": "registry:component",
+      "target": "components/ui/avatar-group/AvatarGroup.vue",
+      "content": "<script setup lang=\"ts\">\nimport { Comment, Text, computed, provide, ref, toRef, useSlots } from \"vue\";\nimport { cn } from \"@/lib/utils\";\nimport { Avatar, avatarGroupKey, type AvatarVariants } from \"../avatar\";\n\ninterface Props {\n  /** 最多展示的子头像数，超出折叠为 +N 尾巴（按 default 插槽内子 Avatar 计数） */\n  max?: number;\n  vertical?: boolean;\n  /** 下发给子 Avatar 的尺寸（子级显式 size 优先） */\n  size?: AvatarVariants[\"size\"] | number;\n  /** 悬停展开全部头像（仅在设置了 max 时生效） */\n  expandOnHover?: boolean;\n  /** 子头像加描边（Group 内部分隔） */\n  bordered?: boolean;\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n\nconst slots = useSlots();\nconst expanded = ref(false);\n\nprovide(avatarGroupKey, { size: toRef(props, \"size\") });\n\n// 统计 default 插槽中的元素级 VNode（过滤注释与文本节点）\nconst total = computed(\n  () => slots.default?.().filter((v) => v.type !== Comment && v.type !== Text).length ?? 0,\n);\n\nconst restCount = computed(() =>\n  props.max != null && total.value > props.max ? total.value - props.max : 0,\n);\n\nconst showRest = computed(() => restCount.value > 0 && !(props.expandOnHover && expanded.value));\n\n// 溢出折叠：nth-child 规则命中 max+1 之后的元素；+N 尾巴也命中该规则，用 !inline-flex 覆盖\nconst overflowClass = computed(() =>\n  props.max != null && !expanded.value ? `[&>*:nth-child(n+${props.max + 1})]:hidden` : undefined,\n);\n\nfunction onEnter() {\n  if (props.expandOnHover) expanded.value = true;\n}\n\nfunction onLeave() {\n  expanded.value = false;\n}\n</script>\n\n<template>\n  <div\n    :class=\"\n      cn(\n        'inline-flex items-center',\n        props.vertical ? 'flex-col [&>*+*]:-mt-2' : 'flex-row [&>*+*]:-ml-2',\n        overflowClass,\n        props.bordered && '[&>*]:ring-2 [&>*]:ring-background',\n        props.class,\n      )\n    \"\n    @mouseenter=\"onEnter\"\n    @mouseleave=\"onLeave\"\n  >\n    <slot />\n    <Avatar v-if=\"showRest\" class=\"!inline-flex font-medium\">\n      <slot name=\"rest\" :rest=\"restCount\">+{{ restCount }}</slot>\n    </Avatar>\n  </div>\n</template>\n"
+    },
+    {
+      "path": "avatar-group/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/avatar-group/index.ts",
+      "content": "export { default as AvatarGroup } from \"./AvatarGroup.vue\";\n"
+    }
+  ]
+}

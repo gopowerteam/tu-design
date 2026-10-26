@@ -2,50 +2,62 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "card",
   "type": "registry:ui",
-  "description": "卡片容器族：Header/Title/Description/Content/Footer。",
+  "description": "卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。",
   "registryDependencies": ["utils"],
   "files": [
     {
       "path": "card/Card.vue",
       "type": "registry:component",
       "target": "components/ui/card/Card.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div\n    :class=\"\n      cn('rounded-xl border border-border bg-card text-card-foreground shadow-xs', props.class)\n    \"\n  >\n    <slot />\n  </div>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\nimport { cardVariants, type CardVariants } from \"./index\";\n\ninterface Props {\n  /** 卡片尺寸，联动圆角、字级与分区 padding */\n  size?: CardVariants[\"size\"];\n  /** 是否显示边框（关闭时同时去掉阴影基底） */\n  bordered?: boolean;\n  /** 悬浮时提升阴影 */\n  hoverable?: boolean;\n  /** 可点击卡片：hover 提升 + cursor-pointer */\n  interactive?: boolean;\n  /** 嵌入式背景（bg-muted/30） */\n  embedded?: boolean;\n  /** 分区之间显示分隔线（不含 Cover） */\n  segmented?: boolean;\n  /** 显示关闭按钮，点击触发 close 事件 */\n  closable?: boolean;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), {\n  size: \"default\",\n  bordered: true,\n});\n\nconst emit = defineEmits<{ close: [] }>();\n\nconst segmentedClass = props.segmented\n  ? [\n      \"[&>[data-slot]:not(:first-child):not([data-slot=card-cover])]:border-t\",\n      \"[&>[data-slot=card-content]]:pt-6\",\n      \"[&>[data-slot=card-footer]]:pt-6\",\n    ]\n  : undefined;\n</script>\n\n<template>\n  <div\n    data-slot=\"card\"\n    :class=\"\n      cn(\n        cardVariants({\n          size: props.size,\n          bordered: props.bordered,\n          hoverable: props.hoverable,\n          interactive: props.interactive,\n          embedded: props.embedded,\n        }),\n        segmentedClass,\n        props.class,\n      )\n    \"\n  >\n    <slot />\n    <button\n      v-if=\"props.closable\"\n      type=\"button\"\n      aria-label=\"关闭\"\n      class=\"absolute right-3 top-3 inline-flex size-7 cursor-pointer items-center justify-center rounded-md text-muted-foreground opacity-70 transition-[color,background-color,opacity] hover:bg-muted hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring\"\n      @click=\"emit('close')\"\n    >\n      <svg\n        xmlns=\"http://www.w3.org/2000/svg\"\n        viewBox=\"0 0 24 24\"\n        fill=\"none\"\n        stroke=\"currentColor\"\n        stroke-width=\"2\"\n        stroke-linecap=\"round\"\n        stroke-linejoin=\"round\"\n        class=\"size-4\"\n        aria-hidden=\"true\"\n      >\n        <path d=\"M18 6 6 18\" />\n        <path d=\"m6 6 12 12\" />\n      </svg>\n    </button>\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardAction.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardAction.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div\n    data-slot=\"card-action\"\n    :class=\"\n      cn(\n        'col-start-2 row-span-2 row-start-1 flex items-center gap-2 self-start justify-self-end',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </div>\n</template>\n"
     },
     {
       "path": "card/CardContent.vue",
       "type": "registry:component",
       "target": "components/ui/card/CardContent.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div data-slot=\"card-content\" :class=\"cn('p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+    },
+    {
+      "path": "card/CardCover.vue",
+      "type": "registry:component",
+      "target": "components/ui/card/CardCover.vue",
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div\n    data-slot=\"card-cover\"\n    :class=\"cn('-mx-px -mt-px overflow-hidden rounded-t-[inherit]', props.class)\"\n  >\n    <slot />\n  </div>\n</template>\n"
     },
     {
       "path": "card/CardDescription.vue",
       "type": "registry:component",
       "target": "components/ui/card/CardDescription.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <p :class=\"cn('text-sm text-muted-foreground', props.class)\">\n    <slot />\n  </p>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <p data-slot=\"card-description\" :class=\"cn('text-sm text-muted-foreground', props.class)\">\n    <slot />\n  </p>\n</template>\n"
     },
     {
       "path": "card/CardFooter.vue",
       "type": "registry:component",
       "target": "components/ui/card/CardFooter.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('flex items-center p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div data-slot=\"card-footer\" :class=\"cn('flex items-center p-6 pt-0', props.class)\">\n    <slot />\n  </div>\n</template>\n"
     },
     {
       "path": "card/CardHeader.vue",
       "type": "registry:component",
       "target": "components/ui/card/CardHeader.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div :class=\"cn('flex flex-col gap-1.5 p-6', props.class)\">\n    <slot />\n  </div>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <div\n    data-slot=\"card-header\"\n    :class=\"\n      cn(\n        'grid auto-rows-min grid-rows-[auto_auto] items-start gap-1.5 p-6',\n        'has-data-[slot=card-action]:grid-cols-[minmax(0,1fr)_auto]',\n        props.class,\n      )\n    \"\n  >\n    <slot />\n  </div>\n</template>\n"
     },
     {
       "path": "card/CardTitle.vue",
       "type": "registry:component",
       "target": "components/ui/card/CardTitle.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <h3 :class=\"cn('font-semibold leading-none tracking-tight', props.class)\">\n    <slot />\n  </h3>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\nconst props = defineProps<{ class?: string }>();\n</script>\n\n<template>\n  <h3 data-slot=\"card-title\" :class=\"cn('font-semibold leading-none tracking-tight', props.class)\">\n    <slot />\n  </h3>\n</template>\n"
     },
     {
       "path": "card/index.ts",
       "type": "registry:component",
       "target": "components/ui/card/index.ts",
-      "content": "export { default as Card } from \"./Card.vue\";\nexport { default as CardContent } from \"./CardContent.vue\";\nexport { default as CardDescription } from \"./CardDescription.vue\";\nexport { default as CardFooter } from \"./CardFooter.vue\";\nexport { default as CardHeader } from \"./CardHeader.vue\";\nexport { default as CardTitle } from \"./CardTitle.vue\";\n"
+      "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Card } from \"./Card.vue\";\nexport { default as CardAction } from \"./CardAction.vue\";\nexport { default as CardContent } from \"./CardContent.vue\";\nexport { default as CardCover } from \"./CardCover.vue\";\nexport { default as CardDescription } from \"./CardDescription.vue\";\nexport { default as CardFooter } from \"./CardFooter.vue\";\nexport { default as CardHeader } from \"./CardHeader.vue\";\nexport { default as CardTitle } from \"./CardTitle.vue\";\n\nexport const cardVariants = cva(\n  \"relative rounded-xl border border-border bg-card text-card-foreground shadow-xs\",\n  {\n    variants: {\n      size: {\n        sm: \"rounded-lg text-sm [&>[data-slot=card-header]]:p-4 [&>[data-slot=card-content]]:px-4 [&>[data-slot=card-footer]]:px-4\",\n        default: \"\",\n        lg: \"rounded-2xl text-base [&>[data-slot=card-header]]:p-8 [&>[data-slot=card-content]]:px-8 [&>[data-slot=card-footer]]:px-8\",\n      },\n      bordered: { true: \"\", false: \"border-0 shadow-none\" },\n      hoverable: { true: \"transition-shadow hover:shadow-md\" },\n      interactive: {\n        true: \"cursor-pointer transition-[box-shadow,translate] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0\",\n      },\n      embedded: { true: \"bg-muted/30\" },\n    },\n    defaultVariants: {\n      size: \"default\",\n      bordered: true,\n    },\n  },\n);\n\nexport type CardVariants = VariantProps<typeof cardVariants>;\n"
     }
   ]
 }

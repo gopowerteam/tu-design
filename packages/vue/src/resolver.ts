@@ -8,11 +8,14 @@
  */
 export const COMPONENT_NAMES = [
   "Avatar",
+  "AvatarGroup",
   "Badge",
   "Button",
   "Calendar",
   "Card",
+  "CardAction",
   "CardContent",
+  "CardCover",
   "CardDescription",
   "CardFooter",
   "CardHeader",

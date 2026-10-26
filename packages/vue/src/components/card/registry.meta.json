@@ -1,4 +1,4 @@
 {
-  "description": "卡片容器族：Header/Title/Description/Content/Footer。",
+  "description": "卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。",
   "registryDependencies": ["utils"]
 }

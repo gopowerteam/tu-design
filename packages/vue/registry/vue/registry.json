@@ -6,7 +6,13 @@
       "name": "avatar",
       "title": "Avatar",
       "type": "registry:ui",
-      "description": "头像，含图片加载与回退（Ark UI）。"
+      "description": "头像，支持尺寸/形状、加载占位与失败回退（Ark UI）。"
+    },
+    {
+      "name": "avatar-group",
+      "title": "AvatarGroup",
+      "type": "registry:ui",
+      "description": "头像组，数量折叠、悬停展开与垂直排列。"
     },
     {
       "name": "badge",
@@ -30,7 +36,7 @@
       "name": "card",
       "title": "Card",
       "type": "registry:ui",
-      "description": "卡片容器族：Header/Title/Description/Content/Footer。"
+      "description": "卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。"
     },
     {
       "name": "cascader",
