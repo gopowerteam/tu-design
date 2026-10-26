@@ -81,3 +81,26 @@ describe("Checkbox", () => {
     w.unmount();
   });
 });
+
+describe("Checkbox 半选态（S10，TableRender 全选依赖）", () => {
+  it('checked="indeterminate" 渲染半选状态', () => {
+    const w = mountCheckbox({ checked: "indeterminate" });
+    expect(control()!.dataset.state).toBe("indeterminate");
+    w.unmount();
+  });
+
+  it("受控 true/false 正常切换，半选由父级收回", () => {
+    const w = mountCheckbox({ checked: true });
+    expect(control()!.dataset.state).toBe("checked");
+    w.unmount();
+  });
+
+  it("点击半选框发出 boolean（非 indeterminate）", async () => {
+    const onUpdate = vi.fn();
+    const w = mountCheckbox({ checked: "indeterminate", "onUpdate:checked": onUpdate });
+    await w.find('[data-part="control"]').trigger("click");
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalled());
+    expect(typeof onUpdate.mock.calls[0][0]).toBe("boolean");
+    w.unmount();
+  });
+});

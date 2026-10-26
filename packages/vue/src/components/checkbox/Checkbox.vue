@@ -4,9 +4,13 @@ import { computed, ref } from "vue";
 import { Checkbox as ArkCheckbox } from "@ark-ui/vue/checkbox";
 import { cn } from "@/lib/utils";
 
-// checked 用 default: undefined 禁用 Boolean casting（Dialog 同款约定）
+// checked 用 default: undefined 禁用 Boolean casting（Dialog 同款约定）；
+// "indeterminate" 对齐 Ark UI CheckedState，用于表格全选等半选语义（S10）
 const props = defineProps({
-  checked: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  checked: {
+    type: [Boolean, String] as PropType<boolean | "indeterminate" | undefined>,
+    default: undefined,
+  },
   defaultChecked: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
   class: { type: String, default: undefined },
@@ -15,12 +19,13 @@ const props = defineProps({
 const emit = defineEmits<{ "update:checked": [checked: boolean] }>();
 
 // 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）
-const internalChecked = ref(props.defaultChecked);
+const internalChecked = ref<boolean>(props.defaultChecked);
 const isChecked = computed(() => props.checked ?? internalChecked.value);
 
-function handleUpdate(checked: boolean) {
-  internalChecked.value = checked;
-  emit("update:checked", checked);
+function handleUpdate(checked: boolean | "indeterminate") {
+  const next = checked === "indeterminate" ? false : checked;
+  internalChecked.value = next;
+  emit("update:checked", next);
 }
 </script>
 
@@ -36,7 +41,20 @@ function handleUpdate(checked: boolean) {
       class="border-input data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary focus-visible:border-ring focus-visible:ring-ring/50 peer size-4 shrink-0 rounded-[4px] border bg-transparent shadow-xs transition-shadow outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50"
     >
       <ArkCheckbox.Indicator class="flex items-center justify-center text-current">
+        <!-- 半选态（data-state=indeterminate）显示短横线，选中态显示对勾 -->
         <svg
+          v-if="isChecked === 'indeterminate'"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="3"
+          stroke-linecap="round"
+          class="size-3.5"
+        >
+          <path d="M5 12h14" />
+        </svg>
+        <svg
+          v-else
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"

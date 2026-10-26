@@ -209,6 +209,10 @@ export default defineConfig({
               text: "表单渲染器 <span class='sidebar-en'>FormRender</span>",
               link: "/components/form-render",
             },
+            {
+              text: "表格渲染器 <span class='sidebar-en'>TableRender</span>",
+              link: "/components/table-render",
+            },
           ],
         },
       ],

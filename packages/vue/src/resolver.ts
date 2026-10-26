@@ -70,6 +70,7 @@ export const COMPONENT_NAMES = [
   "Slider",
   "Slot",
   "Switch",
+  "TableRender",
   "Tabs",
   "TabsContent",
   "TabsList",

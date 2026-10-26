@@ -24,7 +24,7 @@ describe("TuDesignResolver", () => {
   });
 
   it("白名单与组件库组件导出同步（排除非组件导出）", () => {
-    // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身、form-render API
+    // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身、form-render/table-render API
     const nonComponentExports = new Set([
       "cn",
       "avatarVariants",
@@ -45,6 +45,10 @@ describe("TuDesignResolver", () => {
       "MODEL_VALUE",
       "SLIDER",
       "VALUE",
+      "defineTable",
+      "defineColumns",
+      "useTableRender",
+      "columnRenders",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());
