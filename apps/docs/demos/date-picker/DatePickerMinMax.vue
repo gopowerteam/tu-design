@@ -6,9 +6,10 @@ const date = ref<string | null>(null);
 </script>
 
 <template>
-  <div class="w-72 space-y-2">
+  <div class="space-y-2">
     <TDatePicker
       v-model="date"
+      class="w-80"
       :min="'2026-01-01'"
       :max="'2026-12-31'"
       placeholder="限 2026 年内"

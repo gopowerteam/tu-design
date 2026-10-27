@@ -85,3 +85,25 @@ npx tu-design add dialog
 - `TDialogTitle` 渲染为 `h2` 并自动关联 `aria-labelledby`；`TDialogDescription` 关联 `aria-describedby`
 - 打开时焦点移入对话框并圈定，关闭后还原到触发元素
 - `Escape` 与遮罩点击默认关闭（Root 层 `close-on-escape` / `close-on-interact-outside` 可调）
+
+## 主题定制
+
+Dialog 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                 | 用途                             |
+| -------------------- | -------------------------------- |
+| `--background`       | 面板底色（`bg-background`）      |
+| `--border`           | 面板边框色（`border`）           |
+| `--muted-foreground` | 描述文字（`TDialogDescription`） |
+| `--ring`             | 右上角关闭按钮焦点环颜色         |
+| `--radius`           | 圆角基准（`rounded-lg` 派生）    |
+
+遮罩（Backdrop）为固定 `bg-black/50`，不使用主题变量。
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--background: oklch(0.98 0.01 260)">
+  <TDialog v-model:open="open">…</TDialog>
+</div>
+```

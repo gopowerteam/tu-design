@@ -84,3 +84,21 @@ const open = ref(false);
 ### Slots
 
 全部子组件均只提供默认插槽；`TPopover` 的默认插槽放置 `TPopoverTrigger` 与 `TPopoverContent`。
+
+## 主题定制
+
+Popover 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                          |
+| ------------------------------------ | ----------------------------- |
+| `--popover` / `--popover-foreground` | 气泡面板底色 / 文字           |
+| `--border`                           | 面板边框色（`border`）        |
+| `--radius`                           | 圆角基准（`rounded-md` 派生） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--popover: oklch(0.98 0.01 260)">
+  <TPopoverContent>品牌色气泡</TPopoverContent>
+</div>
+```

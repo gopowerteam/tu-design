@@ -6,9 +6,10 @@ const range = ref<[string, string] | null>(null);
 </script>
 
 <template>
-  <div class="w-96 space-y-2">
+  <div class="space-y-2">
     <TDateRangePicker
       v-model="range"
+      class="w-80"
       :min="'2026-01-01'"
       :max="'2026-12-31'"
       placeholder="限 2026 年内"

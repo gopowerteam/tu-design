@@ -19,6 +19,10 @@ npx tu-design add label
 
 <DemoPreview file="label/LabelDemo.vue" />
 
+## 组件结构
+
+Label 为单组件，无子组件；不使用 cva，样式为固定工具类（`text-sm font-medium leading-none`）加 `class` 合并。
+
 ## API
 
 ### Props
@@ -29,8 +33,16 @@ npx tu-design add label
 
 渲染 `<label>`（`text-sm font-medium leading-none`）；`for`/`@click` 等原生属性透传。
 
+### Events
+
+Label 不声明自定义事件，`for`、`click` 等原生属性与事件随 attrs 透传到根 `<label>` 元素。
+
 ### Slots
 
 | 插槽      | 说明     |
 | --------- | -------- |
 | `default` | 标签文字 |
+
+## 主题定制
+
+Label 样式为固定工具类（`text-sm font-medium leading-none`），不依赖任何主题 CSS 变量；调整字号/字重经 `class` 覆盖即可。

@@ -78,3 +78,29 @@ npx tu-design add select
 - 单选语义：`v-model` 为 `string`（Ark 内部以数组表示，包装层已转换）
 - `TSelectValueText` 自含选中回显，不要向其传插槽内容
 - 键盘 `↑`/`↓` 高亮、`Enter` 选中、`Escape` 关闭
+
+## 主题定制
+
+Select 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                                                 |
+| ------------------------------------ | ---------------------------------------------------- |
+| `--input`                            | Trigger 边框色                                       |
+| `--muted-foreground`                 | 占位态文字（`data-[placeholder]`）                   |
+| `--ring`                             | Trigger 键盘聚焦环（`border-ring` / `ring-ring/50`） |
+| `--popover` / `--popover-foreground` | 面板底色/文字                                        |
+| `--accent` / `--accent-foreground`   | 选项高亮态（`data-[highlighted]`）底色/文字          |
+| `--radius`                           | 圆角基准（`rounded-md`/`rounded-sm` 派生）           |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--accent: oklch(0.9 0.06 260)">
+  <TSelect v-model="value" :items="items">
+    <TSelectTrigger />
+    <TSelectContent>
+      <TSelectItem v-for="i in items" :key="i.value" :item="i" />
+    </TSelectContent>
+  </TSelect>
+</div>
+```

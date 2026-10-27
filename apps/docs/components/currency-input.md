@@ -25,6 +25,10 @@ npx tu-design add currency-input
 
 <DemoPreview file="currency-input/CurrencyInputUnits.vue" />
 
+## 组件结构
+
+CurrencyInput 对外为单组件，无子组件；内部为纯原生实现（无需原语）：容器 `div`（承载边框/焦点环/校验态）+ 内部真实 `input` + 内置单位后缀（由 `labelUnit` 渲染），样式为内联类组合（无 cva 变体）。
+
 ## API
 
 ### Props
@@ -49,6 +53,10 @@ npx tu-design add currency-input
 
 `focus`、`blur` 等原生事件随 attrs 透传到内部 `input`。
 
+### Slots
+
+CurrencyInput 不声明自定义插槽：单位后缀由 `labelUnit` prop 内置渲染（含禁用降透明度样式），不接受插槽内容替换。
+
 ## 与表单集成
 
 <DemoPreview file="currency-input/CurrencyInputFormDemo.vue" />
@@ -59,3 +67,24 @@ npx tu-design add currency-input
 - 换算基于十进制字符串移位，无浮点误差（`0.29` 元 → `29` 分，而非 `28.99…`）。
 - 输入白名单为非负数字文本；负号或非法字符（如 `-5`、`1.2.3`）视为无效，`v-model` 输出 `null`，范围校验交给表单 validators。
 - 外部赋值会反算回显：`modelValue=15000`（元）在 `labelUnit="万"` 下输入框显示 `1.5`。
+
+## 主题定制
+
+CurrencyInput 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                 | 用途                                            |
+| -------------------- | ----------------------------------------------- |
+| `--input`            | 容器与单位后缀边框色（`border-input`）          |
+| `--ring`             | 焦点边框与焦点环（`focus-within:ring-ring/20`） |
+| `--destructive`      | 校验失败态边框与环（`data-invalid:*`）          |
+| `--radius`           | 圆角基准（`rounded-md` 派生）                   |
+| `--muted`            | 单位后缀底色（`bg-muted/40`）                   |
+| `--muted-foreground` | 单位后缀文字色（`text-muted-foreground`）       |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--muted: oklch(0.92 0.01 260)">
+  <TCurrencyInput v-model="amount" label-unit="万" value-unit="元" />
+</div>
+```

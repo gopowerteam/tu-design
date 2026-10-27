@@ -29,23 +29,29 @@ npx tu-design add avatar
 
 ## 加载回退
 
-图片加载失败或未提供 `src` 时渲染 Fallback 内容（通常为文字或图标）。配合 `fallback-src` 可在失败时切换备用图片，通过 `@load` / `@error` 感知加载状态（完整示例见 [AvatarGroup](/components/avatar-group) 页底部）。
+图片加载失败或未提供 `src` 时渲染 Fallback 内容（通常为文字或图标）。配合 `fallback-src` 可在失败时切换备用图片，通过 `@load` / `@error` 感知加载状态（完整示例见 [AvatarGroup](/components/avatar-group) 页底部）：
+
+<DemoPreview file="avatar/AvatarFallback.vue" />
+
+## 组件结构
+
+Avatar 为单组件，无子组件；内部基于 Ark UI 的 `Avatar.Root` / `Avatar.Image` / `Avatar.Fallback` 三段结构，变体类由 `avatarVariants`（cva）统一生成。与 [AvatarGroup](/components/avatar-group) 为组合关系：组内 `size` 经 provide/inject 下发，子级显式 `size` 优先。
 
 ## API
 
 ### Props
 
-| Prop          | 类型                                                       | 默认值   | 说明                                                                   |
-| ------------- | ---------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
-| `src`         | `string`                                                   | —        | 头像图片地址；加载失败或未提供时渲染 Fallback                          |
-| `alt`         | `string`                                                   | —        | 图片替代文本                                                           |
-| `fallbackSrc` | `string`                                                   | —        | 图片加载失败时的备用图片地址（备用图也失败时回落 Fallback 并再次报错） |
-| `size`        | `'xs' \| 'sm' \| 'md' \| 'lg' \| number`                   | `md`     | 预设尺寸或自定义像素值                                                 |
-| `shape`       | `'circle' \| 'square'`                                     | `circle` | 形状                                                                   |
-| `color`       | `string`                                                   | —        | Fallback 背景色覆盖（默认主题 `bg-muted`）                             |
-| `objectFit`   | `'fill' \| 'contain' \| 'cover' \| 'none' \| 'scale-down'` | `cover`  | 图片在容器内的适应方式                                                 |
-| `imgProps`    | `ImgHTMLAttributes`                                        | —        | 透传到底层 img 的原生属性（组件显式属性优先级更高）                    |
-| `class`       | `string`                                                   | —        | 追加/覆盖样式（经 `cn` 合并）                                          |
+| Prop        | 类型                                                       | 默认值   | 说明                                                                   |
+| ----------- | ---------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| `src`       | `string`                                                   | —        | 头像图片地址；加载失败或未提供时渲染 Fallback                          |
+| `alt`       | `string`                                                   | —        | 图片替代文本                                                           |
+| `fallback`  | `string`                                                   | —        | 图片加载失败时的备用图片地址（备用图也失败时回落 Fallback 并再次报错） |
+| `size`      | `'xs' \| 'sm' \| 'md' \| 'lg' \| number`                   | `md`     | 预设尺寸或自定义像素值                                                 |
+| `shape`     | `'circle' \| 'square'`                                     | `circle` | 形状                                                                   |
+| `color`     | `string`                                                   | —        | Fallback 背景色覆盖（默认主题 `bg-muted`）                             |
+| `objectFit` | `'fill' \| 'contain' \| 'cover' \| 'none' \| 'scale-down'` | `cover`  | 图片在容器内的适应方式                                                 |
+| `imgProps`  | `ImgHTMLAttributes`                                        | —        | 透传到底层 img 的原生属性（组件显式属性优先级更高）                    |
+| `class`     | `string`                                                   | —        | 追加/覆盖样式（经 `cn` 合并）                                          |
 
 ### Events
 
@@ -64,3 +70,19 @@ npx tu-design add avatar
 ### 头像组
 
 多个头像的排列、折叠与展开见 [AvatarGroup](/components/avatar-group)。
+
+## 主题定制
+
+Avatar 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量      | 用途                      |
+| --------- | ------------------------- |
+| `--muted` | 容器底色（Fallback 背景） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--muted: oklch(0.9 0.02 260)">
+  <TAvatar />
+</div>
+```

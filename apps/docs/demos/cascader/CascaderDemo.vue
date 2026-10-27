@@ -6,7 +6,7 @@
     </div>
     <div class="flex flex-col items-center gap-2">
       <span class="text-muted-foreground text-xs">勾选级联（多选）</span>
-      <TCascader v-model="checked" :options="regions" checkable cascade class="w-72" />
+      <TCascader v-model="checked" :options="regions" checkable cascade class="w-64" />
     </div>
     <div class="flex flex-col items-center gap-2">
       <span class="text-muted-foreground text-xs">悬停展开</span>

@@ -29,6 +29,10 @@ npx tu-design add number-input
 
 <DemoPreview file="number-input/NumberInputStates.vue" />
 
+## 组件结构
+
+NumberInput 基于 Ark `NumberInput` 原语组装：Root 容器（承载边框/校验态）+ `DecrementTrigger`/`IncrementTrigger` 步进按钮 + 内部真实 `Input` 三段式结构；样式为内联类组合（无 cva 变体），attrs 透传到内部真实 `input`。
+
 ## API
 
 ### Props
@@ -65,3 +69,24 @@ npx tu-design add number-input
 经 `TFormControl` 包装对接 `TFormField`（`id` 自动落到内部 input）：
 
 <DemoPreview file="number-input/NumberInputFormDemo.vue" />
+
+## 主题定制
+
+NumberInput 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                 | 用途                                      |
+| -------------------- | ----------------------------------------- |
+| `--input`            | Root 默认边框色（`border-input`）         |
+| `--radius`           | 圆角基准（`rounded-md` 派生）             |
+| `--destructive`      | 校验失败态边框与环（`data-invalid:*`）    |
+| `--muted`            | 步进按钮底色（`bg-muted/50`）             |
+| `--accent`           | 步进按钮 hover 底色（`hover:bg-accent`）  |
+| `--muted-foreground` | 步进按钮图标色（`text-muted-foreground`） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--accent: oklch(0.55 0.18 260)">
+  <TNumberInput v-model="count" />
+</div>
+```

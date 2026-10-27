@@ -78,3 +78,21 @@ npx tu-design add tooltip
 - 悬停打开依赖 `pointermove`（防止误扫过触发），键盘聚焦同样可触发；`Escape` 关闭
 - 位置默认在下方自动避让，可通过 `positioning` 透传给 Ark 原语调整
 - 进出场动画基于 `data-[state]` + `tw-animate-css`
+
+## 主题定制
+
+Tooltip 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                   | 用途                          |
+| ---------------------- | ----------------------------- |
+| `--primary`            | 气泡底色                      |
+| `--primary-foreground` | 气泡文字色                    |
+| `--radius`             | 圆角基准（`rounded-md` 派生） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TTooltip>…</TTooltip>
+</div>
+```

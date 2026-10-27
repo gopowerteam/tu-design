@@ -23,6 +23,10 @@ npx tu-design add textarea
 
 <DemoPreview file="textarea/TextareaControlled.vue" />
 
+## 组件结构
+
+Textarea 为单组件，无子组件；纯样式封装（无需原语），也没有 cva 变体，样式为原生 `<textarea>` 元素上的固定类组合。
+
 ## API
 
 ### Props
@@ -38,3 +42,26 @@ npx tu-design add textarea
 ### Events
 
 Textarea 未声明额外事件：`v-model` 对应 `update:modelValue`；`focus`、`blur` 等原生事件随 attrs 透传到根 `<textarea>`。
+
+### Slots
+
+Textarea 不声明自定义插槽：组件模板未使用 `<slot>`，输入内容完全经 `v-model`/原生属性表达，不提供插槽子内容。
+
+## 主题定制
+
+Textarea 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量            | 用途                                   |
+| --------------- | -------------------------------------- |
+| `--input`       | 默认边框色（`border-input`）           |
+| `--ring`        | 焦点边框与焦点环（`ring-ring/50`）     |
+| `--destructive` | 校验失败态边框与环（`aria-invalid:*`） |
+| `--radius`      | 圆角基准（`rounded-md` 派生）          |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--input: oklch(0.55 0.18 260)">
+  <TTextarea placeholder="品牌色边框" />
+</div>
+```

@@ -25,6 +25,10 @@ npx tu-design add tree-select
 
 <DemoPreview file="tree-select/TreeSelectMultiple.vue" />
 
+## 组件结构
+
+TreeSelect 为单组件，无子组件对外导出（树面板由内部 `TreePanel` 渲染，不进入公共 API）；触发器与面板样式由常量类（`controlCls`）+ Tailwind 工具类拼装，无 cva 变体。
+
 ## API
 
 ### Props
@@ -57,6 +61,10 @@ npx tu-design add tree-select
 | `update:show`          | `boolean`                   | 弹层开合                                    |
 | `update:expanded-keys` | `Key[]`                     | 展开变化                                    |
 
+### Slots
+
+TreeSelect 不声明自定义插槽：树节点由 `options` props 声明式渲染（节点文案取自 `label`），搜索框、勾选框、展开箭头与空状态（"无数据"）均为内置渲染，无插槽出口；触发器样式可通过 `class` prop 追加/覆盖。
+
 ## 说明
 
 - **checkable 值语义**：`checkable` 时 `v-model` 恒为数组（等价多选）；传单个 `Key` 会按无选中处理并警告
@@ -64,3 +72,30 @@ npx tu-design add tree-select
 - 键盘：`↑`/`↓` 移动、`→` 展开、`←` 折叠回父级、`Enter` 选中、`Escape` 关闭
 - `options` 变更后残留的失效 key 会被静默忽略（不回显、不报错）
 - 安装时自动携带 `tree-shared`（树数据层）/ `utils` / `date-shared` 依赖
+
+## 主题定制
+
+TreeSelect 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                                                 |
+| ------------------------------------ | ---------------------------------------------------- |
+| `--input`                            | 触发器边框色；勾选框未选态边框色                     |
+| `--ring`                             | 触发器聚焦环（`border-ring` / `ring-ring/50`）       |
+| `--destructive`                      | 校验无效态（`data-invalid`）边框与光晕               |
+| `--popover` / `--popover-foreground` | 弹层面板底色/文字                                    |
+| `--border`                           | 弹层边框色（裸 `border` 的全局兜底）                 |
+| `--accent`                           | 节点 hover/键盘/选中高亮底色；多选标签底色           |
+| `--accent-foreground`                | 多选标签文字色                                       |
+| `--primary`                          | 勾选框选中/半选态底色与边框色                        |
+| `--background`                       | 勾选框未选态底色与对勾颜色                           |
+| `--muted-foreground`                 | 占位文案、搜索框占位、展开箭头、清空按钮、空状态文字 |
+| `--foreground`                       | 清空按钮 hover 文字色                                |
+| `--radius`                           | 圆角基准（`rounded-md`/`rounded-sm` 派生）           |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TTreeSelect v-model="value" :options="options" checkable cascade />
+</div>
+```

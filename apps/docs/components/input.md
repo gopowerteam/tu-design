@@ -25,6 +25,10 @@ npx tu-design add input
 
 <DemoPreview file="input/InputStates.vue" />
 
+## 组件结构
+
+Input 为单组件，无子组件；纯样式封装（无需原语），也没有 cva 变体，样式为单个 `<input>` 元素上的固定类组合。
+
 ## API
 
 ### Props
@@ -45,4 +49,27 @@ Input 未声明额外事件：`v-model` 对应 `update:modelValue`；`focus`、`
 <template>
   <TInput placeholder="搜索" @keydown.enter="onSearch" />
 </template>
+```
+
+### Slots
+
+Input 不声明自定义插槽：根元素为原生 `<input>` 自闭合元素，没有可承载插槽内容的子节点，占位文本等经 `placeholder` 等 attrs/props 传入。
+
+## 主题定制
+
+Input 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量            | 用途                                   |
+| --------------- | -------------------------------------- |
+| `--input`       | 默认边框色（`border-input`）           |
+| `--ring`        | 焦点边框与焦点环（`ring-ring/50`）     |
+| `--destructive` | 校验失败态边框与环（`aria-invalid:*`） |
+| `--radius`      | 圆角基准（`rounded-md` 派生）          |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--input: oklch(0.55 0.18 260)">
+  <TInput placeholder="品牌色边框" />
+</div>
 ```

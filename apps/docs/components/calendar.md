@@ -20,6 +20,16 @@ npx tu-design add calendar
 
 <DemoPreview file="calendar/CalendarDemo.vue" />
 
+## 组件结构
+
+Calendar 为复合组件，基于 `@ark-ui/vue` 的 `DatePicker`（zag）原语封装，由三部分构成：
+
+- `Calendar.vue` — 形态壳：独立使用时自建 `Root`（`:open="true"` 恒开，无 Positioner，就地渲染，值状态自持）；渲染在 Picker 弹层内时经 `CALENDAR_IN_PICKER` 注入标记探测宿主，退化为纯卡片内核（embedded），值与选择状态归宿主 Root；
+- `CalendarBody.vue` — 卡片内核：day/month/year 三视图表格。日视图为双层格子（全格命中 trigger + 24px 视觉圆点 dot，状态经 `group-*` 传导）；`week` 形态整周高亮由本文件按同周判定（`isSameWeek`，跟随 locale）补 `data-week-selected` 实现，不走 zag range 模式；
+- `CalendarNav.vue` — 视图导航条（Prev/Next/ViewTrigger），必须渲染在对应 `View` 子树内（`view` 参数由 View provide）。
+
+后两者为内部件，不对外导出；卡片视觉常量收敛在 `CalendarBody.vue` 单文件内。
+
 ## API
 
 ### Props
@@ -42,6 +52,10 @@ npx tu-design add calendar
 | ------------------- | ------------------------- | --------------------------------------------------------------------- |
 | `update:modelValue` | `(value: string \| null)` | 选中值变化（`"yyyy-MM-dd"`，空值归一 `null`）。**仅 standalone 发出** |
 
+### Slots
+
+Calendar 不声明自定义插槽（源码无 `<slot>` 出口）；模板内的 `Context v-slot` 为 zag 内部上下文消费，非对外插槽。
+
 ## 形态判定
 
 组件内部自动探测：渲染在 Picker 弹层内 → **`embedded` 内嵌形态**（纯卡片内核，不自建弹层，值域归宿主 Picker）；否则 → **`standalone` 独立形态**（自建日历状态，`v-model` 可用）。两种形态无需任何配置切换。
@@ -60,3 +74,24 @@ npx tu-design add calendar
 ## 路线图
 
 Full 尺寸日历为未来的 `size` 档（`size="card" | "full"`）：同一卡片内核换自适应容器宽（`w-full` 流式布局 + 单元格插槽扩展），与形态维度正交组合（如 standalone × full = 独立宽版日历），见 `TDatePicker` 文档的路线图。
+
+## 主题定制
+
+Calendar 卡片样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                                                                       |
+| ------------------------------------ | -------------------------------------------------------------------------- |
+| `--primary` / `--primary-foreground` | 选中格与整周条带底色/反色文字；range 中段与整周 hover 预览浅条带；今日文字 |
+| `--accent`                           | 格子 hover 与键盘焦点底色；导航钮 hover 底色                               |
+| `--muted-foreground`                 | 表头星期文字；prev/next 导航钮图标色                                       |
+| `--foreground`                       | 视图标题（月份/年份/年代）文字                                             |
+| `--border`                           | 表头底边框色                                                               |
+| `--radius`                           | 导航钮圆角（`rounded-md` 派生）                                            |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TCalendar v-model="date" />
+</div>
+```

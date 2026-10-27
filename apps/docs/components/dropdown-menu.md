@@ -85,3 +85,22 @@ npx tu-design add dropdown-menu
 - 点击菜单项前需要先悬停高亮（真实交互的自然顺序），键盘 `↑`/`↓`/`Enter` 同样可用
 - 选中后默认关闭菜单（Ark 原语 `close-on-select` 可调）
 - 进出场动画基于 `data-[state]` + `tw-animate-css`
+
+## 主题定制
+
+DropdownMenu 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                                          |
+| ------------------------------------ | --------------------------------------------- |
+| `--popover` / `--popover-foreground` | 菜单面板底色/文字                             |
+| `--accent` / `--accent-foreground`   | 菜单项高亮态（`data-[highlighted]`）底色/文字 |
+| `--muted`                            | 分隔线颜色（`bg-muted`）                      |
+| `--radius`                           | 圆角基准（`rounded-md`/`rounded-sm` 派生）    |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--popover: oklch(0.98 0.01 260)">
+  <TDropdownMenu>…</TDropdownMenu>
+</div>
+```

@@ -7,8 +7,8 @@ const cities = ["杭州", "上海", { label: "深圳", value: "sz", disabled: tr
 
 <template>
   <div class="flex flex-col items-center gap-2">
-    <TSelect v-model="city" :items="cities" class="w-48">
-      <TSelectTrigger>
+    <TSelect v-model="city" :items="cities">
+      <TSelectTrigger class="w-64">
         <TSelectValueText placeholder="选择城市" />
       </TSelectTrigger>
       <TSelectContent>

@@ -2,15 +2,15 @@
   <div class="flex flex-col items-center gap-8 py-4">
     <div class="flex flex-col items-center gap-2">
       <span class="text-muted-foreground text-xs">基础单选</span>
-      <TTreeSelect v-model="region" :options="regions" class="w-56" />
+      <TTreeSelect v-model="region" :options="regions" class="w-64" />
     </div>
     <div class="flex flex-col items-center gap-2">
       <span class="text-muted-foreground text-xs">勾选级联（多选）</span>
-      <TTreeSelect v-model="checked" :options="regions" checkable cascade class="w-72" />
+      <TTreeSelect v-model="checked" :options="regions" checkable cascade class="w-64" />
     </div>
     <div class="flex flex-col items-center gap-2">
       <span class="text-muted-foreground text-xs">可搜索 + 可清空</span>
-      <TTreeSelect v-model="searched" :options="regions" filterable clearable class="w-56" />
+      <TTreeSelect v-model="searched" :options="regions" filterable clearable class="w-64" />
     </div>
   </div>
 </template>

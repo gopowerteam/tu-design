@@ -771,6 +771,15 @@ const table = defineTable<Task>({
 
 选择顺序建议：**能 `formatter` 就不 `render`**（纯文本格式化走取值链更轻）；格式化不够了再上内置渲染器；内置也不够才手写 `render`。三者优先级：`render` > `formatter` > `record[key]`。
 
+## 组件结构
+
+| 成员                      | 说明                                                                                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TTableRender`            | 表格本体：包装 TanStack `useVueTable`，内置分页器（`TablePagination`）、行选择、固定列、虚拟滚动与树形展开；列单元格渲染见上文[内置列渲染器](#内置列渲染器) |
+| `defineTable<T>(config)`  | 聚合函数：`useTableRender` 的别名，一步返回 `TableRenderDefinition`（须在组件 setup 中调用，TanStack 约束）                                                 |
+| `useTableRender(options)` | 底层组合函数：包装 TanStack `useVueTable`，供已有实例 / 动态配置的高级场景                                                                                  |
+| `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                      |
+
 ## API
 
 按「组件 → 入口函数 → 数据类型」三组组织；单元格预设见上文 [内置列渲染器](#内置列渲染器)。
@@ -916,3 +925,28 @@ const table = defineTable<Task>({
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。
 - 二期规划：列显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
+
+## 主题定制
+
+表格本体直接使用以下 CSS 变量（完整机制见[主题](/guide/theming)）：
+
+| 变量                                 | 用途                                                            |
+| ------------------------------------ | --------------------------------------------------------------- |
+| `--background`                       | sticky 固定列单元格底色（防滚动透出）                           |
+| `--border`                           | 行分隔线、sticky 组交界分隔边框、分页条与页码按钮边框           |
+| `--muted`                            | 行 hover 底色（`hover:bg-muted/50`）；树形展开按钮 hover        |
+| `--muted-foreground`                 | 表头文字、空态 / 错误占位文字、树形 caret、列设置与分页统计文字 |
+| `--foreground`                       | 表头排序按钮、列设置「全选 / 重置」hover 文字                   |
+| `--accent`                           | 列设置面板选项 hover 底色（`hover:bg-accent/50`）               |
+| `--primary` / `--primary-foreground` | 分页当前页码高亮（`data-[selected]:bg-primary` 等）             |
+| `--radius`                           | 圆角基准（分页按钮 / 每页条数下拉的 `rounded-md` 派生）         |
+
+行选择 Checkbox、操作列 Button、列设置 Popover、搜索区 FormRender 等由内部引用组件承接样式，主题变量见对应文档。
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TTableRender :definition="table" row-key="id" />
+</div>
+```

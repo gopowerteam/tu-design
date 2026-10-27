@@ -25,6 +25,10 @@ npx tu-design add pin-input
 
 <DemoPreview file="pin-input/PinInputMask.vue" />
 
+## 组件结构
+
+PinInput 基于 Ark `PinInput` 原语组装：Root 容器（`flex` 布局）+ `length` 个单格 `Input` + 格间 `separator` 插槽（渲染 `length - 1` 次）；样式为内联类组合（无 cva 变体），attrs 透传到首格 `input`。
+
 ## API
 
 ### Props
@@ -63,3 +67,21 @@ npx tu-design add pin-input
 `v-model`（`string[]`）直接对接 `TFormField`：
 
 <DemoPreview file="pin-input/PinInputFormDemo.vue" />
+
+## 主题定制
+
+PinInput 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量            | 用途                                   |
+| --------------- | -------------------------------------- |
+| `--input`       | 单格默认边框色（`border-input`）       |
+| `--radius`      | 单格圆角基准（`rounded-md` 派生）      |
+| `--destructive` | 校验失败态边框与环（`data-invalid:*`） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--input: oklch(0.55 0.18 260)">
+  <TPinInput v-model="code" :length="4" />
+</div>
+```

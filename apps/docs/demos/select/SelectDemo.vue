@@ -1,7 +1,7 @@
 <template>
   <div class="flex justify-center">
-    <TSelect v-model="framework" :items="frameworks" class="w-48">
-      <TSelectTrigger>
+    <TSelect v-model="framework" :items="frameworks">
+      <TSelectTrigger class="w-64">
         <TSelectValueText placeholder="选择框架" />
       </TSelectTrigger>
       <TSelectContent>

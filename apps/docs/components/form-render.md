@@ -125,3 +125,21 @@ npx tu-design add form-render
 - **widget 参数显式传 `placeholder: undefined` 会覆盖 `item.placeholder`**（展开语义：键存在即覆盖，组件收到 undefined）；需要 item 级缺省时请省略该键。
 - `r.select({ open })` / `r.datePicker({ open })` 等**弹层受控字段是半受控语义**：只传 `open` 而不配对 `onUpdate:open` 时弹层无法交互关闭；完整受控用法请两者一起传（组件原语义，非 FormRender 拦截范围）。
 - 二期规划：条件 Tag 回显、高级搜索弹窗、`collapsed` 折叠、`group` 分组、组件/文本双模式。
+
+## 主题定制
+
+FormRender 自身（栅格容器与操作区布局）不直接依赖任何主题 CSS 变量，样式由内部引用的组件承接，主题变量见对应文档：
+
+| 内部承接                        | 组件                                   | 主题变量                                                                     |
+| ------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------- |
+| 标签 / 错误 / 说明文字          | Form 家族                              | `--destructive` / `--muted-foreground`，见 [Form](/components/form)          |
+| 操作区搜索 / 提交 / 重置 / 取消 | Button（default / outline 变体）       | `--primary` / `--background` / `--input` 等，见 [Button](/components/button) |
+| 各 widget 控件                  | Input / Select / DatePicker 等基础组件 | 见各组件文档                                                                 |
+
+在容器上覆盖变量即可整体传导给内部组件：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TFormRender :definition="form" searchable />
+</div>
+```

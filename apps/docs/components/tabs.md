@@ -86,3 +86,22 @@ npx tu-design add tabs
 
 - 激活态样式挂在 `data-[selected]` 上（zag 语义），自定义主题时同理
 - 键盘 `←`/`→` 导航，`Home`/`End` 跳转首尾
+
+## 主题定制
+
+Tabs 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                             | 用途                                                      |
+| -------------------------------- | --------------------------------------------------------- |
+| `--muted` / `--muted-foreground` | 标签列表底色 / 文字（`TTabsList`）                        |
+| `--background` / `--foreground`  | 激活标签底色 / 文字（`data-[selected]:bg-background` 等） |
+| `--ring`                         | 标签焦点环颜色（`focus-visible:ring-ring/50`）            |
+| `--radius`                       | 圆角基准（List `rounded-lg` / Trigger `rounded-md` 派生） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--muted: oklch(0.95 0.02 260)">
+  <TTabs default-value="a">…</TTabs>
+</div>
+```

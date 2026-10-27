@@ -17,6 +17,42 @@ npx tu-design add card
 
 <DemoPreview file="card/CardDemo.vue" />
 
+## 尺寸
+
+`size` 联动圆角、字级与分区 padding，提供 `sm` / `default` / `lg` 三档：
+
+<DemoPreview file="card/CardSizes.vue" />
+
+## 视觉变体
+
+`bordered` 控制边框与阴影基底，`embedded` 提供弱化的嵌入背景：
+
+<DemoPreview file="card/CardVariants.vue" />
+
+## 交互
+
+`hoverable` 仅提升悬浮阴影；`interactive` 面向整卡可点击的场景（悬浮提升 + 上浮位移 + 按压回落）。整卡可点击时建议在 `Card` 上补 `role="button"` 与键盘事件，保证可达性：
+
+<DemoPreview file="card/CardInteractive.vue" />
+
+## 分段与媒体
+
+`segmented` 在分区之间显示分隔线（不含 Cover，并自动补偿分区顶部间距）；`CardCover` 是贴边裁剪的顶部媒体区：
+
+<DemoPreview file="card/CardSegmented.vue" />
+
+## 可关闭
+
+`closable` 在右上角渲染关闭按钮，点击触发 `close` 事件；显隐由使用者自行控制：
+
+<DemoPreview file="card/CardClosable.vue" />
+
+> **注意**：`closable` 的关闭按钮绝对定位于右上角（`right-3 top-3`），与 `CardAction` 同用时两者会在右上角重叠，请二选一使用。
+
+## 头部操作
+
+<DemoPreview file="card/CardAction.vue" />
+
 ## 组件结构
 
 | 组件              | 渲染元素 | 说明                                                                     |
@@ -60,3 +96,24 @@ npx tu-design add card
 ### Slots
 
 全部组件均只提供默认插槽。
+
+## 主题定制
+
+Card 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                           | 用途                                                                    |
+| ------------------------------ | ----------------------------------------------------------------------- |
+| `--card` / `--card-foreground` | 卡片底色 / 文字（`bg-card` / `text-card-foreground`）                   |
+| `--border`                     | 边框色（`border-border`；`bordered: false` 时随边框一并移除）           |
+| `--muted`                      | `embedded` 变体底色（`bg-muted/30`）；关闭按钮 hover 底色               |
+| `--muted-foreground`           | 关闭按钮图标色                                                          |
+| `--ring`                       | 关闭按钮焦点环颜色                                                      |
+| `--radius`                     | 圆角基准（`rounded-xl` 默认 / `rounded-lg` sm / `rounded-2xl` lg 派生） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--card: oklch(0.97 0.02 260)">
+  <TCard>品牌色卡片</TCard>
+</div>
+```

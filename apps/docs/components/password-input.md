@@ -25,6 +25,10 @@ npx tu-design add password-input
 
 <DemoPreview file="password-input/PasswordInputStates.vue" />
 
+## 组件结构
+
+PasswordInput 对外为单组件，无子组件；内部为纯原生实现（无需原语）：容器 `div`（承载边框/焦点环/校验态）+ 内部真实 `input` + 明文切换 `button`，样式为内联类组合（无 cva 变体）。
+
 ## API
 
 ### Props
@@ -59,3 +63,24 @@ npx tu-design add password-input
 经 `TFormControl` 包装对接 `TFormField`：
 
 <DemoPreview file="password-input/PasswordInputFormDemo.vue" />
+
+## 主题定制
+
+PasswordInput 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量                 | 用途                                             |
+| -------------------- | ------------------------------------------------ |
+| `--input`            | 容器默认边框色（`border-input`）                 |
+| `--ring`             | 焦点边框与焦点环（`focus-within:ring-ring/20`）  |
+| `--destructive`      | 校验失败态边框与环（`data-invalid:*`）           |
+| `--radius`           | 圆角基准（`rounded-md` / `rounded-sm` 派生）     |
+| `--muted-foreground` | 切换按钮图标色（`text-muted-foreground`）        |
+| `--foreground`       | 切换按钮 hover 文字色（`hover:text-foreground`） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--ring: oklch(0.55 0.18 260)">
+  <TPasswordInput v-model="password" />
+</div>
+```

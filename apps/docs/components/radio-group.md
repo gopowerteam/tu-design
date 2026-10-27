@@ -70,3 +70,22 @@ npx tu-design add radio-group
 经 `TFormControl` 包装对接 `TFormField`；`name` 写入隐藏 input 供原生表单提交：
 
 <DemoPreview file="radio-group/RadioGroupFormDemo.vue" />
+
+## 主题定制
+
+RadioGroup 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
+
+| 变量            | 用途                                               |
+| --------------- | -------------------------------------------------- |
+| `--input`       | 圆点控件边框色                                     |
+| `--primary`     | 选中圆点底色                                       |
+| `--destructive` | `invalid` 态边框、光晕与圆点底色（`data-invalid`） |
+| `--ring`        | 键盘聚焦环（`border-ring` / `ring-ring/50`）       |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--primary: oklch(0.55 0.18 260)">
+  <TRadioGroup v-model:value="value" :options="options" />
+</div>
+```

@@ -15,6 +15,17 @@
 /* 组件库 tokens（.dark 变量 + @theme inline 映射），路径：apps/packages/vue */
 @import "../../../../packages/vue/src/styles/tokens.css";
 
+/*
+ * 文档正文 markdown 表格撑满内容区（下方 .tu-demo 段恢复 demo 内表格原行为）。
+ * width: 100% + table-layout: auto：宽度统一，列宽仍按内容分配，避免 fixed 均分截断长类型签名。
+ * 注意：Content 组件把 markdown 顶层块直接渲染为 .vp-doc 的子元素，表格中间没有 div，
+ * 因此作用域必须用 .vp-doc table（与默认主题写表格样式的作用域一致）。
+ */
+.vp-doc table {
+  display: table; /* 默认主题为横向滚动设为 block，导致内部表格盒不随 width 拉伸（视觉收缩） */
+  width: 100%;
+}
+
 /* Demo 容器：压制默认主题 .vp-doc 的元素预设，恢复接近全局浏览器的基线 */
 .vp-doc .tu-demo {
   color: inherit;
@@ -62,6 +73,7 @@
   border-collapse: collapse;
   margin: 0;
   display: table;
+  width: auto; /* 恢复按内容收缩，不被文档级撑满规则影响 */
 }
 
 .vp-doc .tu-demo img {

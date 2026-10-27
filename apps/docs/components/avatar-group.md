@@ -19,6 +19,10 @@ npx tu-design add avatar-group
 
 <DemoPreview file="avatar/AvatarGroupDemo.vue" />
 
+## 组件结构
+
+AvatarGroup 为容器组件，自身不渲染头像，由 `default` 插槽内的 `<TAvatar>` 组成，与 Avatar 为组合关系：`size` 经 `avatarGroupKey`（provide/inject）下发给子 Avatar（子级显式 `size` 优先）；溢出折叠的 `+N` 尾巴本身也是一个 `TAvatar`。
+
 ## API
 
 ### Props
@@ -32,6 +36,10 @@ npx tu-design add avatar-group
 | `bordered`      | `boolean`                                | `false` | 子头像加描边（Group 内部分隔）                 |
 | `class`         | `string`                                 | —       | 追加/覆盖样式（经 `cn` 合并）                  |
 
+### Events
+
+AvatarGroup 不声明自定义事件，原生事件随 attrs 透传到根元素；`expand-on-hover` 的悬停展开为组件内部行为，不对外 emit。
+
 ### Slots
 
 | 插槽      | 参数               | 说明                         |
@@ -42,3 +50,19 @@ npx tu-design add avatar-group
 ::: tip 计数说明
 `max` 折叠基于 `default` 插槽中元素级子节点计数，`v-if` 占位注释与文本节点会被忽略；建议插槽内只放置 `<TAvatar>` 元素。
 :::
+
+## 主题定制
+
+AvatarGroup 自身布局类不依赖主题 CSS 变量；`bordered` 描边由以下变量驱动（子头像底色另依赖 Avatar 的 `--muted`，见 [Avatar](/components/avatar) 主题定制）：
+
+| 变量           | 用途                            |
+| -------------- | ------------------------------- |
+| `--background` | `bordered` 子头像描边色（ring） |
+
+在任意容器上覆盖即得到作用域主题：
+
+```html
+<div style="--background: oklch(0.98 0 0)">
+  <TAvatarGroup bordered :max="3"><!-- 子 TAvatar --></TAvatarGroup>
+</div>
+```

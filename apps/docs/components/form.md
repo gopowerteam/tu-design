@@ -267,3 +267,22 @@ watch(
 ```
 
 增删、移动行时，TanStack 会正确移位每行的校验与 touched 状态——删掉第 2 行不会让第 3 行继承它的错误。
+
+## 主题定制
+
+Form 家族是纯布局与文字组件，自身仅依赖少量文字色变量（完整机制见[主题](/guide/theming)）：
+
+| 变量                 | 用途                                                             |
+| -------------------- | ---------------------------------------------------------------- |
+| `--destructive`      | 校验错误文字：`TFormLabel` 校验失败变红、`TFormMessage` 错误文案 |
+| `--muted-foreground` | 辅助说明文字（`TFormDescription`）                               |
+
+控件本体（输入框、选择器等）的样式由 `TFormControl` 内部引用的基础组件承接，主题变量见对应组件文档（如 [Input](/components/input)、[Select](/components/select)）。
+
+在任意容器上覆盖即得到作用域主题（含内部控件）：
+
+```html
+<div style="--destructive: oklch(0.6 0.22 25)">
+  <TForm :form="form">…</TForm>
+</div>
+```
