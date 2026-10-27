@@ -149,7 +149,7 @@ function openFromInput() {
         :index="0"
         :placeholder="props.placeholder"
         :aria-invalid="props.invalid || undefined"
-        class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm outline-none"
+        class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm tabular-nums outline-none"
         @click="openFromInput"
         @keydown.down.prevent="openFromInput"
       />
@@ -170,7 +170,7 @@ function openFromInput() {
         :index="1"
         :placeholder="props.placeholder"
         :aria-invalid="props.invalid || undefined"
-        class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm outline-none"
+        class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm tabular-nums outline-none"
         @click="openFromInput"
         @keydown.down.prevent="openFromInput"
       />
