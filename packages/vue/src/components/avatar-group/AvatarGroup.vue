@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Comment, Text, computed, provide, ref, toRef, useSlots } from "vue";
+import { Comment, Fragment, Text, computed, provide, ref, toRef, useSlots, type VNode } from "vue";
 import { cn } from "@/lib/utils";
 import { Avatar, avatarGroupKey, type AvatarVariants } from "../avatar";
 
@@ -23,10 +23,20 @@ const expanded = ref(false);
 
 provide(avatarGroupKey, { size: toRef(props, "size") });
 
-// 统计 default 插槽中的元素级 VNode（过滤注释与文本节点）
-const total = computed(
-  () => slots.default?.().filter((v) => v.type !== Comment && v.type !== Text).length ?? 0,
-);
+// default 插槽的元素级 VNode（过滤注释与文本节点）。
+// 真实模板中 v-for 会把子节点包进单个 Fragment vnode，须递归展平后再计数/切片——
+// 否则 total 恒为 1，max 折叠在插槽用 v-for 时（绝大多数真实用法）整体失效
+function flattenVnodes(vnodes: VNode[]): VNode[] {
+  return vnodes.flatMap((v) => {
+    if (v.type === Fragment && Array.isArray(v.children))
+      return flattenVnodes(v.children as VNode[]);
+    return v.type !== Comment && v.type !== Text ? [v] : [];
+  });
+}
+
+const childVnodes = computed(() => flattenVnodes(slots.default?.() ?? []));
+
+const total = computed(() => childVnodes.value.length);
 
 const restCount = computed(() =>
   props.max != null && total.value > props.max ? total.value - props.max : 0,
@@ -34,9 +44,10 @@ const restCount = computed(() =>
 
 const showRest = computed(() => restCount.value > 0 && !(props.expandOnHover && expanded.value));
 
-// 溢出折叠：nth-child 规则命中 max+1 之后的元素；+N 尾巴也命中该规则，用 !inline-flex 覆盖
-const overflowClass = computed(() =>
-  props.max != null && !expanded.value ? `[&>*:nth-child(n+${props.max + 1})]:hidden` : undefined,
+// 折叠直接切片渲染：nth-child 动态类（[&>*:nth-child(n+X)]:hidden）由运行时拼接，
+// Tailwind 扫描不到该候选而从不生成 CSS，折叠在真实页面从未生效
+const visibleVnodes = computed(() =>
+  props.max != null && !expanded.value ? childVnodes.value.slice(0, props.max) : childVnodes.value,
 );
 
 function onEnter() {
@@ -54,7 +65,6 @@ function onLeave() {
       cn(
         'inline-flex items-center',
         props.vertical ? 'flex-col [&>*+*]:-mt-2' : 'flex-row [&>*+*]:-ml-2',
-        overflowClass,
         props.bordered && '[&>*]:ring-2 [&>*]:ring-background',
         props.class,
       )
@@ -62,7 +72,9 @@ function onLeave() {
     @mouseenter="onEnter"
     @mouseleave="onLeave"
   >
-    <slot />
+    <template v-for="(vnode, i) in visibleVnodes" :key="vnode.key ?? i">
+      <component :is="vnode" />
+    </template>
     <Avatar v-if="showRest" class="!inline-flex font-medium">
       <slot name="rest" :rest="restCount">+{{ restCount }}</slot>
     </Avatar>
