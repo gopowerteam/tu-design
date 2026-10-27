@@ -25,7 +25,15 @@ npx tu-design add switch
 
 ## 禁用
 
+`disabled` 下控件不可交互且整体降透明度：
+
 <DemoPreview file="switch/SwitchDisabled.vue" />
+
+## 场景：设置列表
+
+开关 + 标题/描述组合成设置项；`v-model` 直接绑定数组元素字段，实时统计已开启数量：
+
+<DemoPreview file="switch/SwitchSettingsDemo.vue" />
 
 ## 组件结构
 

@@ -924,7 +924,7 @@ const table = defineTable<Task>({
 - **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。
-- 二期规划：列显隐、列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
+- 二期规划：列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
 
 ## 主题定制
 

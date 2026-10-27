@@ -25,7 +25,7 @@ const form = useForm({
             :model-value="field.state.value"
             placeholder="请选择开始日期"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormDescription>统计区间的起始日</TFormDescription>

@@ -19,15 +19,37 @@ npx tu-design add form-render
 
 ## 基础用法
 
-搜索表单（联动显隐、日期范围、重置）。`defineForm` 返回值也可拆分消费（`:form` + `:items`，与 `<TForm :form>` 模式兼容，便于 items 复用），见文末「提交与重置」：
+搜索表单（联动显隐、日期范围、重置）。`defineForm` 返回值也可拆分消费（`:form` + `:items`，与 `<TForm :form>` 模式兼容，便于 items 复用），见文末「拆分式与自定义操作区」：
 
 <DemoPreview file="form-render/SearchFormDemo.vue" />
 
+要点：`visible` 是响应式函数——键入关键词后「状态」字段即时出现；点「搜索」走完整校验流，`onSubmit` 收到归一后的表单值。
+
 ## 数据录入表单
 
-数据录入表单（valibot 校验、提交）：
+数据录入表单（valibot schema 提交兜底、多 widget 混排）：
 
 <DemoPreview file="form-render/EntryFormDemo.vue" />
+
+## 字段校验与默认值
+
+`schema` 是表单级提交兜底；逐字段的即时校验经 `item.validators` 透传 TanStack 字段级校验器，**同样遵循 onBlur + onChange 双键接线**。`default` 支持值或同步工厂，派生 `defaultValues`：
+
+<DemoPreview file="form-render/FormRenderValidatorsDemo.vue" />
+
+要点：用户名失焦见 `onBlur` 下限错误、键入超长见 `onChange` 上限错误，提交时 `schema` 兜底；错误经内部 `FormMessage` 展示，无需额外接线。
+
+## 栅格布局
+
+`minWidth`（默认 320px）以 `auto-fill` 决定列数，缩放窗口自适应换列；`item.span` 控制跨列，`"full"` 整行：
+
+<DemoPreview file="form-render/FormRenderLayoutDemo.vue" />
+
+## 拆分式与自定义操作区
+
+`defineForm` 返回 `{ items, form, resetToDefaults }`，可拆开传（`:form` + `:items`）；`#actions` 插槽替换内置按钮组，自定义按钮里直接调 `form.handleSubmit()` 仍是完整校验流：
+
+<DemoPreview file="form-render/FormRenderActionsDemo.vue" />
 
 ## 组件结构
 

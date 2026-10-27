@@ -29,7 +29,7 @@ npx tu-design add avatar
 
 ## 加载回退
 
-图片加载失败或未提供 `src` 时渲染 Fallback 内容（通常为文字或图标）。配合 `fallback-src` 可在失败时切换备用图片，通过 `@load` / `@error` 感知加载状态（完整示例见 [AvatarGroup](/components/avatar-group) 页底部）：
+图片加载失败或未提供 `src` 时渲染 Fallback 内容（通常为文字或图标）。配合 `fallback` 可在失败时切换备用图片（备用图也失败时回落 Fallback 并再次报错），通过 `@load` / `@error` 感知加载状态：
 
 <DemoPreview file="avatar/AvatarFallback.vue" />
 
@@ -55,10 +55,10 @@ Avatar 为单组件，无子组件；内部基于 Ark UI 的 `Avatar.Root` / `Av
 
 ### Events
 
-| 事件    | 参数                   | 说明                                                       |
-| ------- | ---------------------- | ---------------------------------------------------------- |
-| `load`  | `{ status: 'loaded' }` | 图片加载完成                                               |
-| `error` | `{ status: 'error' }`  | 图片加载失败（使用 `fallback-src` 且其也失败时会再次触发） |
+| 事件    | 参数                   | 说明                                                   |
+| ------- | ---------------------- | ------------------------------------------------------ |
+| `load`  | `{ status: 'loaded' }` | 图片加载完成                                           |
+| `error` | `{ status: 'error' }`  | 图片加载失败（使用 `fallback` 且其也失败时会再次触发） |
 
 ### Slots
 

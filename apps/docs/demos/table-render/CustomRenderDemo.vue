@@ -49,7 +49,7 @@ const table = defineTable<Task>({
     <TTableRender :definition="table" row-key="id" />
     <p class="text-muted-foreground mt-2 text-xs">
       自定义工厂 <code>progressColumn()</code> 与内置渲染器同签名，可逐列混用（见
-      <a class="text-primary" href="#r-dict-mapping-options-字典映射">dict</a> 演示）。
+      <a class="text-primary" href="#r-dict-mapping-options-—-字典映射">dict</a> 演示）。
     </p>
   </div>
 </template>

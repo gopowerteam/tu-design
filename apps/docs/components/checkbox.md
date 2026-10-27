@@ -23,9 +23,27 @@ npx tu-design add checkbox
 
 <DemoPreview file="checkbox/CheckboxControlled.vue" />
 
+## 多选组
+
+多个 Checkbox 组合时，各 `checked` 状态由父组件统一维护（数组过滤即可增删选中项），适合技能标签、批量筛选等场景：
+
+<DemoPreview file="checkbox/CheckboxGroupDemo.vue" />
+
+## 全选与半选
+
+`checked` 除布尔值外还接受 `"indeterminate"`，渲染短横线半选态，用于表格全选等「部分选中」语义。点击半选态父项会取消全选（回到全不选）：
+
+<DemoPreview file="checkbox/CheckboxIndeterminateDemo.vue" />
+
 ## 禁用
 
 <DemoPreview file="checkbox/CheckboxDisabled.vue" />
+
+## 与表单集成
+
+经 `TFormControl` 包装对接 `TFormField`，`checked` 状态变化时同步到表单字段，配合校验器在提交时给出「必须勾选」的错误提示：
+
+<DemoPreview file="checkbox/CheckboxFormDemo.vue" />
 
 ## 组件结构
 
@@ -35,12 +53,12 @@ Checkbox 为单组件，无子组件；勾选/半选态样式由 `data-[state]` 
 
 ### Props
 
-| Prop              | 类型      | 默认值  | 说明                   |
-| ----------------- | --------- | ------- | ---------------------- |
-| `v-model:checked` | `boolean` | —       | 选中状态；不传为非受控 |
-| `default-checked` | `boolean` | `false` | 非受控时的初始状态     |
-| `disabled`        | `boolean` | `false` | 禁用                   |
-| `class`           | `string`  | —       | 追加/覆盖根样式        |
+| Prop              | 类型                         | 默认值  | 说明                                                |
+| ----------------- | ---------------------------- | ------- | --------------------------------------------------- |
+| `v-model:checked` | `boolean \| "indeterminate"` | —       | 选中状态，支持 `"indeterminate"` 半选；不传为非受控 |
+| `default-checked` | `boolean`                    | `false` | 非受控时的初始状态                                  |
+| `disabled`        | `boolean`                    | `false` | 禁用                                                |
+| `class`           | `string`                     | —       | 追加/覆盖根样式                                     |
 
 ### Events
 

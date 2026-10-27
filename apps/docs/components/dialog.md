@@ -17,15 +17,27 @@ npx tu-design add dialog
 
 ## 基础用法
 
-基础三件套：`TDialog`（根，状态容器）+ `TDialogTrigger`（打开）+ `TDialogContent`（面板）。内容区用 `TDialogHeader` / `TDialogTitle` / `TDialogDescription` / `TDialogFooter` 组装，`TDialogClose` 包裹的元素点击即关闭（含内置右上角关闭按钮，`show-close-button` 可关闭）。
+基础三件套：`TDialog`（根，状态容器）+ `TDialogTrigger`（打开）+ `TDialogContent`（面板）。内容区用 `TDialogHeader` / `TDialogTitle` / `TDialogDescription` / `TDialogFooter` 组装，`TDialogClose` 包裹的元素点击即关闭（含内置右上角关闭按钮，`show-close-button` 可关闭）：
 
 <DemoPreview file="dialog/DialogDemo.vue" />
 
+## 表单内嵌
+
+内容区放任意表单控件即可；`TDialogFooter` 默认右对齐主操作，小屏自动纵向堆叠。「取消」「保存」都用 `TDialogClose` 包裹，点击后关闭：
+
+<DemoPreview file="dialog/DialogForm.vue" />
+
 ## 受控用法
 
-需要程序化控制开关时使用 `v-model:open`：外部按钮直接改写 `open` ref 即可打开对话框，Escape / 遮罩关闭也会同步回写。
+需要程序化控制开关时使用 `v-model:open`：外部代码直接改写 `open` ref 即可打开对话框，Escape / 遮罩关闭也会同步回写。触发器与程序化打开共用同一份状态：
 
 <DemoPreview file="dialog/DialogControlled.vue" />
+
+## 尺寸
+
+面板宽度通过 `TDialogContent` 的 `class` 覆盖（默认 `sm:max-w-lg`），常用 `sm:max-w-sm` / `sm:max-w-xl` 两档：
+
+<DemoPreview file="dialog/DialogSizes.vue" />
 
 ## 组件结构
 
@@ -84,7 +96,7 @@ npx tu-design add dialog
 
 - `TDialogTitle` 渲染为 `h2` 并自动关联 `aria-labelledby`；`TDialogDescription` 关联 `aria-describedby`
 - 打开时焦点移入对话框并圈定，关闭后还原到触发元素
-- `Escape` 与遮罩点击默认关闭（Root 层 `close-on-escape` / `close-on-interact-outside` 可调）
+- `Escape` 与遮罩点击默认关闭
 
 ## 主题定制
 

@@ -15,13 +15,23 @@ npx tu-design add textarea
 
 ## 基础用法
 
+`v-model` 双向绑定，`maxlength` 等原生属性直接透传，可配合字数计数使用：
+
 <DemoPreview file="textarea/TextareaDemo.vue" />
 
-## 受控用法
+## 高度与自适应
 
-`v-model` 双向绑定输入值：
+组件内置 `field-sizing-content`：在支持的浏览器中高度随内容自动增长（`min-h-16` 起步）；需要固定高度时用 `class` 覆盖（如 `h-24`），超出内容滚动：
 
-<DemoPreview file="textarea/TextareaControlled.vue" />
+<DemoPreview file="textarea/TextareaSizingDemo.vue" />
+
+## 状态
+
+`disabled`、`readonly` 与 `invalid` 对比；`invalid` 输出 `aria-invalid` 并套 destructive 样式：
+
+<DemoPreview file="textarea/TextareaStatesDemo.vue" />
+
+## 组件结构
 
 ## 组件结构
 

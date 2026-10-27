@@ -21,24 +21,21 @@ npx tu-design add popover
 
 ## 受控用法
 
-需要程序化控制展开状态时使用 `v-model:open`：
+需要程序化控制展开状态时使用 `v-model:open`，外部状态与气泡开关双向同步：
 
-```vue
-<script setup lang="ts">
-import { ref } from "vue";
+<DemoPreview file="popover/PopoverControlled.vue" />
 
-const open = ref(false);
-</script>
+## 弹出方向
 
-<template>
-  <TPopover v-model:open="open">
-    <TPopoverTrigger>
-      <TButton variant="outline">点我</TButton>
-    </TPopoverTrigger>
-    <TPopoverContent>受控气泡</TPopoverContent>
-  </TPopover>
-</template>
-```
+通过 `positioning` 透传 Ark 原语调整位置，`placement` 支持四个方向（空间不足时自动避让）：
+
+<DemoPreview file="popover/PopoverPlacement.vue" />
+
+## 内容定制
+
+`TPopoverContent` 内可放任意内容，例如表单——提交后经 `v-model:open` 关闭气泡：
+
+<DemoPreview file="popover/PopoverForm.vue" />
 
 ## 组件结构
 

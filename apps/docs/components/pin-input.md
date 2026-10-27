@@ -19,9 +19,21 @@ npx tu-design add pin-input
 
 <DemoPreview file="pin-input/PinInputDemo.vue" />
 
-## 掩码与分隔符
+## 长度与字符类型
 
-`mask` 以密码形态显示，`separator` 插槽渲染格间分隔（共 `length - 1` 次）：
+`length` 控制格数；`type="alphanumeric"` 接受字母与数字，`placeholder` 自定义空格占位符：
+
+<DemoPreview file="pin-input/PinInputLength.vue" />
+
+## 完成行为
+
+`blur-on-complete` 在填满后自动失焦；`complete` 事件返回完整值数组：
+
+<DemoPreview file="pin-input/PinInputComplete.vue" />
+
+## 掩码、分隔符与校验态
+
+`mask` 以密码形态显示，`separator` 插槽渲染格间分隔（共 `length - 1` 次）；`invalid` 套 destructive 边框与焦点环：
 
 <DemoPreview file="pin-input/PinInputMask.vue" />
 

@@ -15,11 +15,21 @@ npx tu-design add separator
 
 ## 基础用法
 
-::: tip
-垂直方向需要父容器有确定高度（组件自身 `h-full w-px`）。
-:::
+默认水平方向，`h-px w-full` 自动撑满父容器宽度，适合段落与表单分组之间的切分：
 
 <DemoPreview file="separator/SeparatorDemo.vue" />
+
+## 垂直方向
+
+传 `orientation="vertical"` 渲染为 `w-px h-full`，需要父容器有确定高度（如固定 `h-16` 的行内布局）：
+
+<DemoPreview file="separator/SeparatorVertical.vue" />
+
+## 文字夹层分隔线
+
+Separator 没有内容插槽，但用 flex 布局组合文字即可实现「或」式分隔或标题分隔线：
+
+<DemoPreview file="separator/SeparatorContent.vue" />
 
 ## 组件结构
 

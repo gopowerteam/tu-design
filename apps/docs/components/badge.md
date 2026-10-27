@@ -17,6 +17,25 @@ npx tu-design add badge
 
 <DemoPreview file="badge/BadgeDemo.vue" />
 
+## 变体说明
+
+- `default`（默认）：主题色实底，用于强调当前状态或新内容；
+- `secondary`：次级实底，用于弱化的分类标签；
+- `destructive`：危险色实底，用于失败、删除等告警语义；
+- `outline`：仅边框，用于中性标签，可融入任意背景。
+
+## 带图标
+
+徽章内容是默认插槽，直接在文字前放置内联 SVG 即可，图标颜色随变体文字色自动着色：
+
+<DemoPreview file="badge/BadgeIcon.vue" />
+
+## 嵌入按钮
+
+徽章常与按钮组合用作计数提示，通过 `class` 追加圆角与间距即可贴合按钮内边距：
+
+<DemoPreview file="badge/BadgeInButton.vue" />
+
 ## 组件结构
 
 Badge 为单组件，无子组件；变体类由 `badgeVariants`（cva）统一生成。

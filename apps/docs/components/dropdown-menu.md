@@ -15,15 +15,27 @@ npx tu-design add dropdown-menu
 
 ## 基础用法
 
-`TDropdownMenu`（根，状态容器）+ `TDropdownMenuTrigger`（打开）+ `TDropdownMenuContent`（面板），菜单项用 `TDropdownMenuItem`，配合 `TDropdownMenuLabel` / `TDropdownMenuSeparator` 分组。
+`TDropdownMenu`（根，状态容器）+ `TDropdownMenuTrigger`（打开）+ `TDropdownMenuContent`（面板），菜单项用 `TDropdownMenuItem`，配合 `TDropdownMenuLabel` / `TDropdownMenuSeparator` 分组。菜单项内直接放 SVG 图标即可（自动收窄为 16px）；`disabled` 置灰禁点，危险操作可用 `text-destructive` 标色：
 
 <DemoPreview file="dropdown-menu/DropdownMenuDemo.vue" />
+
+## 分组
+
+`TDropdownMenuGroup` 把语义相关的菜单项归为一组（`label` 提供可访问名称，屏幕阅读器可读），组与组之间用 `TDropdownMenuSeparator` 分隔：
+
+<DemoPreview file="dropdown-menu/DropdownMenuGroups.vue" />
 
 ## 选中事件
 
 `select` 挂在 `TDropdownMenu` 根组件上，菜单项被选中（点击或键盘 Enter）时回传 `{ value }`：
 
 <DemoPreview file="dropdown-menu/DropdownMenuSelect.vue" />
+
+## 子菜单
+
+在 `TDropdownMenuContent` 内嵌套一层 Ark `Menu.Root`（`Menu.TriggerItem` 作入口，内层 `Positioner/Content` 承载子项）。库暂未导出子菜单包装组件，此用法直接使用 `@ark-ui/vue` 原语：
+
+<DemoPreview file="dropdown-menu/DropdownMenuSubmenu.vue" />
 
 ## 组件结构
 

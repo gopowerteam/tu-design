@@ -1,7 +1,9 @@
 <template>
-  <div class="flex flex-wrap items-center justify-center gap-3">
-    <TButton variant="outline" @click="open = true">程序化打开</TButton>
-    <span class="text-sm text-muted-foreground">当前状态：{{ open ? "打开" : "关闭" }}</span>
+  <div class="flex flex-col items-center gap-3">
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <TButton variant="outline" @click="open = true">程序化打开</TButton>
+      <span class="text-xs text-muted-foreground">open = {{ open }}</span>
+    </div>
     <TDialog v-model:open="open">
       <TDialogTrigger as-child>
         <TButton>触发器打开</TButton>
@@ -20,6 +22,9 @@
         </TDialogFooter>
       </TDialogContent>
     </TDialog>
+    <p class="text-xs text-muted-foreground">
+      两种打开方式共用一个状态；无论怎么关，状态都保持同步。
+    </p>
   </div>
 </template>
 

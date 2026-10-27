@@ -15,17 +15,31 @@ npx tu-design add number-input
 
 ## 基础用法
 
-`min`/`max` 夹取边界，`step` 供按钮与键盘 ↑↓ 共用：
+`min`/`max` 夹取边界，`step` 供按钮与键盘 ↑↓ 共用；清空或输入非法值时归一为 `null`：
 
 <DemoPreview file="number-input/NumberInputDemo.vue" />
 
+## 边界与步长
+
+手动输入越界值会在失焦时被夹取回边界；`step` 同时作用于按钮点击与键盘 ↑↓：
+
+<DemoPreview file="number-input/NumberInputStepDemo.vue" />
+
 ## 格式化展示
 
-`formatOptions` 接受任意 `Intl.NumberFormatOptions`，如百分比样式（仅影响展示，存储值不变）：
+`formatOptions` 接受任意 `Intl.NumberFormatOptions`，仅影响展示，存储值不变：
 
 <DemoPreview file="number-input/NumberInputFormat.vue" />
 
-## 禁用与校验态
+## 自定义步进图标
+
+`decrement` / `increment` 插槽替换默认的加减图标（图标需自带尺寸与 `aria-hidden`）：
+
+<DemoPreview file="number-input/NumberInputSlotsDemo.vue" />
+
+## 状态
+
+`disabled` 时步进按钮与输入同时禁用；`invalid` 套 destructive 样式：
 
 <DemoPreview file="number-input/NumberInputStates.vue" />
 

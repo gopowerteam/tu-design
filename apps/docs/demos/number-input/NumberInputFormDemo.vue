@@ -8,7 +8,7 @@ const form = useForm({
 </script>
 
 <template>
-  <TForm :form="form" class="w-72">
+  <TForm :form="form" class="w-full max-w-sm">
     <TFormField name="age" v-slot="{ field }">
       <TFormItem>
         <TFormLabel>年龄</TFormLabel>

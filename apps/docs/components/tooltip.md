@@ -25,6 +25,24 @@ npx tu-design add tooltip
 
 <DemoPreview file="tooltip/TooltipKeyboard.vue" />
 
+## 弹出方向
+
+通过 `positioning` 透传 Ark 原语调整位置，`placement` 支持四个方向（默认 `bottom`，空间不足时自动避让）：
+
+<DemoPreview file="tooltip/TooltipPlacement.vue" />
+
+## 触发延迟
+
+`delay-duration` 控制悬停多久后显示，`0` 为立即显示；`close-duration` 控制移开后多久隐藏：
+
+<DemoPreview file="tooltip/TooltipDelay.vue" />
+
+## 受控用法
+
+需要程序化控制显隐时使用 `v-model:open`，外部状态与气泡开关双向同步：
+
+<DemoPreview file="tooltip/TooltipControlled.vue" />
+
 ## 组件结构
 
 | 组件              | 说明                               |

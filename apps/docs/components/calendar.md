@@ -18,7 +18,35 @@ npx tu-design add calendar
 
 ## 基础用法
 
+独立展示的日历面板（非弹层）：`v-model` 绑定 `"yyyy-MM-dd"` 字符串（空值归一 `null`）。点击日期选中，点标题上钻月/年视图，左右箭头翻页：
+
 <DemoPreview file="calendar/CalendarDemo.vue" />
+
+## 视图形态
+
+`mode` 锁定视图：`"month"` / `"year"` 将卡片锁定在对应粒度（`"month"` 仍可点年份标题上钻），`"day"`（默认）保留完整切换链：
+
+<DemoPreview file="calendar/CalendarMonthDemo.vue" />
+
+<DemoPreview file="calendar/CalendarYearDemo.vue" />
+
+## 可选范围与禁用日期
+
+`min` / `max` 限定可选窗口（界外日期置灰不可点）；`isDateUnavailable` 接收谓词函数，命中的日期划线置灰、不可选中：
+
+<DemoPreview file="calendar/CalendarBoundsDemo.vue" />
+
+## 周选择
+
+`week` 开启周选择形态：点击任意一天即选中整周（整行实心高亮，hover 有整周预览），周起点跟随 `locale`（默认 `zh-CN` 周一起）：
+
+<DemoPreview file="calendar/CalendarWeekDemo.vue" />
+
+## 多月并排
+
+`numOfMonths` 让日视图并排展示多个月（卡片自动加宽），适合跨月选择场景：
+
+<DemoPreview file="calendar/CalendarMultiMonthDemo.vue" />
 
 ## 组件结构
 

@@ -5,13 +5,13 @@
         <TButton variant="outline">打开菜单</TButton>
       </TDropdownMenuTrigger>
       <TDropdownMenuContent>
-        <TDropdownMenuItem value="edit"> 编辑 </TDropdownMenuItem>
-        <TDropdownMenuItem value="duplicate"> 复制 </TDropdownMenuItem>
+        <TDropdownMenuItem value="edit">编辑</TDropdownMenuItem>
+        <TDropdownMenuItem value="duplicate">复制</TDropdownMenuItem>
         <TDropdownMenuSeparator />
-        <TDropdownMenuItem value="delete"> 删除 </TDropdownMenuItem>
+        <TDropdownMenuItem value="delete">删除</TDropdownMenuItem>
       </TDropdownMenuContent>
     </TDropdownMenu>
-    <p class="text-sm text-muted-foreground">最后选中：{{ selected || "（尚未选择）" }}</p>
+    <p class="text-xs text-muted-foreground">最后选中：{{ selected || "（尚未选择）" }}</p>
   </div>
 </template>
 

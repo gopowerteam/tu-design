@@ -17,7 +17,11 @@ npx tu-design add form
 
 ## 基础用法
 
+`useForm()` 建实例，`TForm` 承载提交，`TFormField` + `v-slot="{ field }"` 逐字段接线：`field.state.value` 取值、`field.handleChange` 写值、`field.handleBlur` 失焦：
+
 <DemoPreview file="form/FormDemo.vue" />
+
+> **接线要点**：失焦用 `@focusout="field.handleBlur"` 而非 `@blur`——`focusout` 会冒泡且经 fallthrough 落到控件根元素，对 RadioGroup、DatePicker 等复合控件更稳；漏接会导致错误在再次选中/填写后不清除。
 
 ## 校验时机与写法
 
@@ -30,7 +34,7 @@ npx tu-design add form
 | `onSubmit` | 表单提交时               | 表单级兜底校验（常用默认） |
 | `onMount`  | 字段挂载                 | 回填后的预校验等           |
 
-未声明的键不在该时机校验。提交时 `handleSubmit` 会先跑全部字段级校验、再跑表单级校验，任一失败都不会调用 `onSubmit`。
+未声明的键不在该时机校验；**字段级校验器建议 `onBlur` + `onChange` 双键成对声明**——只写单键时另一时机不校验，会出现「键入修好了错误却不消失」或「提交不触发」的观感。提交时 `handleSubmit` 会先跑全部字段级校验、再跑表单级校验，任一失败都不会调用 `onSubmit`。
 
 ### 字段级两种写法
 
@@ -47,24 +51,29 @@ npx tu-design add form
 >
 ```
 
+### 校验时机对比
+
+用户名键入触发字段级 `onChange`（上限）、失焦触发 `onBlur`（下限），提交时由表单级 `onSubmit` schema 兜底——三处错误都会经 `TFormMessage` 渲染：
+
+<DemoPreview file="form/FormValidationDemo.vue" />
+
+要点：`validators` 各键互不影响；清空输入失焦见下限错误，键入超长见上限错误，点「提交」追加表单级兜底错误。
+
 ### 跨字段校验（密码确认）
 
-函数式校验器经 `fieldApi.form` 读取整表值：
+函数式校验器经 `fieldApi.form` 读取整表值，确认密码字段实时与密码字段比对：
+
+<DemoPreview file="form/FormCrossFieldDemo.vue" />
+
+对应写法：
 
 ```ts
 validators: {
   onChange: ({ value, fieldApi }) =>
     value === fieldApi.form.state.values.password ? undefined : "两次输入不一致",
+  onBlur: ({ /* 同款 */ }),
 }
 ```
-
-### 校验时机对比
-
-用户名失焦触发字段级 `onBlur` 校验，提交时由表单级 `onSubmit` schema 兜底——两处错误都会经 `TFormMessage` 渲染：
-
-<DemoPreview file="form/FormValidationDemo.vue" />
-
-要点：`validators` 键不同互不影响；点击「提交」不满足条件时，先见失焦错误，提交后追加表单级错误。
 
 ## 异步提交
 
@@ -79,6 +88,12 @@ validators: {
 <DemoPreview file="form/FormBackfillDemo.vue" />
 
 要点：回填后可声明 `onMount` 校验器做预校验；重置按钮直接调 `form.reset()`，无需自行清空。
+
+## 富控件集成
+
+`TFormControl` 的 aria 接线对任意单一子控件生效——日期选择器同样只需四步接线（取值 / 写值 / 失焦 / 错误）：
+
+<DemoPreview file="form/DatePickerFormDemo.vue" />
 
 ## 组件结构
 

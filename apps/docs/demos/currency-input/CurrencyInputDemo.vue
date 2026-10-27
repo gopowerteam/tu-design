@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-// 界面按「万」输入，v-model 存储以「元」为单位
+// v-model 以 valueUnit（元）为单位，number | null；空输入归一 null
 const amount = ref<number | null>(15000);
 </script>
 
 <template>
-  <div class="w-72 space-y-2">
-    <TCurrencyInput v-model="amount" label-unit="万" value-unit="元" placeholder="0.00" />
-    <p class="text-sm text-muted-foreground">输入 1.5 万，存储值为 {{ amount }} 元</p>
+  <div class="space-y-2">
+    <TCurrencyInput v-model="amount" placeholder="0.00" class="w-72" />
+    <p class="text-xs text-muted-foreground">
+      当前值：{{ amount === null ? "（空）" : `${amount} 元` }}
+    </p>
   </div>
 </template>

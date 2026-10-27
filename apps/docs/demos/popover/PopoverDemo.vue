@@ -1,28 +1,16 @@
 <template>
-  <div class="flex flex-col items-center gap-4">
+  <div class="flex flex-col items-center gap-3">
     <TPopover>
-      <TPopoverTrigger>
-        <TButton variant="outline">非受控开关</TButton>
+      <TPopoverTrigger as-child>
+        <TButton variant="outline">点击打开气泡</TButton>
       </TPopoverTrigger>
       <TPopoverContent>
-        <div class="text-sm font-medium">尺寸说明</div>
-        <p class="text-muted-foreground mt-1 text-sm">默认宽度 w-72，可通过 class 覆盖。</p>
+        <div class="text-sm font-medium">气泡面板</div>
+        <p class="mt-1 text-sm text-muted-foreground">
+          默认宽度 w-72，点击面板外或按 Escape 关闭；宽度可通过 class 覆盖。
+        </p>
       </TPopoverContent>
     </TPopover>
-
-    <TPopover v-model:open="open">
-      <TPopoverTrigger as-child>
-        <TButton variant="outline">{{ open ? "受控：已展开" : "受控：已收起" }}</TButton>
-      </TPopoverTrigger>
-      <TPopoverContent class="w-56">
-        <p class="text-sm">配合 v-model:open 的受控用法。</p>
-      </TPopoverContent>
-    </TPopover>
+    <p class="text-xs text-muted-foreground">TPopoverContent 可放任意内容，默认宽 w-72。</p>
   </div>
 </template>
-
-<script setup lang="ts">
-import { ref } from "vue";
-
-const open = ref(false);
-</script>

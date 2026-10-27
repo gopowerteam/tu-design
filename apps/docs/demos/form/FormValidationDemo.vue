@@ -2,8 +2,9 @@
 import * as v from "valibot";
 import { useForm } from "@tanstack/vue-form";
 
-// 字段级：失焦校验（onBlur）；表单级：提交兜底（onSubmit）
+// 字段级：键入即校上限（onChange）+ 失焦校下限（onBlur）；表单级：提交兜底（onSubmit）
 const usernameRules = {
+  onChange: v.pipe(v.string(), v.maxLength(12, "键入校验：最多 12 个字符")),
   onBlur: v.pipe(v.string(), v.minLength(3, "失焦校验：至少 3 个字符")),
 };
 
@@ -30,10 +31,12 @@ const form = useForm({
             :model-value="field.state.value"
             placeholder="至少 3 个字符"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
-        <TFormDescription>失焦触发字段级校验，提交触发表单级校验</TFormDescription>
+        <TFormDescription
+          >键入触发 onChange 校验，失焦触发 onBlur，提交触发表单级兜底</TFormDescription
+        >
         <TFormMessage />
       </TFormItem>
     </TFormField>

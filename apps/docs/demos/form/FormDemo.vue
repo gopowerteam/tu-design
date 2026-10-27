@@ -8,7 +8,7 @@
             :model-value="field.state.value"
             placeholder="you@example.com"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormDescription>我们不会公开你的邮箱</TFormDescription>
@@ -25,7 +25,7 @@
             type="password"
             placeholder="至少 8 位"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormMessage />
@@ -41,7 +41,7 @@
             :min="1"
             :max="120"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormMessage />
@@ -58,7 +58,7 @@
             value-unit="元"
             placeholder="0.00"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormMessage />

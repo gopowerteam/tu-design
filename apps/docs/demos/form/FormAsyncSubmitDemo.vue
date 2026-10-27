@@ -27,7 +27,7 @@ const form = useForm({
             :model-value="field.state.value"
             placeholder="you@example.com"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormMessage />

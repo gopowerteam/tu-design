@@ -15,15 +15,21 @@ npx tu-design add currency-input
 
 ## 基础用法
 
-界面按「万」输入，`v-model` 以「元」存储：
+默认界面与存储单位均为「元」，`v-model` 为 `number | null`，空输入归一 `null`：
 
 <DemoPreview file="currency-input/CurrencyInputDemo.vue" />
 
 ## 单位换算
 
-`labelUnit` 与 `valueUnit` 可自由组合，换算方向双向：外部赋值会反算回显：
+`labelUnit`（界面输入单位，同时作为后缀展示）与 `valueUnit`（存储单位）可自由组合，换算方向双向：外部赋值会反算回显：
 
 <DemoPreview file="currency-input/CurrencyInputUnits.vue" />
+
+## 禁用与校验态
+
+`disabled` 时输入框与单位后缀同时禁用；`invalid` 套 destructive 边框与焦点环：
+
+<DemoPreview file="currency-input/CurrencyInputStates.vue" />
 
 ## 组件结构
 

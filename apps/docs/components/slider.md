@@ -15,15 +15,33 @@ npx tu-design add slider
 
 ## 基础用法
 
-`default-value` 非受控，单值传 `n`、区间传数组：
+单值直接传 `number`；不传值时为非受控（初始值用 `default-value`），键盘 `←`/`→` 按 `step` 微调：
 
 <DemoPreview file="slider/SliderDemo.vue" />
 
+## 非受控初始值
+
+`default-value` 设定初始值，单值传 `n`、区间传数组：
+
+<DemoPreview file="slider/SliderUncontrolledDemo.vue" />
+
+## 区间与步进
+
+传数组即渲染双 Thumb 区间选择；`step` 同时约束鼠标拖动与键盘微调的最小刻度：
+
+<DemoPreview file="slider/SliderRangeDemo.vue" />
+
 ## 受控用法
 
-`v-model` 绑定 `number[]`（载荷恒为数组，与 Ark 一致）：
+`v-model` 绑定 `number[]`（载荷恒为数组，与 Ark 一致，单值也回传 `[n]`）：
 
 <DemoPreview file="slider/SliderControlled.vue" />
+
+## 禁用
+
+`disabled` 下整体降透明度且不可交互：
+
+<DemoPreview file="slider/SliderDisabledDemo.vue" />
 
 ## 组件结构
 

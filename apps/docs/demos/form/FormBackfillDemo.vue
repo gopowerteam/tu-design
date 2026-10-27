@@ -33,7 +33,7 @@ onMounted(loadProfile);
           <TInput
             :model-value="field.state.value"
             @update:model-value="field.handleChange"
-            @blur="field.handleBlur"
+            @focusout="field.handleBlur"
           />
         </TFormControl>
         <TFormMessage />

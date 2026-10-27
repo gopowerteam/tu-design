@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
-const volume = ref([40]);
-const price = ref([20, 80]);
+const brightness = ref([60]);
 </script>
 
 <template>
-  <div class="flex w-72 flex-col items-stretch gap-6">
-    <TSlider v-model="volume" :max="100" />
-    <TSlider v-model="price" :min="0" :max="200" :step="10" />
-    <p class="text-sm text-muted-foreground">
-      音量 {{ volume[0] }} · 价格 {{ price[0] }} – {{ price[1] }}
-    </p>
+  <div class="flex w-72 flex-col gap-1">
+    <div class="text-muted-foreground flex justify-between text-xs">
+      <span>亮度</span>
+      <span>{{ brightness[0] }}%</span>
+    </div>
+    <!-- v-model 载荷恒为 number[]，即使单值传 number 也回传数组 -->
+    <TSlider v-model="brightness" />
   </div>
 </template>

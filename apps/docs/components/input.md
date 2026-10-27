@@ -15,15 +15,25 @@ npx tu-design add input
 
 ## 基础用法
 
-`v-model` 双向绑定，配合 `type` 等原生属性使用：
+`v-model` 双向绑定，`placeholder`、`type` 等 attrs 直接透传到原生 `<input>`：
 
 <DemoPreview file="input/InputDemo.vue" />
 
-## 禁用与校验态
+## 原生类型与事件
 
-`disabled` 等原生属性经 attrs 透传；`invalid` 输出 `aria-invalid` 并套 destructive 样式：
+`maxlength`、`autocomplete` 等原生属性，以及 `keydown.enter` 等原生事件，全部随 attrs 透传，无需额外 API：
 
-<DemoPreview file="input/InputStates.vue" />
+<DemoPreview file="input/InputTypesDemo.vue" />
+
+> 需要密码显隐切换时，使用专用组件 [PasswordInput](/components/password-input) 而非 `type="password"`。
+
+## 状态
+
+`disabled`（经 attrs 透传）、`readonly` 与 `invalid`（输出 `aria-invalid` 并套 destructive 样式）对比。注意三者语义不同：禁用不可聚焦，只读可聚焦可复制，校验态只影响视觉与 aria：
+
+<DemoPreview file="input/InputStatesDemo.vue" />
+
+> **注意**：`invalid` 只负责视觉与 aria 状态，校验逻辑需配合 [Form](/components/form) 自行实现。
 
 ## 组件结构
 

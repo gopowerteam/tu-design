@@ -25,6 +25,24 @@ npx tu-design add tabs
 
 <DemoPreview file="tabs/TabsControlled.vue" />
 
+## 禁用项
+
+在 `TTabsTrigger` 上设置 `disabled` 禁用单个标签：不可点击，键盘 ←/→ 导航也会自动跳过：
+
+<DemoPreview file="tabs/TabsDisabled.vue" />
+
+## 切换模式
+
+`activation-mode` 控制键盘导航行为，默认 `automatic`（聚焦即切换）；设为 `manual` 后 ←/→ 只移动焦点，需 Enter 或点击确认切换：
+
+<DemoPreview file="tabs/TabsActivation.vue" />
+
+## 懒挂载
+
+`lazy-mount` 让面板首次激活才挂载，`unmount-on-exit` 让面板切走即卸载。需要保留表单输入等状态的面板不要加这两个属性：
+
+<DemoPreview file="tabs/TabsLazy.vue" />
+
 ## 组件结构
 
 | 组件           | 说明                                |

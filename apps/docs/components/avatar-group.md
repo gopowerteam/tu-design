@@ -13,11 +13,29 @@ description: 头像组，数量折叠、悬停展开与垂直排列。
 npx tu-design add avatar-group
 ```
 
-## 用法
+## 基础用法
 
-通过 `max` 折叠超出数量为 `+N` 尾巴（`rest` 插槽可自定义）；`expand-on-hover` 悬停展开全部；`vertical` 垂直排列；`size` 下发给子 Avatar（子级显式 `size` 优先）：
+通过 `max` 指定最多展示的子头像数，超出的部分折叠为 `+N` 尾巴；未超出 `max` 时全部展示、不折叠：
 
-<DemoPreview file="avatar/AvatarGroupDemo.vue" />
+<DemoPreview file="avatar-group/AvatarGroupBasicDemo.vue" />
+
+## 悬停展开与自定义尾巴
+
+设置 `expand-on-hover` 后，鼠标悬停在头像组上会展开全部头像（仅在设置了 `max` 时生效）；`rest` 插槽可自定义 `+N` 尾巴的内容，展开行为不变：
+
+<DemoPreview file="avatar-group/AvatarGroupHoverDemo.vue" />
+
+## 排列与尺寸
+
+`vertical` 改为垂直排列；`size` 会下发给组内全部子头像，子头像显式声明 `size` 时优先生效：
+
+<DemoPreview file="avatar-group/AvatarGroupLayoutDemo.vue" />
+
+## 描边
+
+`bordered` 给每个子头像加背景色描边，头像重叠处形成分隔线，`+N` 尾巴同样生效：
+
+<DemoPreview file="avatar-group/AvatarGroupBorderedDemo.vue" />
 
 ## 组件结构
 

@@ -15,9 +15,37 @@ npx tu-design add radio-group
 
 ## 基础用法
 
-`v-model:value` 受控（或 `default-value` 非受控）；支持 `options` 声明式渲染（与默认插槽同传时插槽优先）、`orientation` 水平排列、`invalid` 校验态：
+`v-model:value` 受控（或 `default-value` 非受控）绑定当前选中项；选中即切换，回显文本随选择变化：
 
 <DemoPreview file="radio-group/RadioGroupDemo.vue" />
+
+::: tip 键盘导航
+单选组天然支持键盘操作：聚焦后用 `↑`/`↓`（`orientation="horizontal"` 时为 `←`/`→`）在选项间移动并选中，`Space` 选中当前项。试一试：点击上面的选项后不要动鼠标，直接按方向键。
+:::
+
+## 声明式选项
+
+传 `options` 即可整组渲染，不必手写 `TRadioGroupItem`；项支持 `disabled`。与默认插槽同传时插槽优先——简单列表用 `options` 更省事，需要自定义选项结构（描述、图标等）时用插槽：
+
+<DemoPreview file="radio-group/RadioGroupOptionsDemo.vue" />
+
+## 水平排列
+
+`orientation="horizontal"` 让选项横向排布，键盘导航同步切换为 `←`/`→`：
+
+<DemoPreview file="radio-group/RadioGroupHorizontalDemo.vue" />
+
+## 状态
+
+整组禁用（`disabled`）、单项禁用（item 上设 `disabled`）与 `invalid` 校验态对比：
+
+<DemoPreview file="radio-group/RadioGroupStatesDemo.vue" />
+
+## 与表单集成
+
+经 `TFormControl` 包装对接 `TFormField`；`name` 写入隐藏 input 供原生表单提交，`required` 配合校验器在提交时给出错误提示：
+
+<DemoPreview file="radio-group/RadioGroupFormDemo.vue" />
 
 ## 组件结构
 
@@ -64,12 +92,6 @@ npx tu-design add radio-group
 | ----------------- | --------- | --------------------------------------------------- |
 | `TRadioGroup`     | `default` | 自定义选项列表；未提供时回退到 `options` 声明式渲染 |
 | `TRadioGroupItem` | `default` | 选项文本（Ark `ItemText`，自动关联可访问性）        |
-
-## 与表单集成
-
-经 `TFormControl` 包装对接 `TFormField`；`name` 写入隐藏 input 供原生表单提交：
-
-<DemoPreview file="radio-group/RadioGroupFormDemo.vue" />
 
 ## 主题定制
 

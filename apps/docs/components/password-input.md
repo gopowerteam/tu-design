@@ -25,6 +25,18 @@ npx tu-design add password-input
 
 <DemoPreview file="password-input/PasswordInputStates.vue" />
 
+## 自定义切换图标
+
+`visibility-icon` 插槽作用域为 `{ visible }`，可整体替换默认的 Eye / EyeOff 图标：
+
+<DemoPreview file="password-input/PasswordInputIcon.vue" />
+
+## 强度指示
+
+组件不内置强度指示；如需密码强度提示，在组件外部组合一个指示条，按 `v-model` 自行计算强度：
+
+<DemoPreview file="password-input/PasswordInputStrength.vue" />
+
 ## 组件结构
 
 PasswordInput 对外为单组件，无子组件；内部为纯原生实现（无需原语）：容器 `div`（承载边框/焦点环/校验态）+ 内部真实 `input` + 明文切换 `button`，样式为内联类组合（无 cva 变体）。
