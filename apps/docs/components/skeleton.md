@@ -17,6 +17,30 @@ npx tu-design add skeleton
 
 <DemoPreview file="skeleton/SkeletonDemo.vue" />
 
+## 组合模式
+
+Skeleton 的价值在组合：用多个骨架块拼出与真实界面同构的占位结构。
+
+### 卡片骨架
+
+<DemoPreview file="skeleton/SkeletonCardDemo.vue" />
+
+### 列表骨架
+
+<DemoPreview file="skeleton/SkeletonListDemo.vue" />
+
+## 形状与尺寸
+
+Skeleton 无内置变体，`rounded-full`、`rounded-lg`、比例宽度等 class 组合即得任意形状：
+
+<DemoPreview file="skeleton/SkeletonShapesDemo.vue" />
+
+## 加载切换
+
+骨架屏的典型用途：请求期间展示骨架，完成后切换到真实内容。两侧结构一致，切换不跳动：
+
+<DemoPreview file="skeleton/SkeletonToggleDemo.vue" />
+
 ## 组件结构
 
 Skeleton 为单组件，无子组件；不使用 cva，样式为固定工具类（`animate-pulse rounded-md bg-muted`）加 `class` 合并。
