@@ -72,7 +72,7 @@ watch(
       :placeholder="props.placeholder"
       :disabled="props.disabled"
       :aria-invalid="props.invalid || undefined"
-      :class="'bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm outline-none disabled:cursor-not-allowed disabled:opacity-50'"
+      :class="'bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm tabular-nums outline-none disabled:cursor-not-allowed disabled:opacity-50'"
       @input="onInput"
     />
     <div

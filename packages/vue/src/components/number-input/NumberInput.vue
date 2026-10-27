@@ -53,7 +53,7 @@ function handleValueChange(details: { value: string; valueAsNumber: number }) {
     :invalid="props.invalid"
     :class="
       cn(
-        'border-input flex h-9 items-stretch overflow-hidden rounded-md border shadow-sm transition-[color,box-shadow] outline-none data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]',
+        'border-input flex h-9 items-stretch overflow-hidden rounded-md border shadow-sm transition-[color,box-shadow] outline-none focus-within:border-ring focus-within:ring-ring/50 focus-within:ring-[3px] data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]',
         props.class,
       )
     "

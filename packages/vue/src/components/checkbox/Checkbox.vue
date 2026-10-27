@@ -13,6 +13,10 @@ const props = defineProps({
   },
   defaultChecked: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
+  /** 原生表单提交的字段名（透传 HiddenInput，与 RadioGroup 对齐） */
+  name: { type: String, default: undefined },
+  /** 关联的 form id */
+  form: { type: String, default: undefined },
   class: { type: String, default: undefined },
 });
 
@@ -33,6 +37,8 @@ function handleUpdate(checked: boolean | "indeterminate") {
   <ArkCheckbox.Root
     :checked="isChecked"
     :disabled="props.disabled"
+    :name="props.name"
+    :form="props.form"
     :class="cn('inline-flex items-center gap-2', props.class)"
     @update:checked="handleUpdate"
   >

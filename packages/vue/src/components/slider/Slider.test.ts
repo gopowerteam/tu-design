@@ -72,4 +72,14 @@ describe("Slider", () => {
     await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith([15]));
     w.unmount();
   });
+
+  it("v-model 传单值 number 不崩溃（入参归一为数组）", async () => {
+    const onUpdate = vi.fn();
+    const w = mountSlider({ modelValue: 40, "onUpdate:modelValue": onUpdate });
+    expect(thumbs().length).toBe(1);
+    thumbs()[0]!.focus();
+    thumbs()[0]!.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowRight", bubbles: true }));
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith([41]));
+    w.unmount();
+  });
 });

@@ -5,9 +5,6 @@ import { Slider as ArkSlider } from "@ark-ui/vue/slider";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  /** 当前值（配合 v-model）；单值或区间数组，不传时为非受控 */
-  value?: number | number[];
-  defaultValue?: number | number[];
   min?: number;
   max?: number;
   step?: number;
@@ -17,6 +14,9 @@ interface Props {
 
 const props = withDefaults(
   defineProps<{
+    /** 当前值（配合 v-model）；单值或区间数组，不传时为非受控。出参恒为 number[] */
+    modelValue?: number | number[];
+    /** 同 modelValue（兼容别名，v-model 场景请直接用 modelValue） */
     value?: number | number[];
     defaultValue?: number | number[];
     min?: number;
@@ -33,12 +33,16 @@ const emit = defineEmits<{ "update:modelValue": [value: number[]] }>();
 const toArray = (v: number | number[] | undefined) =>
   v === undefined ? undefined : Array.isArray(v) ? v : [v];
 
-const thumbs = computed(() => toArray(props.value) ?? toArray(props.defaultValue) ?? [props.min]);
+// modelValue 未传时回落 value（兼容别名）；都未传走非受控（defaultValue/内部状态）
+const thumbs = computed(
+  () =>
+    toArray(props.modelValue) ?? toArray(props.value) ?? toArray(props.defaultValue) ?? [props.min],
+);
 </script>
 
 <template>
   <ArkSlider.Root
-    :model-value="toArray(props.value)"
+    :model-value="toArray(props.modelValue) ?? toArray(props.value)"
     :default-value="toArray(props.defaultValue)"
     :min="props.min"
     :max="props.max"

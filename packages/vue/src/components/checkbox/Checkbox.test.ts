@@ -103,4 +103,13 @@ describe("Checkbox 半选态（S10，TableRender 全选依赖）", () => {
     expect(typeof onUpdate.mock.calls[0][0]).toBe("boolean");
     w.unmount();
   });
+
+  it("name/form 透传到原生 input（原生表单提交可用）", () => {
+    mountCheckbox({ name: "agree", form: "profile-form" });
+    const input = document.querySelector<HTMLInputElement>(
+      '[data-scope="checkbox"] input[type="checkbox"]',
+    );
+    expect(input?.getAttribute("name")).toBe("agree");
+    expect(input?.getAttribute("form")).toBe("profile-form");
+  });
 });

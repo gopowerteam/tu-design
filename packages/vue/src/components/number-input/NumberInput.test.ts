@@ -122,4 +122,11 @@ describe("NumberInput", () => {
     expect(rootEl()!.hasAttribute("data-disabled")).toBe(true);
     w.unmount();
   });
+
+  it("Root 提供可见焦点态（focus-within ring，可达性）", () => {
+    const w = mount(NumberInput, { props: { modelValue: 42 }, attachTo: document.body });
+    expect(rootEl()!.className).toContain("focus-within:border-ring");
+    expect(rootEl()!.className).toContain("focus-within:ring-[3px]");
+    w.unmount();
+  });
 });
