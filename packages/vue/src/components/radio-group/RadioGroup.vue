@@ -69,7 +69,13 @@ if (import.meta.env.DEV && slots.default && props.options?.length) {
     :read-only="props.readOnly"
     :invalid="props.invalid"
     :orientation="props.orientation"
-    :class="cn('grid gap-2', props.class)"
+    :class="
+      cn(
+        'grid gap-2',
+        props.orientation === 'horizontal' && 'grid-flow-col auto-cols-max gap-4',
+        props.class,
+      )
+    "
     @update:model-value="handleUpdate"
   >
     <slot v-if="$slots.default" />

@@ -181,4 +181,20 @@ describe("RadioGroup", () => {
     warn.mockRestore();
     w.unmount();
   });
+
+  it("horizontal 方向根元素应用水平排列类", () => {
+    const w = mount(RadioGroup, {
+      props: { orientation: "horizontal" },
+      attachTo: document.body,
+    });
+    const root = rootEl()!;
+    expect(root.className).toContain("grid-flow-col");
+    expect(root.className).toContain("auto-cols-max");
+    w.unmount();
+
+    const w2 = mount(RadioGroup, { attachTo: document.body });
+    const root2 = rootEl()!;
+    expect(root2.className).not.toContain("grid-flow-col");
+    w2.unmount();
+  });
 });
