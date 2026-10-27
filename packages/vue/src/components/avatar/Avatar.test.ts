@@ -67,8 +67,8 @@ describe("Avatar", () => {
     expect(w.emitted("error")).toBeTruthy();
   });
 
-  it("加载失败时切换到 fallbackSrc", async () => {
-    const w = mount(Avatar, { props: { src: "a.png", fallbackSrc: "b.png" } });
+  it("加载失败时切换到 fallback", async () => {
+    const w = mount(Avatar, { props: { src: "a.png", fallback: "b.png" } });
     w.findComponent(ArkAvatar.Root).vm.$emit("statusChange", { status: "error" });
     await nextTick();
     expect(w.find("img").attributes("src")).toBe("b.png");

@@ -9,7 +9,7 @@ interface Props {
   src?: string;
   alt?: string;
   /** 图片加载失败时的备用图片地址（自动切换；备用图也失败时回落 Fallback 并再次触发 error） */
-  fallbackSrc?: string;
+  fallback?: string;
   /** 预设尺寸或自定义像素值（number） */
   size?: AvatarVariants["size"] | number;
   shape?: AvatarVariants["shape"];
@@ -30,12 +30,12 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
   /** 图片加载完成 */
   load: [details: AvatarStatusChangeDetails];
-  /** 图片加载失败（使用 fallbackSrc 且其也失败时会再次触发） */
+  /** 图片加载失败（使用 fallback 且其也失败时会再次触发） */
   error: [details: AvatarStatusChangeDetails];
 }>();
 
 // Ark 仅上报 loaded/error（zag LoadStatus 双态）；loading 为本地初始态，
-// 驱动 #placeholder 插槽与 fallbackSrc 切换
+// 驱动 #placeholder 插槽与 fallback 切换
 const status = ref<"loading" | "loaded" | "error">("loading");
 
 function handleStatusChange(details: AvatarStatusChangeDetails) {
@@ -44,9 +44,9 @@ function handleStatusChange(details: AvatarStatusChangeDetails) {
   else emit("error", details);
 }
 
-// 失败且配置 fallbackSrc 时切换到备用图；切图会重新走加载流程并再次上报状态
+// 失败且配置 fallback 时切换到备用图；切图会重新走加载流程并再次上报状态
 const currentSrc = computed(() =>
-  status.value === "error" && props.fallbackSrc ? props.fallbackSrc : props.src,
+  status.value === "error" && props.fallback ? props.fallback : props.src,
 );
 
 // 头像组注入的 size（子级显式传入优先），缺省回落 md
