@@ -306,80 +306,82 @@ watch(isOpen, (open) => {
 
 <template>
   <ArkPopover.Root :open="isOpen" @update:open="handleOpenUpdate">
-    <div
-      ref="triggerEl"
-      v-bind="$attrs"
-      data-part="trigger"
-      role="button"
-      tabindex="0"
-      :aria-expanded="isOpen"
-      aria-haspopup="true"
-      :aria-disabled="props.disabled || undefined"
-      :class="
-        cn(
-          controlCls,
-          'min-h-9 cursor-pointer gap-2 px-3 py-1.5 text-sm',
-          props.disabled && 'cursor-not-allowed opacity-50',
-          props.class,
-        )
-      "
-      @click="openFromInput"
-      @keydown="handleKeydown"
-    >
-      <template v-if="isMulti">
-        <ValueTags
-          v-if="tags.length"
-          :values="tags"
-          :max-tag-count="props.maxTagCount"
-          :disabled="!!props.disabled"
-          @remove="removeTag"
-        />
-        <input
-          v-if="props.filterable"
-          v-model="pattern"
-          data-part="input"
-          type="text"
-          class="h-5 w-12 min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          :placeholder="tags.length ? '' : props.placeholder"
-          :aria-label="props.placeholder"
-        />
-        <span v-if="!tags.length && !props.filterable" class="truncate text-muted-foreground">{{
-          props.placeholder
-        }}</span>
-      </template>
-      <template v-else>
-        <input
-          v-if="props.filterable"
-          v-model="pattern"
-          data-part="input"
-          type="text"
-          class="h-full w-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
-          :placeholder="singleLabel || props.placeholder"
-          :aria-label="props.placeholder"
-        />
-        <template v-else>
-          <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
-          <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+    <ArkPopover.Anchor as-child>
+      <div
+        ref="triggerEl"
+        v-bind="$attrs"
+        data-part="trigger"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isOpen"
+        aria-haspopup="true"
+        :aria-disabled="props.disabled || undefined"
+        :class="
+          cn(
+            controlCls,
+            'min-h-9 cursor-pointer gap-2 px-3 py-1.5 text-sm',
+            props.disabled && 'cursor-not-allowed opacity-50',
+            props.class,
+          )
+        "
+        @click="openFromInput"
+        @keydown="handleKeydown"
+      >
+        <template v-if="isMulti">
+          <ValueTags
+            v-if="tags.length"
+            :values="tags"
+            :max-tag-count="props.maxTagCount"
+            :disabled="!!props.disabled"
+            @remove="removeTag"
+          />
+          <input
+            v-if="props.filterable"
+            v-model="pattern"
+            data-part="input"
+            type="text"
+            class="h-5 w-12 min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+            :placeholder="tags.length ? '' : props.placeholder"
+            :aria-label="props.placeholder"
+          />
+          <span v-if="!tags.length && !props.filterable" class="truncate text-muted-foreground">{{
+            props.placeholder
+          }}</span>
         </template>
-      </template>
-      <span class="ml-auto flex shrink-0 items-center gap-1">
-        <span
-          v-if="props.clearable && hasValue && !props.disabled"
-          role="button"
-          data-part="clear"
-          class="text-muted-foreground hover:text-foreground"
-          aria-label="清空"
-          @click.stop="handleClear"
-        >
-          <ClearIcon />
+        <template v-else>
+          <input
+            v-if="props.filterable"
+            v-model="pattern"
+            data-part="input"
+            type="text"
+            class="h-full w-full min-w-0 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+            :placeholder="singleLabel || props.placeholder"
+            :aria-label="props.placeholder"
+          />
+          <template v-else>
+            <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
+            <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+          </template>
+        </template>
+        <span class="ml-auto flex shrink-0 items-center gap-1">
+          <span
+            v-if="props.clearable && hasValue && !props.disabled"
+            role="button"
+            data-part="clear"
+            class="text-muted-foreground hover:text-foreground"
+            aria-label="清空"
+            @click.stop="handleClear"
+          >
+            <ClearIcon />
+          </span>
+          <ChevronIcon
+            :class="
+              cn('text-muted-foreground transition-transform', isOpen ? '-rotate-90' : 'rotate-90')
+            "
+          />
         </span>
-        <ChevronIcon
-          :class="
-            cn('text-muted-foreground transition-transform', isOpen ? '-rotate-90' : 'rotate-90')
-          "
-        />
-      </span>
-    </div>
+      </div>
+    </ArkPopover.Anchor>
 
     <!-- 弹层 Teleport 到 body：脱离表单 DOM，消除 overflow 容器裁剪隐患（DatePicker 同款） -->
     <Teleport to="body">

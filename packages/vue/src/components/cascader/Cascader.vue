@@ -292,60 +292,62 @@ watch(isOpen, (open) => {
 
 <template>
   <ArkPopover.Root :open="isOpen" @update:open="handleOpenUpdate">
-    <div
-      ref="triggerEl"
-      v-bind="$attrs"
-      data-part="trigger"
-      role="button"
-      tabindex="0"
-      :aria-expanded="isOpen"
-      aria-haspopup="true"
-      :aria-disabled="props.disabled || undefined"
-      :class="
-        cn(
-          controlCls,
-          'min-h-9 cursor-pointer gap-2 px-3 py-1.5 text-sm',
-          props.disabled && 'cursor-not-allowed opacity-50',
-          props.class,
-        )
-      "
-      @click="openFromInput"
-      @keydown="handleKeydown"
-    >
-      <template v-if="isMulti">
-        <ValueTags
-          v-if="tags.length"
-          :values="tags"
-          :max-tag-count="props.maxTagCount"
-          :disabled="!!props.disabled"
-          @remove="removeTag"
-        />
-        <span v-if="!tags.length" class="truncate text-muted-foreground">{{
-          props.placeholder
-        }}</span>
-      </template>
-      <template v-else>
-        <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
-        <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
-      </template>
-      <span class="ml-auto flex shrink-0 items-center gap-1">
-        <span
-          v-if="props.clearable && hasValue && !props.disabled"
-          role="button"
-          data-part="clear"
-          class="text-muted-foreground hover:text-foreground"
-          aria-label="清空"
-          @click.stop="handleClear"
-        >
-          <ClearIcon />
+    <ArkPopover.Anchor as-child>
+      <div
+        ref="triggerEl"
+        v-bind="$attrs"
+        data-part="trigger"
+        role="button"
+        tabindex="0"
+        :aria-expanded="isOpen"
+        aria-haspopup="true"
+        :aria-disabled="props.disabled || undefined"
+        :class="
+          cn(
+            controlCls,
+            'min-h-9 cursor-pointer gap-2 px-3 py-1.5 text-sm',
+            props.disabled && 'cursor-not-allowed opacity-50',
+            props.class,
+          )
+        "
+        @click="openFromInput"
+        @keydown="handleKeydown"
+      >
+        <template v-if="isMulti">
+          <ValueTags
+            v-if="tags.length"
+            :values="tags"
+            :max-tag-count="props.maxTagCount"
+            :disabled="!!props.disabled"
+            @remove="removeTag"
+          />
+          <span v-if="!tags.length" class="truncate text-muted-foreground">{{
+            props.placeholder
+          }}</span>
+        </template>
+        <template v-else>
+          <span v-if="singleLabel" class="truncate">{{ singleLabel }}</span>
+          <span v-else class="truncate text-muted-foreground">{{ props.placeholder }}</span>
+        </template>
+        <span class="ml-auto flex shrink-0 items-center gap-1">
+          <span
+            v-if="props.clearable && hasValue && !props.disabled"
+            role="button"
+            data-part="clear"
+            class="text-muted-foreground hover:text-foreground"
+            aria-label="清空"
+            @click.stop="handleClear"
+          >
+            <ClearIcon />
+          </span>
+          <ChevronIcon
+            :class="
+              cn('text-muted-foreground transition-transform', isOpen ? '-rotate-90' : 'rotate-90')
+            "
+          />
         </span>
-        <ChevronIcon
-          :class="
-            cn('text-muted-foreground transition-transform', isOpen ? '-rotate-90' : 'rotate-90')
-          "
-        />
-      </span>
-    </div>
+      </div>
+    </ArkPopover.Anchor>
     <Teleport to="body">
       <ArkPopover.Positioner>
         <ArkPopover.Content
