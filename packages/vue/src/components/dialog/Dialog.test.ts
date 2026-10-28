@@ -1,16 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "./index";
+import { Dialog } from "./index";
 
 const content = () =>
   document.querySelector<HTMLElement>('[data-scope="dialog"][data-part="content"]');
@@ -20,37 +11,39 @@ const description = () =>
 const backdrop = () =>
   document.querySelector<HTMLElement>('[data-scope="dialog"][data-part="backdrop"]');
 
-interface HostOptions {
-  dialogProps?: Record<string, unknown>;
-  triggerAsChild?: boolean;
-  showCloseButton?: boolean;
+interface Slots {
+  trigger?: () => unknown;
+  default?: () => unknown;
+  title?: () => unknown;
+  description?: () => unknown;
+  footer?: (ctx: { close: () => void }) => unknown;
 }
 
-function mountHost(options: HostOptions = {}) {
-  const { dialogProps = {}, triggerAsChild = false, showCloseButton = true } = options;
+function mountDialog(props: Record<string, unknown> = {}, slots: Slots = {}) {
   const Host = defineComponent({
     setup() {
-      return () =>
-        h(Dialog, dialogProps, {
-          default: () => [
-            triggerAsChild
-              ? h(DialogTrigger, { asChild: true }, () =>
-                  h("a", { class: "link", href: "/x" }, "打开"),
-                )
-              : h(DialogTrigger, null, () => "打开"),
-            h(DialogContent, { showCloseButton }, () => [
-              h(DialogHeader, null, () => [
-                h(DialogTitle, null, () => "编辑资料"),
-                h(DialogDescription, null, () => "保存后立即生效"),
-              ]),
-              h("p", null, "内容区"),
-              h(DialogFooter, null, () => [h(DialogClose, null, () => "取消")]),
-            ]),
-          ],
-        });
+      return () => h(Dialog, props, slots as never);
     },
   });
   return mount(Host, { attachTo: document.body });
+}
+
+/** 全量插槽：#trigger + title/description props + 默认插槽 + #footer(close) */
+function mountFull(props: Record<string, unknown> = {}) {
+  return mountDialog(
+    { title: "编辑资料", description: "保存后立即生效", ...props },
+    {
+      trigger: () => h("button", { type: "button", class: "open-btn" }, "打开"),
+      default: () => h("p", { class: "body-text" }, "内容区"),
+      footer: ({ close }: { close: () => void }) =>
+        h("button", { type: "button", class: "cancel-btn", onClick: close }, "取消"),
+    },
+  );
+}
+
+async function openDialog(w: ReturnType<typeof mountFull>) {
+  await w.find("button.open-btn").trigger("click");
+  await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
 }
 
 afterEach(() => {
@@ -58,27 +51,60 @@ afterEach(() => {
 });
 
 describe("Dialog", () => {
-  it("Trigger 点击打开，面板与标题渲染且带 data-state=open", async () => {
-    const w = mountHost();
+  it("#trigger 打开：asChild 语义合并到插槽元素，面板进入 open 态", async () => {
+    const w = mountFull();
     // Ark 预挂载内容面板：关闭态为 hidden + data-state=closed
     expect(content()!.dataset.state).toBe("closed");
     expect(content()!.hasAttribute("hidden")).toBe(true);
 
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+    // asChild 合并：行为直接落在插槽的 <button> 上，全树仅此一个触发元素
+    const btn = w.find("button.open-btn");
+    expect(btn.attributes("data-part")).toBe("trigger");
+    expect(btn.attributes("aria-controls")).toBeDefined();
+    expect(document.body.querySelectorAll('[data-part="trigger"]').length).toBe(1);
+
+    await openDialog(w);
     expect(content()!.hasAttribute("hidden")).toBe(false);
-    expect(title()!.textContent).toContain("编辑资料");
-    expect(description()!.textContent).toContain("保存后立即生效");
     expect(backdrop()).not.toBeNull();
     w.unmount();
   });
 
-  it("Escape 关闭", async () => {
-    const w = mountHost();
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+  it("title/description props 渲染文案，#title/#description 插槽可覆盖", async () => {
+    const w = mountFull();
+    await openDialog(w);
+    expect(title()!.textContent).toContain("编辑资料");
+    expect(description()!.textContent).toContain("保存后立即生效");
+    expect(title()!.className).toContain("font-semibold");
+    expect(description()!.className).toContain("text-muted-foreground");
+    w.unmount();
 
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    const w2 = mountDialog(
+      { title: "属性标题", description: "属性描述" },
+      {
+        trigger: () => h("button", { type: "button" }, "打开"),
+        title: () => "插槽标题",
+        description: () => "插槽描述",
+      },
+    );
+    await w2.find("button[data-part='trigger']").trigger("click");
+    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+    expect(title()!.textContent).toContain("插槽标题");
+    expect(description()!.textContent).toContain("插槽描述");
+    w2.unmount();
+  });
+
+  it("默认插槽渲染弹层 body 内容区", async () => {
+    const w = mountFull();
+    await openDialog(w);
+    expect(content()!.querySelector(".body-text")!.textContent).toBe("内容区");
+    w.unmount();
+  });
+
+  it("#footer 作用域 close 关闭对话框", async () => {
+    const w = mountFull();
+    await openDialog(w);
+
+    await w.find("button.cancel-btn").trigger("click");
     await vi.waitFor(() => {
       const el = content();
       expect(el === null || el.dataset.state === "closed").toBe(true);
@@ -86,45 +112,9 @@ describe("Dialog", () => {
     w.unmount();
   });
 
-  it("CloseTrigger 点击关闭", async () => {
-    const w = mountHost();
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
-
-    const close = document.querySelector<HTMLElement>('[data-part="close-trigger"]');
-    expect(close).not.toBeNull();
-    close!.click();
-    await vi.waitFor(() => {
-      const el = content();
-      expect(el === null || el.dataset.state === "closed").toBe(true);
-    });
-    w.unmount();
-  });
-
-  it("默认渲染内置关闭按钮，showCloseButton=false 时只剩用户的 DialogClose", async () => {
-    const w = mountHost({ showCloseButton: false });
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
-    // footer 里的 DialogClose 恒为 1 个；内置 X 按钮使总数为 2
-    expect(document.querySelectorAll('[data-part="close-trigger"]').length).toBe(1);
-    w.unmount();
-  });
-
-  it("DialogTrigger asChild 合并到子元素并保持打开行为", async () => {
-    const w = mountHost({ triggerAsChild: true });
-    const a = w.find("a");
-    expect(a.exists()).toBe(true);
-    expect(a.attributes("href")).toBe("/x");
-    // zag asChild 将触发器行为合并到子元素：data-part/aria-controls 就位
-    expect(a.attributes("data-part")).toBe("trigger");
-
-    await a.trigger("click");
-    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
-    w.unmount();
-  });
-
-  it("v-model:open 受控：Trigger 触发 update:open，Escape 回写 false", async () => {
+  it("v-model:open 受控：Trigger 回写 true，Escape/程序化置 false 双向同步", async () => {
     const open = ref(false);
+    // 注意：props 对象需在渲染函数内联求值（open: open.value），保证 Host 依赖追踪并随状态重渲染
     const Host = defineComponent({
       setup() {
         return () =>
@@ -132,32 +122,53 @@ describe("Dialog", () => {
             Dialog,
             { open: open.value, "onUpdate:open": (v: boolean) => (open.value = v) },
             {
-              default: () => [
-                h(DialogTrigger, null, () => "打开"),
-                h(DialogContent, null, () => h(DialogTitle, null, () => "受控")),
-              ],
+              trigger: () => h("button", { type: "button" }, "打开"),
+              default: () => h("p", "受控"),
+              title: () => "受控",
             },
           );
       },
     });
     const w = mount(Host, { attachTo: document.body });
+    const btn = () => w.find("button[data-part='trigger']");
 
-    await w.find('[data-part="trigger"]').trigger("click");
+    await btn().trigger("click");
     await vi.waitFor(() => expect(open.value).toBe(true));
     await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     await vi.waitFor(() => expect(open.value).toBe(false));
+    await vi.waitFor(() => {
+      const el = content();
+      expect(el === null || el.dataset.state === "closed").toBe(true);
+    });
+
+    // 程序化打开：外部改 open 即可驱动面板
+    open.value = true;
+    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
     w.unmount();
   });
 
-  it("Title/Description/Content 应用变体类", async () => {
-    const w = mountHost();
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()).not.toBeNull());
-    expect(title()!.className).toContain("font-semibold");
-    expect(description()!.className).toContain("text-muted-foreground");
-    expect(content()!.className).toContain("bg-background");
+  it("无 title/description 时不渲染对应 DOM", async () => {
+    const w = mountDialog(
+      {},
+      {
+        trigger: () => h("button", { type: "button" }, "打开"),
+        default: () => h("p", "纯内容"),
+      },
+    );
+    await w.find("button[data-part='trigger']").trigger("click");
+    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+    expect(title()).toBeNull();
+    expect(description()).toBeNull();
+    w.unmount();
+  });
+
+  it("aria 接线：content 的 aria-labelledby/describedby 指向 title/description", async () => {
+    const w = mountFull();
+    await openDialog(w);
+    expect(content()!.getAttribute("aria-labelledby")).toBe(title()!.id);
+    expect(content()!.getAttribute("aria-describedby")).toBe(description()!.id);
     w.unmount();
   });
 });

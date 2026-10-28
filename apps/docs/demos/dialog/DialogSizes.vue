@@ -1,23 +1,21 @@
 <template>
   <div class="flex flex-wrap items-center justify-center gap-3">
-    <TDialog v-for="size in sizes" :key="size.cls">
-      <TDialogTrigger as-child>
+    <TDialog
+      v-for="size in sizes"
+      :key="size.label"
+      :title="size.title"
+      :description="size.description"
+      :content-class="size.cls"
+    >
+      <template #trigger>
         <TButton variant="outline">{{ size.label }}</TButton>
-      </TDialogTrigger>
-      <TDialogContent :class="size.cls">
-        <TDialogHeader>
-          <TDialogTitle>{{ size.title }}</TDialogTitle>
-          <TDialogDescription>{{ size.description }}</TDialogDescription>
-        </TDialogHeader>
-        <p class="text-sm text-muted-foreground">
-          面板宽度由 Content 的 class 覆盖（默认 <code>sm:max-w-lg</code>）。
-        </p>
-        <TDialogFooter>
-          <TDialogClose as-child>
-            <TButton variant="ghost">关闭</TButton>
-          </TDialogClose>
-        </TDialogFooter>
-      </TDialogContent>
+      </template>
+      <p class="text-sm text-muted-foreground">
+        面板宽度由 content-class 覆盖（默认 <code>sm:max-w-lg</code>）。
+      </p>
+      <template #footer="{ close }">
+        <TButton variant="ghost" @click="close">关闭</TButton>
+      </template>
     </TDialog>
   </div>
 </template>

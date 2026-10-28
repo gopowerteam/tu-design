@@ -1,5 +1,5 @@
 {
-  "description": "模态对话框：基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 asChild 与 v-model:open。",
+  "description": "模态对话框单组件：#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 v-model:open。",
   "registryDependencies": ["utils"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

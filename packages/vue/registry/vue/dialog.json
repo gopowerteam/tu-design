@@ -2,7 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "dialog",
   "type": "registry:ui",
-  "description": "模态对话框：基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 asChild 与 v-model:open。",
+  "description": "模态对话框单组件：#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 v-model:open。",
   "registryDependencies": ["utils"],
   "dependencies": ["@ark-ui/vue@^5.39.2"],
   "files": [
@@ -10,55 +10,13 @@
       "path": "dialog/Dialog.vue",
       "type": "registry:component",
       "target": "components/ui/dialog/Dialog.vue",
-      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\n\ninterface Props {\n  /** 受控开关（配合 v-model:open）；不传时为非受控，由内部状态管理 */\n  open?: boolean;\n  defaultOpen?: boolean;\n  /** 首次打开前不挂载内容 */\n  lazyMount?: boolean;\n  /** 关闭后卸载内容（关闭动画结束后） */\n  unmountOnExit?: boolean;\n}\n\n// 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，\n// 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。\nconst props = defineProps({\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultOpen: { type: Boolean, default: false },\n  lazyMount: { type: Boolean, default: false },\n  unmountOnExit: { type: Boolean, default: false },\n});\n\nconst emit = defineEmits<{ \"update:open\": [open: boolean] }>();\n\n// 对 Root 恒走受控模式（open 恒为布尔）：非受控语义由内部 ref 实现，\n// 避开 zag uncontrolled 内部状态在部分环境下不同步的问题，两种模式行为一致。\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n</script>\n\n<template>\n  <ArkDialog.Root\n    :open=\"isOpen\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:open=\"handleUpdate\"\n  >\n    <slot />\n  </ArkDialog.Root>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogClose.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogClose.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\n\ninterface Props {\n  /** 以默认插槽子元素为渲染目标，不渲染额外按钮 */\n  asChild?: boolean;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkDialog.CloseTrigger :as-child=\"props.asChild\">\n    <slot />\n  </ArkDialog.CloseTrigger>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogContent.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogContent.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  /** 是否在内容右上角渲染关闭按钮 */\n  showCloseButton?: boolean;\n  class?: string;\n}\n\nconst props = withDefaults(defineProps<Props>(), { showCloseButton: true });\n</script>\n\n<template>\n  <ArkDialog.Backdrop\n    class=\"fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"\n  />\n  <ArkDialog.Positioner class=\"fixed inset-0 z-50 flex items-center justify-center p-4\">\n    <ArkDialog.Content\n      :class=\"\n        cn(\n          'bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg',\n          props.class,\n        )\n      \"\n    >\n      <slot />\n      <ArkDialog.CloseTrigger\n        v-if=\"props.showCloseButton\"\n        class=\"absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none\"\n      >\n        <svg\n          viewBox=\"0 0 24 24\"\n          fill=\"none\"\n          stroke=\"currentColor\"\n          stroke-width=\"2\"\n          stroke-linecap=\"round\"\n          stroke-linejoin=\"round\"\n          class=\"size-4\"\n        >\n          <path d=\"M18 6 6 18\" />\n          <path d=\"m6 6 12 12\" />\n        </svg>\n        <span class=\"sr-only\">关闭</span>\n      </ArkDialog.CloseTrigger>\n    </ArkDialog.Content>\n  </ArkDialog.Positioner>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogDescription.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogDescription.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkDialog.Description :class=\"cn('text-sm text-muted-foreground', props.class)\">\n    <slot />\n  </ArkDialog.Description>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogFooter.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogFooter.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <div :class=\"cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', props.class)\">\n    <slot />\n  </div>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogHeader.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogHeader.vue",
-      "content": "<script setup lang=\"ts\">\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <div :class=\"cn('flex flex-col gap-2 text-center sm:text-left', props.class)\">\n    <slot />\n  </div>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogTitle.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogTitle.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkDialog.Title :class=\"cn('text-lg font-semibold leading-none tracking-tight', props.class)\">\n    <slot />\n  </ArkDialog.Title>\n</template>\n"
-    },
-    {
-      "path": "dialog/DialogTrigger.vue",
-      "type": "registry:component",
-      "target": "components/ui/dialog/DialogTrigger.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\n\ninterface Props {\n  /** 以默认插槽子元素为渲染目标（样式与行为合并其上），不渲染额外按钮 */\n  asChild?: boolean;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkDialog.Trigger :as-child=\"props.asChild\">\n    <slot />\n  </ArkDialog.Trigger>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Dialog as ArkDialog } from \"@ark-ui/vue/dialog\";\nimport { cn } from \"@/lib/utils\";\n\n// 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，\n// 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。\nconst props = defineProps({\n  /** 受控开关（配合 v-model:open）；不传时为非受控，由内部状态管理 */\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  /** 非受控时的初始开关 */\n  defaultOpen: { type: Boolean, default: false },\n  /** 首次打开前不挂载内容 */\n  lazyMount: { type: Boolean, default: false },\n  /** 关闭后卸载内容（关闭动画结束后） */\n  unmountOnExit: { type: Boolean, default: false },\n  /** 标题文案（#title 插槽优先，两者皆无则不渲染标题） */\n  title: { type: String, default: undefined },\n  /** 描述文案（#description 插槽优先，两者皆无则不渲染描述） */\n  description: { type: String, default: undefined },\n  /** 是否渲染右上角内置关闭按钮 */\n  showCloseButton: { type: Boolean, default: true },\n  /** 追加/覆盖面板样式类（默认 sm:max-w-lg 可由此覆盖，如 \"sm:max-w-xl\"） */\n  contentClass: { type: String, default: undefined },\n});\n\nconst emit = defineEmits<{ \"update:open\": [open: boolean] }>();\n\n// 对 Root 恒走受控模式（open 恒为布尔）：非受控语义由内部 ref 实现，\n// 避开 zag uncontrolled 内部状态在部分环境下不同步的问题，两种模式行为一致。\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n\n/** 关闭对话框（#footer 作用域插槽注入）：走受控桥把 open 置 false，\n * 与原 TDialogClose（Ark CloseTrigger）的关闭语义等价，退出动画/焦点还原由 zag 处理 */\nfunction close() {\n  handleUpdate(false);\n}\n\n// 标题/描述有任一来源（props 或插槽）时才渲染头部区块（原 TDialogHeader 布局类）\nconst hasHeader = computed(() => Boolean(props.title || props.description));\n\n// 面板样式：内置类 + contentClass 合并（twMerge 自动去冲突，后者优先）\nconst contentClass = computed(() =>\n  cn(\n    \"bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg\",\n    props.contentClass,\n  ),\n);\n</script>\n\n<template>\n  <ArkDialog.Root\n    :open=\"isOpen\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:open=\"handleUpdate\"\n  >\n    <!-- #trigger：触发元素本体（asChild 语义合并到子元素，原 TDialogTrigger 同款实现）；未提供则不渲染触发器 -->\n    <ArkDialog.Trigger v-if=\"$slots.trigger\" as-child>\n      <slot name=\"trigger\" />\n    </ArkDialog.Trigger>\n\n    <ArkDialog.Backdrop\n      class=\"fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0\"\n    />\n    <ArkDialog.Positioner class=\"fixed inset-0 z-50 flex items-center justify-center p-4\">\n      <ArkDialog.Content :class=\"contentClass\">\n        <!-- 标题/描述：#title / #description 插槽优先，回退 title/description props；皆无则不渲染对应 DOM -->\n        <div\n          v-if=\"hasHeader || $slots.title || $slots.description\"\n          class=\"flex flex-col gap-2 text-center sm:text-left\"\n        >\n          <ArkDialog.Title\n            v-if=\"$slots.title || props.title\"\n            class=\"text-lg font-semibold leading-none tracking-tight\"\n          >\n            <slot name=\"title\">{{ props.title }}</slot>\n          </ArkDialog.Title>\n          <ArkDialog.Description\n            v-if=\"$slots.description || props.description\"\n            class=\"text-sm text-muted-foreground\"\n          >\n            <slot name=\"description\">{{ props.description }}</slot>\n          </ArkDialog.Description>\n        </div>\n\n        <!-- 默认插槽：弹层内容区（原 TDialogContent 的 body 部分） -->\n        <slot />\n\n        <!-- 底部操作区：#footer=\"{ close }\" 注入关闭函数，替代原 TDialogClose -->\n        <div v-if=\"$slots.footer\" class=\"flex flex-col-reverse gap-2 sm:flex-row sm:justify-end\">\n          <slot name=\"footer\" :close=\"close\" />\n        </div>\n\n        <ArkDialog.CloseTrigger\n          v-if=\"props.showCloseButton\"\n          class=\"absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none\"\n        >\n          <svg\n            viewBox=\"0 0 24 24\"\n            fill=\"none\"\n            stroke=\"currentColor\"\n            stroke-width=\"2\"\n            stroke-linecap=\"round\"\n            stroke-linejoin=\"round\"\n            class=\"size-4\"\n          >\n            <path d=\"M18 6 6 18\" />\n            <path d=\"m6 6 12 12\" />\n          </svg>\n          <span class=\"sr-only\">关闭</span>\n        </ArkDialog.CloseTrigger>\n      </ArkDialog.Content>\n    </ArkDialog.Positioner>\n  </ArkDialog.Root>\n</template>\n"
     },
     {
       "path": "dialog/index.ts",
       "type": "registry:component",
       "target": "components/ui/dialog/index.ts",
-      "content": "export { default as Dialog } from \"./Dialog.vue\";\nexport { default as DialogClose } from \"./DialogClose.vue\";\nexport { default as DialogContent } from \"./DialogContent.vue\";\nexport { default as DialogDescription } from \"./DialogDescription.vue\";\nexport { default as DialogFooter } from \"./DialogFooter.vue\";\nexport { default as DialogHeader } from \"./DialogHeader.vue\";\nexport { default as DialogTitle } from \"./DialogTitle.vue\";\nexport { default as DialogTrigger } from \"./DialogTrigger.vue\";\n"
+      "content": "export { default as Dialog } from \"./Dialog.vue\";\n"
     }
   ]
 }

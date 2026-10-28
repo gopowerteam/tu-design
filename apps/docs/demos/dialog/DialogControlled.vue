@@ -4,23 +4,17 @@
       <TButton variant="outline" @click="open = true">程序化打开</TButton>
       <span class="text-xs text-muted-foreground">open = {{ open }}</span>
     </div>
-    <TDialog v-model:open="open">
-      <TDialogTrigger as-child>
+    <TDialog
+      v-model:open="open"
+      title="受控对话框"
+      description="开关状态由 open ref 驱动，Escape / 遮罩关闭会同步回写。"
+    >
+      <template #trigger>
         <TButton>触发器打开</TButton>
-      </TDialogTrigger>
-      <TDialogContent>
-        <TDialogHeader>
-          <TDialogTitle>受控对话框</TDialogTitle>
-          <TDialogDescription
-            >开关状态由 open ref 驱动，Escape / 遮罩关闭会同步回写。</TDialogDescription
-          >
-        </TDialogHeader>
-        <TDialogFooter>
-          <TDialogClose as-child>
-            <TButton>关闭</TButton>
-          </TDialogClose>
-        </TDialogFooter>
-      </TDialogContent>
+      </template>
+      <template #footer="{ close }">
+        <TButton @click="close">关闭</TButton>
+      </template>
     </TDialog>
     <p class="text-xs text-muted-foreground">
       两种打开方式共用一个状态；无论怎么关，状态都保持同步。
