@@ -6,7 +6,7 @@ shadcn 风格的 Vue 3 组件库 monorepo（Tailwind v4 + oklch CSS 变量主题
 
 - `packages/vue` — `@tu-design/vue` 组件库，组件源码在 `src/components/<name>/`
 - `packages/cli` — `tu-design` CLI（`init`/`add`），按 registry 向用户项目分发组件源码
-- `apps/docs` — VitePress 文档站（根目录 `pnpm docs` 或 `pnpm --filter @tu-design/docs dev`，http://localhost:5173/tu-design/）
+- `apps/docs` — VitePress 文档站（根目录 `pnpm docs`，或 `cd apps/docs && vp run dev`；端口 5174，路径前缀 `/tu-design/`）
 
 ## 常用命令
 
@@ -29,6 +29,12 @@ vp run ready            # 全量体检 = vp check + 递归 test + 递归 build�
 - **registry 是生成物且已提交**：改动 `src/components/`、`src/lib/utils.ts`、`src/styles/tokens.css` 或 workspace catalog 后，必须 `cd packages/vue && vp run generate:registry` 重新生成 `registry/vue/*.json`，否则防漂移测试失败。生成时会将 `catalog:` 依赖翻译为真实版本号并剔除 `.test.ts` 文件。
 - `TuDesignResolver`（`src/resolver.ts`）用组件名白名单而非 `/^T[A-Z]/` 正则（避免误捕 Transition/Teleport 等内置组件）；白名单必须与 `index.ts` 导出保持同步，`resolver.test.ts` 强制校验。
 - 环境要求：Node ≥ 22.18.0，pnpm 12.6.0（`packageManager` 字段固定）。
+
+## Registry 分发链路（CLI ↔ 文档站）
+
+- CLI 默认数据源是线上 Pages：`https://gopowerteam.github.io/tu-design/r/vue`（`packages/cli/src/lib/config.ts` 的 `DEFAULT_REGISTRY`，可用 `--registry` 覆盖）。
+- 文档站 dev 期用 Vite 中间件伺服 `/r/vue/*.json`（直接读 `packages/vue/registry/vue`）；build 期由 `buildEnd` 钩子复制进 `dist/r/vue`。
+- `.github/workflows/deploy-pages.yml`：push master 且 `apps/docs/**` 或 `packages/vue/**` 有变更时自动部署文档 + registry 到 GitHub Pages —— 改动 registry 后要让线上 CLI 生效需等 Pages 部署。
 
 ## 发版（bumpp 锁定版本模型）
 
