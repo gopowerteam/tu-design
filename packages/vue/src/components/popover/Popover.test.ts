@@ -6,8 +6,6 @@ import { Popover } from "./index";
 const content = () =>
   document.querySelector<HTMLElement>('[data-scope="popover"][data-part="content"]');
 
-const trigger = () => document.querySelector<HTMLElement>('[data-part="trigger"]');
-
 afterEach(() => {
   document.body.querySelectorAll('[data-scope="popover"]').forEach((n) => n.remove());
 });
