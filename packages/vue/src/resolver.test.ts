@@ -56,6 +56,9 @@ describe("TuDesignResolver", () => {
       "defineColumns",
       "useTableRender",
       "columnRenders",
+      "useToast",
+      "alertVariants",
+      "alertIconVariants",
     ]);
     const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());

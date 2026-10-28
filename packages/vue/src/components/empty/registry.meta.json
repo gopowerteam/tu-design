@@ -1,0 +1,4 @@
+{
+  "description": "空状态占位，含默认插画与描述文案。",
+  "registryDependencies": ["utils"]
+}

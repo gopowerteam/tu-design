@@ -3,6 +3,12 @@
   "name": "tu-design",
   "items": [
     {
+      "name": "alert",
+      "title": "Alert",
+      "type": "registry:ui",
+      "description": "语义化警示条，支持五种变体、内置图标与可关闭交互。"
+    },
+    {
       "name": "avatar",
       "title": "Avatar",
       "type": "registry:ui",
@@ -87,6 +93,12 @@
       "description": "下拉菜单：单组件模式，items 描述菜单项（含分组/标题/分隔线，支持嵌套），内置键盘导航与选中回调，默认插槽为触发元素（asChild 透传）。"
     },
     {
+      "name": "empty",
+      "title": "Empty",
+      "type": "registry:ui",
+      "description": "空状态占位，含默认插画与描述文案。"
+    },
+    {
       "name": "form",
       "title": "Form",
       "type": "registry:ui",
@@ -141,6 +153,12 @@
       "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。"
     },
     {
+      "name": "progress",
+      "title": "Progress",
+      "type": "registry:ui",
+      "description": "进度条：基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。"
+    },
+    {
       "name": "radio-group",
       "title": "RadioGroup",
       "type": "registry:ui",
@@ -177,6 +195,12 @@
       "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。"
     },
     {
+      "name": "spin",
+      "title": "Spin",
+      "type": "registry:ui",
+      "description": "加载中旋转指示器，支持独立 spinner 与包裹内容（半透明遮罩）两种形态。"
+    },
+    {
       "name": "switch",
       "title": "Switch",
       "type": "registry:ui",
@@ -199,6 +223,12 @@
       "title": "Textarea",
       "type": "registry:ui",
       "description": "多行文本输入：纯样式封装，支持 invalid 校验态。"
+    },
+    {
+      "name": "toast",
+      "title": "Toast",
+      "type": "registry:ui",
+      "description": "全局轻提示：ToastProvider 在应用根部挂载一次，useToast() 提供命令式 API（success/error/info/warning/loading/promise/dismiss）；基于 Ark UI Toast 原语，语义 type 映射主题 token 配色。"
     },
     {
       "name": "tokens",

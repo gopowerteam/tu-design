@@ -1,0 +1,5 @@
+{
+  "description": "语义化警示条，支持五种变体、内置图标与可关闭交互。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "class-variance-authority": "catalog:" }
+}

@@ -120,6 +120,19 @@ export default defineConfig({
           ],
         },
         {
+          text: "反馈组件",
+          items: [
+            { text: "警告提示 <span class='sidebar-en'>Alert</span>", link: "/components/alert" },
+            { text: "空状态 <span class='sidebar-en'>Empty</span>", link: "/components/empty" },
+            {
+              text: "进度条 <span class='sidebar-en'>Progress</span>",
+              link: "/components/progress",
+            },
+            { text: "加载 <span class='sidebar-en'>Spin</span>", link: "/components/spin" },
+            { text: "消息提示 <span class='sidebar-en'>Toast</span>", link: "/components/toast" },
+          ],
+        },
+        {
           text: "表单组件",
           items: [
             { text: "表单 <span class='sidebar-en'>Form</span>", link: "/components/form" },

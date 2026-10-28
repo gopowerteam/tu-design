@@ -1,0 +1,5 @@
+{
+  "description": "加载中旋转指示器，支持独立 spinner 与包裹内容（半透明遮罩）两种形态。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "class-variance-authority": "catalog:" }
+}

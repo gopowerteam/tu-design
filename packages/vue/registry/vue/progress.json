@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "progress",
+  "type": "registry:ui",
+  "description": "进度条：基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。",
+  "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "progress/Progress.vue",
+      "type": "registry:component",
+      "target": "components/ui/progress/Progress.vue",
+      "content": "<script setup lang=\"ts\">\nimport { computed, ref } from \"vue\";\nimport { Progress as ArkProgress } from \"@ark-ui/vue/progress\";\nimport { cn } from \"@/lib/utils\";\n\n/** 语义色类型 */\ntype ProgressType = \"default\" | \"info\" | \"success\" | \"warning\" | \"error\";\n\nconst props = withDefaults(\n  defineProps<{\n    /** 当前值（配合 v-model:value，0 ~ max）；显式传 null 为不确定态 */\n    value?: number | null;\n    /** 最大值 @default 100 */\n    max?: number;\n    /** 进度标签文本 */\n    label?: string;\n    /** 是否显示百分比文本 @default false */\n    showValue?: boolean;\n    /** 语义色：default 用 primary，error 映射 destructive @default \"default\" */\n    type?: ProgressType;\n    /** 不确定态（忽略 value，恒以 null 传给 Ark） */\n    indeterminate?: boolean;\n    /** 追加/覆盖根元素样式类 */\n    class?: string;\n  }>(),\n  { max: 100, showValue: false, type: \"default\", indeterminate: false },\n);\n\nconst emit = defineEmits<{ \"update:value\": [value: number | null] }>();\n\n// —— 受控桥接（Popover 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——\nconst internalValue = ref<number | null>(0);\nconst modelValue = computed<number | null>(() => {\n  if (props.indeterminate) return null;\n  // 显式传 value（含 null）即受控；未传走内部状态\n  return props.value !== undefined ? props.value : internalValue.value;\n});\n\nfunction handleUpdate(value: number | null) {\n  internalValue.value = value;\n  emit(\"update:value\", value);\n}\n\n// type → 语义 token 着色（default 用 primary）\nconst rangeClass = computed(\n  () =>\n    ({\n      default: \"bg-primary\",\n      info: \"bg-info\",\n      success: \"bg-success\",\n      warning: \"bg-warning\",\n      error: \"bg-destructive\",\n    })[props.type],\n);\n</script>\n\n<template>\n  <ArkProgress.Root\n    :model-value=\"modelValue\"\n    :max=\"props.max\"\n    :class=\"cn('relative flex w-full items-center gap-3', props.class)\"\n    @update:model-value=\"handleUpdate\"\n  >\n    <ArkProgress.Label\n      v-if=\"props.label\"\n      class=\"text-foreground text-sm font-medium whitespace-nowrap\"\n    >\n      {{ props.label }}\n    </ArkProgress.Label>\n    <ArkProgress.Track class=\"bg-muted relative h-2 w-full grow overflow-hidden rounded-full\">\n      <ArkProgress.Range\n        :class=\"\n          cn(\n            'h-full rounded-full transition-all duration-300',\n            'data-[state=indeterminate]:w-1/2 data-[state=indeterminate]:animate-pulse',\n            rangeClass,\n          )\n        \"\n      />\n    </ArkProgress.Track>\n    <ArkProgress.ValueText\n      v-if=\"props.showValue\"\n      class=\"text-muted-foreground text-sm leading-none tabular-nums whitespace-nowrap\"\n    />\n  </ArkProgress.Root>\n</template>\n"
+    },
+    {
+      "path": "progress/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/progress/index.ts",
+      "content": "export { default as Progress } from \"./Progress.vue\";\n"
+    }
+  ]
+}

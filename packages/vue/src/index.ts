@@ -36,3 +36,8 @@ export * from "./components/tree-select";
 export * from "./components/week-picker";
 export * from "./components/year-picker";
 export * from "./components/tooltip";
+export * from "./components/alert";
+export * from "./components/empty";
+export * from "./components/progress";
+export * from "./components/spin";
+export * from "./components/toast";
