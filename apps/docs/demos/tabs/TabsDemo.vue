@@ -1,20 +1,23 @@
+<script setup lang="ts">
+const items = [
+  { value: "overview", label: "概览" },
+  { value: "analytics", label: "分析" },
+  { value: "reports", label: "报告" },
+];
+
+const contents: Record<string, string> = {
+  overview: "最近 30 天的访问量与转化率总览。",
+  analytics: "访问来源、留存与漏斗分析。",
+  reports: "导出周期性报告与订阅设置。",
+};
+</script>
+
 <template>
   <div class="flex justify-center">
-    <TTabs default-value="overview" class="w-96">
-      <TTabsList>
-        <TTabsTrigger value="overview">概览</TTabsTrigger>
-        <TTabsTrigger value="analytics">分析</TTabsTrigger>
-        <TTabsTrigger value="reports">报告</TTabsTrigger>
-      </TTabsList>
-      <TTabsContent value="overview" class="pt-3 text-sm text-muted-foreground">
-        最近 30 天的访问量与转化率总览。
-      </TTabsContent>
-      <TTabsContent value="analytics" class="pt-3 text-sm text-muted-foreground">
-        访问来源、留存与漏斗分析。
-      </TTabsContent>
-      <TTabsContent value="reports" class="pt-3 text-sm text-muted-foreground">
-        导出周期性报告与订阅设置。
-      </TTabsContent>
+    <TTabs default-value="overview" :items="items" class="w-96">
+      <template #panel="{ item }">
+        <p class="pt-3 text-sm text-muted-foreground">{{ contents[item.value] }}</p>
+      </template>
     </TTabs>
   </div>
 </template>
