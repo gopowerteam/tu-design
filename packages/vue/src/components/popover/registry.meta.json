@@ -1,5 +1,5 @@
 {
-  "description": "气泡弹层：基于 Ark UI Popover 原语，受控/非受控开关，Trigger 支持 asChild。",
+  "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。",
   "registryDependencies": ["utils"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

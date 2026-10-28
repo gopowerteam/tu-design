@@ -1,12 +1,10 @@
 <template>
   <div class="flex flex-col items-center gap-3">
-    <TPopover v-model:open="open">
-      <TPopoverTrigger as-child>
-        <TButton variant="outline">{{ open ? "受控：已展开" : "受控：已收起" }}</TButton>
-      </TPopoverTrigger>
-      <TPopoverContent class="w-56">
+    <TPopover v-model:open="open" content-class="w-56">
+      <TButton variant="outline">{{ open ? "受控：已展开" : "受控：已收起" }}</TButton>
+      <template #content>
         <p class="text-sm">开关状态由外部 open ref 驱动，点击外部关闭会同步回写。</p>
-      </TPopoverContent>
+      </template>
     </TPopover>
     <TButton variant="ghost" size="sm" @click="open = !open">
       {{ open ? "程序化关闭" : "程序化打开" }}

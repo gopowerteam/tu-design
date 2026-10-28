@@ -2,7 +2,7 @@
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "popover",
   "type": "registry:ui",
-  "description": "气泡弹层：基于 Ark UI Popover 原语，受控/非受控开关，Trigger 支持 asChild。",
+  "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。",
   "registryDependencies": ["utils"],
   "dependencies": ["@ark-ui/vue@^5.39.2"],
   "files": [
@@ -10,25 +10,13 @@
       "path": "popover/Popover.vue",
       "type": "registry:component",
       "target": "components/ui/popover/Popover.vue",
-      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { computed, ref } from \"vue\";\nimport { Popover as ArkPopover } from \"@ark-ui/vue/popover\";\n\ninterface Props {\n  /** 受控开关（配合 v-model:open）；不传时为非受控 */\n  open?: boolean;\n  defaultOpen?: boolean;\n  lazyMount?: boolean;\n  unmountOnExit?: boolean;\n}\n\n// open 用 default: undefined 禁用 Boolean casting，保证「未传」可辨（Dialog 同款约定）\nconst props = defineProps({\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  defaultOpen: { type: Boolean, default: false },\n  lazyMount: { type: Boolean, default: false },\n  unmountOnExit: { type: Boolean, default: false },\n});\n\nconst emit = defineEmits<{ \"update:open\": [open: boolean] }>();\n\n// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n</script>\n\n<template>\n  <ArkPopover.Root\n    :open=\"isOpen\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:open=\"handleUpdate\"\n  >\n    <slot />\n  </ArkPopover.Root>\n</template>\n"
-    },
-    {
-      "path": "popover/PopoverContent.vue",
-      "type": "registry:component",
-      "target": "components/ui/popover/PopoverContent.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Popover as ArkPopover } from \"@ark-ui/vue/popover\";\nimport { cn } from \"@/lib/utils\";\n\ninterface Props {\n  class?: string;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkPopover.Positioner class=\"z-50\">\n    <ArkPopover.Content\n      :class=\"\n        cn(\n          'bg-popover text-popover-foreground z-50 w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',\n          props.class,\n        )\n      \"\n    >\n      <slot />\n    </ArkPopover.Content>\n  </ArkPopover.Positioner>\n</template>\n"
-    },
-    {
-      "path": "popover/PopoverTrigger.vue",
-      "type": "registry:component",
-      "target": "components/ui/popover/PopoverTrigger.vue",
-      "content": "<script setup lang=\"ts\">\nimport { Popover as ArkPopover } from \"@ark-ui/vue/popover\";\n\ninterface Props {\n  /** 以默认插槽子元素为渲染目标，行为合并其上 */\n  asChild?: boolean;\n}\n\nconst props = defineProps<Props>();\n</script>\n\n<template>\n  <ArkPopover.Trigger :as-child=\"props.asChild\">\n    <slot />\n  </ArkPopover.Trigger>\n</template>\n"
+      "content": "<script setup lang=\"ts\">\nimport type { ClassValue } from \"clsx\";\nimport type { PropType } from \"vue\";\nimport { computed, ref, useAttrs } from \"vue\";\nimport type { PopoverRootProps } from \"@ark-ui/vue/popover\";\nimport { Popover as ArkPopover } from \"@ark-ui/vue/popover\";\nimport { cn } from \"@/lib/utils\";\n\n/** 面板相对触发器的对齐方向 */\ntype Align = \"start\" | \"center\" | \"end\";\n\n/** Ark Popover Root 的 positioning 配置（placement 含四方向 × 对齐组合） */\ntype ArkPositioning = NonNullable<PopoverRootProps[\"positioning\"]>;\ntype ArkPlacement = NonNullable<ArkPositioning[\"placement\"]>;\n\ndefineOptions({ inheritAttrs: false });\n\nconst props = defineProps({\n  /** 受控开关（配合 v-model:open）；不传时为非受控 */\n  open: { type: Boolean as PropType<boolean | undefined>, default: undefined },\n  /** 非受控时的初始开关 */\n  defaultOpen: { type: Boolean, default: false },\n  /** 首次展开才挂载面板内容 */\n  lazyMount: { type: Boolean, default: false },\n  /** 收起时卸载面板内容 */\n  unmountOnExit: { type: Boolean, default: false },\n  /** 面板相对触发器的对齐方向（默认居中）；attrs.positioning.placement 显式给出时以其为准 */\n  align: { type: String as PropType<Align>, default: \"center\" },\n  /** 追加/覆盖面板样式类（默认 w-72 可由此覆盖，如 \"w-56 p-0\"） */\n  contentClass: { type: String, default: undefined },\n  /** 透传到面板根元素上的属性（id/style/data-* 等，class 请用 contentClass） */\n  contentProps: { type: Object as PropType<Record<string, unknown>>, default: undefined },\n});\n\nconst emit = defineEmits<{ \"update:open\": [open: boolean] }>();\n\n// attrs（positioning/modal 等 Ark Root 属性）手动转发，便于与 align 合并出 positioning\nconst attrs = useAttrs();\n\n// —— 受控桥接（Dialog 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——\nconst internalOpen = ref(props.defaultOpen);\nconst isOpen = computed(() => props.open ?? internalOpen.value);\n\nfunction handleUpdate(open: boolean) {\n  internalOpen.value = open;\n  emit(\"update:open\", open);\n}\n\n// align → Ark positioning.placement（横轴对齐，主轴默认 bottom 与 Ark 原语一致）；\n// 外部经 attrs 传入的 positioning 已显式指定 placement 时以其为准，其余字段原样合并\nconst rootPositioning = computed<ArkPositioning>(() => {\n  const user = (attrs.positioning ?? {}) as ArkPositioning;\n  if (user.placement) return user;\n  const placement = (props.align === \"center\" ? \"bottom\" : `bottom-${props.align}`) as ArkPlacement;\n  return { ...user, placement };\n});\n\n// 面板样式：内置类 + contentClass + contentProps.class 三方合并（twMerge 自动去冲突，后者优先）\nconst contentClass = computed(() =>\n  cn(\n    \"bg-popover text-popover-foreground z-50 w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95\",\n    props.contentClass,\n    props.contentProps?.[\"class\"] as ClassValue,\n  ),\n);\n</script>\n\n<template>\n  <ArkPopover.Root\n    v-bind=\"attrs\"\n    :open=\"isOpen\"\n    :positioning=\"rootPositioning\"\n    :lazy-mount=\"props.lazyMount\"\n    :unmount-on-exit=\"props.unmountOnExit\"\n    @update:open=\"handleUpdate\"\n  >\n    <!-- 默认插槽即触发元素本体（asChild 语义合并到子元素，不额外包裹，原 PopoverTrigger 同款实现） -->\n    <ArkPopover.Trigger as-child>\n      <slot />\n    </ArkPopover.Trigger>\n    <ArkPopover.Positioner class=\"z-50\">\n      <ArkPopover.Content v-bind=\"props.contentProps\" :class=\"contentClass\">\n        <slot name=\"content\" />\n      </ArkPopover.Content>\n    </ArkPopover.Positioner>\n  </ArkPopover.Root>\n</template>\n"
     },
     {
       "path": "popover/index.ts",
       "type": "registry:component",
       "target": "components/ui/popover/index.ts",
-      "content": "export { default as Popover } from \"./Popover.vue\";\nexport { default as PopoverContent } from \"./PopoverContent.vue\";\nexport { default as PopoverTrigger } from \"./PopoverTrigger.vue\";\n"
+      "content": "export { default as Popover } from \"./Popover.vue\";\n"
     }
   ]
 }

@@ -1,12 +1,10 @@
 <template>
   <div class="flex flex-wrap items-center justify-center gap-3">
     <TPopover v-for="p in placements" :key="p.value" :positioning="{ placement: p.value }">
-      <TPopoverTrigger as-child>
-        <TButton variant="outline" size="sm">{{ p.label }}</TButton>
-      </TPopoverTrigger>
-      <TPopoverContent class="w-48">
+      <TButton variant="outline" size="sm">{{ p.label }}</TButton>
+      <template #content>
         <p class="text-sm">{{ p.label }}方弹出（placement: {{ p.value }}）</p>
-      </TPopoverContent>
+      </template>
     </TPopover>
   </div>
 </template>
