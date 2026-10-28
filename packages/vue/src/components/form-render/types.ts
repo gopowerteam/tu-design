@@ -101,9 +101,11 @@ export type SwitchWidgetOptions = SfcOptions<typeof Switch>;
 /**
  * radioGroup widget：单选组（值 prop 为 value）。items 为组件 required prop，
  * 显式必填（Partial 化会退化为可选）；选项字段与组件 prop 同名（命名穿透）。
+ * 注意：RadioGroup 不支持 Select 的字符串简写（无 normalize 回退，直传即崩），
+ * 此处收窄为 SelectItemOption[] 而非 WidgetItemOption[]。
  */
 export type RadioGroupWidgetOptions = Omit<SfcOptions<typeof RadioGroup>, "items"> & {
-  items: WidgetItemOption[];
+  items: SelectItemOption[];
 };
 
 /** TreeSelect / Cascader：选项 prop 原名 options，受控走 modelValue（ControlledKey 自动剔除） */
