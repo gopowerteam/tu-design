@@ -1,1 +1,1 @@
-export { default as YearPicker } from "./TYearPicker.vue";
+export { default as YearPicker } from "./YearPicker.vue";

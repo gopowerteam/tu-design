@@ -1,1 +1,1 @@
-export { default as MonthPicker } from "./TMonthPicker.vue";
+export { default as MonthPicker } from "./MonthPicker.vue";
