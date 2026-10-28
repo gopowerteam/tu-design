@@ -41,3 +41,7 @@ export * from "./components/empty";
 export * from "./components/progress";
 export * from "./components/spin";
 export * from "./components/toast";
+export * from "./components/alert-dialog";
+export * from "./components/context-menu";
+export * from "./components/drawer";
+export * from "./components/popconfirm";

@@ -9,6 +9,12 @@
       "description": "语义化警示条，支持五种变体、内置图标与可关闭交互。"
     },
     {
+      "name": "alert-dialog",
+      "title": "AlertDialog",
+      "type": "registry:ui",
+      "description": "确认弹窗单组件：v-model:open 控制显隐，title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时按钮进入 loading 并锁定 ESC/遮罩关闭，resolve 自动关闭、reject 保持打开；内容节点为 role=alertdialog。"
+    },
+    {
       "name": "avatar",
       "title": "Avatar",
       "type": "registry:ui",
@@ -57,6 +63,12 @@
       "description": "复选框：基于 Ark UI Checkbox 原语，支持标签插槽、受控/非受控与禁用。"
     },
     {
+      "name": "context-menu",
+      "title": "ContextMenu",
+      "type": "registry:ui",
+      "description": "右键菜单：单组件模式，items 描述菜单项（与 dropdown-menu 同构，含分组/标题/分隔线，支持嵌套），默认插槽为触发元素（ContextTrigger as-child，右键唤出并定位到指针处），内置键盘导航与选中回调。"
+    },
+    {
       "name": "currency-input",
       "title": "CurrencyInput",
       "type": "registry:ui",
@@ -85,6 +97,12 @@
       "title": "Dialog",
       "type": "registry:ui",
       "description": "模态对话框单组件：#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 v-model:open。"
+    },
+    {
+      "name": "drawer",
+      "title": "Drawer",
+      "type": "registry:ui",
+      "description": "抽屉单组件：从四方向滑出的侧边/顶底面板，#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Drawer 原语，进出场动画随 placement 方向自适应，含焦点圈定、Escape/遮罩关闭，支持 v-model:open。"
     },
     {
       "name": "dropdown-menu",
@@ -145,6 +163,12 @@
       "title": "PinInput",
       "type": "registry:ui",
       "description": "多格验证码输入：length 指定格数，支持 otp/mask/字符类型、焦点自动跳格与填满回调，可选分隔符插槽。"
+    },
+    {
+      "name": "popconfirm",
+      "title": "Popconfirm",
+      "type": "registry:ui",
+      "description": "气泡确认：Popover 薄壳变体单组件，默认插槽为触发元素本体（asChild），title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时确认钮 loading 并锁定关闭通道，resolve 自动关闭、reject 保持打开。"
     },
     {
       "name": "popover",

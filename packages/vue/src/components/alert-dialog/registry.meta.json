@@ -1,0 +1,5 @@
+{
+  "description": "确认弹窗单组件：v-model:open 控制显隐，title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时按钮进入 loading 并锁定 ESC/遮罩关闭，resolve 自动关闭、reject 保持打开；内容节点为 role=alertdialog。",
+  "registryDependencies": ["button", "utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

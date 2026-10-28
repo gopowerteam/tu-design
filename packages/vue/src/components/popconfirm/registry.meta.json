@@ -1,0 +1,5 @@
+{
+  "description": "气泡确认：Popover 薄壳变体单组件，默认插槽为触发元素本体（asChild），title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时确认钮 loading 并锁定关闭通道，resolve 自动关闭、reject 保持打开。",
+  "registryDependencies": ["utils", "popover", "button"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

@@ -204,6 +204,22 @@ export default defineConfig({
           items: [
             { text: "对话框 <span class='sidebar-en'>Dialog</span>", link: "/components/dialog" },
             {
+              text: "抽屉 <span class='sidebar-en'>Drawer</span>",
+              link: "/components/drawer",
+            },
+            {
+              text: "确认弹窗 <span class='sidebar-en'>AlertDialog</span>",
+              link: "/components/alert-dialog",
+            },
+            {
+              text: "气泡确认 <span class='sidebar-en'>Popconfirm</span>",
+              link: "/components/popconfirm",
+            },
+            {
+              text: "右键菜单 <span class='sidebar-en'>ContextMenu</span>",
+              link: "/components/context-menu",
+            },
+            {
               text: "下拉菜单 <span class='sidebar-en'>DropdownMenu</span>",
               link: "/components/dropdown-menu",
             },

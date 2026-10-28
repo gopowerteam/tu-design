@@ -8,6 +8,7 @@
  */
 export const COMPONENT_NAMES = [
   "Alert",
+  "AlertDialog",
   "Avatar",
   "AvatarGroup",
   "Badge",
@@ -16,10 +17,12 @@ export const COMPONENT_NAMES = [
   "Card",
   "Cascader",
   "Checkbox",
+  "ContextMenu",
   "CurrencyInput",
   "DatePicker",
   "DateRangePicker",
   "Dialog",
+  "Drawer",
   "DropdownMenu",
   "Empty",
   "Form",
@@ -37,6 +40,7 @@ export const COMPONENT_NAMES = [
   "NumberInput",
   "PasswordInput",
   "PinInput",
+  "Popconfirm",
   "Popover",
   "Progress",
   "RadioGroup",

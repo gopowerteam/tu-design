@@ -1,0 +1,22 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "context-menu",
+  "type": "registry:ui",
+  "description": "右键菜单：单组件模式，items 描述菜单项（与 dropdown-menu 同构，含分组/标题/分隔线，支持嵌套），默认插槽为触发元素（ContextTrigger as-child，右键唤出并定位到指针处），内置键盘导航与选中回调。",
+  "registryDependencies": ["utils", "dropdown-menu"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "files": [
+    {
+      "path": "context-menu/ContextMenu.vue",
+      "type": "registry:component",
+      "target": "components/ui/context-menu/ContextMenu.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { useAttrs } from \"vue\";\nimport { Menu as ArkMenu } from \"@ark-ui/vue/menu\";\nimport { cn } from \"@/lib/utils\";\n// 与 dropdown-menu 同构：items 类型与渲染逻辑直接复用其实现（单一事实来源）\nimport MenuItems from \"../dropdown-menu/MenuItems.vue\";\nimport type { MenuItemOption } from \"../dropdown-menu/types\";\n\ndefineOptions({ name: \"ContextMenu\", inheritAttrs: false });\n\nconst props = defineProps({\n  /** 菜单项描述列表，与 DropdownMenu 的 items 完全同构（item/label/separator/group 四种形态，group 可嵌套） */\n  items: { type: Array as PropType<MenuItemOption[]>, required: true },\n});\n\n// 仅暴露选中事件；开合由触发元素上的右键（contextmenu）事件驱动，ark 内部管理状态\nconst emit = defineEmits<{\n  /** 选中某个 item 时触发（对齐 DropdownMenu 的事件语义） */\n  select: [details: { value: string }];\n}>();\n\n// attrs 转发到面板元素（Root 不渲染 DOM，避免 fallthrough 警告）\nconst attrs = useAttrs();\n\nfunction handleSelect(details: { value: string }) {\n  emit(\"select\", details);\n}\n\n// 面板样式对齐 DropdownMenu 面板（token 化，暗色随主题变量自动切换）\nconst contentCls =\n  \"bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95\";\n</script>\n\n<template>\n  <ArkMenu.Root @select=\"handleSelect\">\n    <!-- 默认插槽 = 触发元素本身（ContextTrigger as-child 透传，右键唤出并定位到指针处） -->\n    <ArkMenu.ContextTrigger as-child>\n      <slot />\n    </ArkMenu.ContextTrigger>\n\n    <ArkMenu.Positioner class=\"z-50\">\n      <ArkMenu.Content v-bind=\"attrs\" :class=\"cn(contentCls)\">\n        <MenuItems :items=\"props.items\" />\n      </ArkMenu.Content>\n    </ArkMenu.Positioner>\n  </ArkMenu.Root>\n</template>\n"
+    },
+    {
+      "path": "context-menu/index.ts",
+      "type": "registry:component",
+      "target": "components/ui/context-menu/index.ts",
+      "content": "export { default as ContextMenu } from \"./ContextMenu.vue\";\n// items 类型与 dropdown-menu 同构：直接 re-export 其 MenuItemOption，保持单一事实来源\nexport type { MenuItemOption } from \"../dropdown-menu\";\n"
+    }
+  ]
+}

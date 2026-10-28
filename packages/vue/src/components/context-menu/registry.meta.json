@@ -1,0 +1,5 @@
+{
+  "description": "右键菜单：单组件模式，items 描述菜单项（与 dropdown-menu 同构，含分组/标题/分隔线，支持嵌套），默认插槽为触发元素（ContextTrigger as-child，右键唤出并定位到指针处），内置键盘导航与选中回调。",
+  "registryDependencies": ["utils", "dropdown-menu"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}

@@ -1,0 +1,5 @@
+{
+  "description": "抽屉单组件：从四方向滑出的侧边/顶底面板，#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Drawer 原语，进出场动画随 placement 方向自适应，含焦点圈定、Escape/遮罩关闭，支持 v-model:open。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
+}
