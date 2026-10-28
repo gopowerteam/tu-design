@@ -1,4 +1,28 @@
 <script setup lang="ts">
+import type { MenuItemOption } from "@tu-design/vue";
+
+const items: MenuItemOption[] = [
+  {
+    type: "group",
+    label: "账号",
+    children: [
+      { type: "item", value: "profile", label: "个人资料" },
+      { type: "item", value: "billing", label: "账单管理" },
+    ],
+  },
+  { type: "separator" },
+  {
+    type: "group",
+    label: "帮助",
+    children: [
+      { type: "item", value: "docs", label: "使用文档" },
+      { type: "item", value: "support", label: "联系支持（禁用）", disabled: true },
+    ],
+  },
+  { type: "separator" },
+  { type: "item", value: "logout", label: "退出登录" },
+];
+
 function onSelect(details: { value: string }) {
   // eslint-disable-next-line no-console
   console.log("selected:", details.value);
@@ -7,23 +31,8 @@ function onSelect(details: { value: string }) {
 
 <template>
   <div class="flex justify-center py-24">
-    <TDropdownMenu @select="onSelect">
-      <TDropdownMenuTrigger as-child>
-        <TButton variant="outline">账号菜单</TButton>
-      </TDropdownMenuTrigger>
-      <TDropdownMenuContent class="w-52">
-        <TDropdownMenuGroup label="账号">
-          <TDropdownMenuItem value="profile">个人资料</TDropdownMenuItem>
-          <TDropdownMenuItem value="billing">账单管理</TDropdownMenuItem>
-        </TDropdownMenuGroup>
-        <TDropdownMenuSeparator />
-        <TDropdownMenuGroup label="帮助">
-          <TDropdownMenuItem value="docs">使用文档</TDropdownMenuItem>
-          <TDropdownMenuItem value="support" disabled>联系支持（禁用）</TDropdownMenuItem>
-        </TDropdownMenuGroup>
-        <TDropdownMenuSeparator />
-        <TDropdownMenuItem value="logout">退出登录</TDropdownMenuItem>
-      </TDropdownMenuContent>
+    <TDropdownMenu :items="items" content-class="w-52" @select="onSelect">
+      <TButton variant="outline">账号菜单</TButton>
     </TDropdownMenu>
   </div>
 </template>

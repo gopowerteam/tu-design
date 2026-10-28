@@ -1,5 +1,5 @@
 {
-  "description": "下拉菜单：基于 Ark UI Menu 原语，含键盘导航、选中回调与分组/分隔线，Trigger 支持 asChild。",
+  "description": "下拉菜单：单组件模式，items 描述菜单项（含分组/标题/分隔线，支持嵌套），内置键盘导航与选中回调，默认插槽为触发元素（asChild 透传）。",
   "registryDependencies": ["utils"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }
