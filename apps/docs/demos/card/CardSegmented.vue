@@ -1,7 +1,12 @@
 <template>
   <div class="flex justify-center">
-    <TCard segmented class="w-full max-w-sm">
-      <TCardCover>
+    <TCard
+      segmented
+      title="分段与封面"
+      description="segmented 在分区之间显示分隔线。"
+      class="w-full max-w-sm"
+    >
+      <template #cover>
         <div
           class="relative h-28 overflow-hidden bg-gradient-to-br from-primary/25 via-primary/10 to-transparent"
         >
@@ -30,17 +35,11 @@
             </div>
           </div>
         </div>
-      </TCardCover>
-      <TCardHeader>
-        <TCardTitle>分段与封面</TCardTitle>
-        <TCardDescription>segmented 在分区之间显示分隔线。</TCardDescription>
-      </TCardHeader>
-      <TCardContent>
-        <p class="text-sm text-muted-foreground">
-          CardCover 顶部媒体区负 margin 贴边；分隔线不会出现在 Cover 下方。
-        </p>
-      </TCardContent>
-      <TCardFooter class="text-sm text-muted-foreground">Card Footer</TCardFooter>
+      </template>
+      <p class="text-sm text-muted-foreground">封面区负 margin 贴边；分隔线不会出现在封面下方。</p>
+      <template #footer>
+        <span class="text-sm text-muted-foreground">Card Footer</span>
+      </template>
     </TCard>
   </div>
 </template>

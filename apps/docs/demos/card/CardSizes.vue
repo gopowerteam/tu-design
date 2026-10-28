@@ -1,31 +1,13 @@
 <template>
   <div class="grid grid-cols-3 gap-4">
-    <TCard size="sm">
-      <TCardHeader>
-        <TCardTitle>Small</TCardTitle>
-        <TCardDescription>紧凑分区与圆角。</TCardDescription>
-      </TCardHeader>
-      <TCardContent>
-        <p class="text-sm text-muted-foreground">size="sm"</p>
-      </TCardContent>
+    <TCard size="sm" title="Small" description="紧凑分区与圆角。">
+      <p class="text-sm text-muted-foreground">size="sm"</p>
     </TCard>
-    <TCard>
-      <TCardHeader>
-        <TCardTitle>Default</TCardTitle>
-        <TCardDescription>默认尺寸。</TCardDescription>
-      </TCardHeader>
-      <TCardContent>
-        <p class="text-sm text-muted-foreground">size="default"</p>
-      </TCardContent>
+    <TCard title="Default" description="默认尺寸。">
+      <p class="text-sm text-muted-foreground">size="default"</p>
     </TCard>
-    <TCard size="lg">
-      <TCardHeader>
-        <TCardTitle>Large</TCardTitle>
-        <TCardDescription>宽松分区与大圆角。</TCardDescription>
-      </TCardHeader>
-      <TCardContent>
-        <p class="text-sm text-muted-foreground">size="lg"</p>
-      </TCardContent>
+    <TCard size="lg" title="Large" description="宽松分区与大圆角。">
+      <p class="text-sm text-muted-foreground">size="lg"</p>
     </TCard>
   </div>
 </template>

@@ -28,14 +28,8 @@ export default {
 <template>
   <TButton>确认</TButton>
   <TButton variant="outline">取消</TButton>
-  <TCard class="w-80">
-    <TCardHeader>
-      <TCardTitle>创建项目</TCardTitle>
-      <TCardDescription>一分钟内部署 tu-design 组件库。</TCardDescription>
-    </TCardHeader>
-    <TCardContent>
-      <p class="text-sm text-muted-foreground">内容</p>
-    </TCardContent>
+  <TCard class="w-80" title="创建项目" description="一分钟内部署 tu-design 组件库。">
+    <p class="text-sm text-muted-foreground">内容</p>
   </TCard>
 </template>
 ```

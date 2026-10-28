@@ -1,17 +1,11 @@
 <template>
   <div class="flex justify-center">
-    <TCard class="w-80">
-      <TCardHeader>
-        <TCardTitle>创建项目</TCardTitle>
-        <TCardDescription>一分钟内部署 tu-design 组件库。</TCardDescription>
-      </TCardHeader>
-      <TCardContent>
-        <p class="text-sm text-muted-foreground">基于 Ark UI 与 Tailwind CSS v4，开箱即用。</p>
-      </TCardContent>
-      <TCardFooter class="gap-2">
+    <TCard title="创建项目" description="一分钟内部署 tu-design 组件库。" class="w-80">
+      <p class="text-sm text-muted-foreground">基于 Ark UI 与 Tailwind CSS v4，开箱即用。</p>
+      <template #footer>
         <TButton>确认</TButton>
         <TButton variant="outline">取消</TButton>
-      </TCardFooter>
+      </template>
     </TCard>
   </div>
 </template>
