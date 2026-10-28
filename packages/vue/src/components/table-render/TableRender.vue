@@ -6,10 +6,10 @@ import { cloneVNode, computed, h, isVNode, onMounted, ref, watch } from "vue";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
+import { Popover } from "@/components/popover";
 import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/tooltip";
+import { Tooltip } from "@/components/tooltip";
 import TablePagination from "./TablePagination.vue";
 import type {
   ColumnVisibilityOptions,
@@ -156,7 +156,7 @@ if (props.definition && props.search) {
 // search 不支持运行时切换（与 FormRender definition/form 同款约定），setup 期定版即可
 const search = instance.search;
 
-// 列设置触发器的 Tooltip 受控开合（TooltipTrigger 与 PopoverTrigger 双 asChild 嵌套会吞点击）
+// 列设置触发器的 Tooltip 受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故手动控制、不嵌套触发器）
 const settingsTipOpen = ref(false);
 
 // ---- 列显隐（column visibility，R20–R26） ------------------------------------
@@ -546,20 +546,11 @@ function onCellClick(record: DataRecord, columnKey: string, index: number, event
   emit("cell-click", record, columnKey, index, event);
 }
 
-/** ellipsis: "tooltip" 的单元格内容：Trigger 承载截断内容，Content 显示完整文本。
- * VNode（render 工厂）单元格经 cloneVNode 复制进 Trigger（VNode 不可二次挂载）。 */
+/** ellipsis: "tooltip" 的单元格内容：默认插槽承载截断内容（触发元素本体，不额外包裹），content 显示完整文本。
+ * VNode（render 工厂）单元格经 cloneVNode 复制进触发位（VNode 不可二次挂载）。 */
 function tooltipCell(value: VNodeChild, text: string): VNodeChild {
   const trigger = isVNode(value) ? cloneVNode(value) : h("span", { class: "block truncate" }, text);
-  return h(
-    Tooltip,
-    { delayDuration: 0 },
-    {
-      default: () => [
-        h(TooltipTrigger, { asChild: true }, { default: () => [trigger] }),
-        h(TooltipContent, null, { default: () => text }),
-      ],
-    },
-  );
+  return h(Tooltip, { delayDuration: 0, content: text }, { default: () => [trigger] });
 }
 
 defineExpose({
@@ -595,9 +586,9 @@ defineExpose({
       />
 
       <!-- 列设置：Popover 面板（R20 最少一列 / R21 重置 / R22 不含选择列）；
-           Tooltip 受控开合（TooltipTrigger 与 PopoverTrigger 双 asChild 嵌套会吞点击，故手动控制） -->
-      <Popover v-if="showColumnSettings">
-        <PopoverTrigger as-child>
+           触发钮 Tooltip 手动受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故并列渲染、不走 hover 自动触发） -->
+      <template v-if="showColumnSettings">
+        <Popover align="end" content-class="w-56 p-0">
           <Button
             variant="ghost"
             size="icon"
@@ -624,67 +615,65 @@ defineExpose({
               <circle cx="7" cy="7" r="3" />
             </svg>
           </Button>
-        </PopoverTrigger>
-        <Tooltip :open="settingsTipOpen">
-          <TooltipContent>列设置</TooltipContent>
-        </Tooltip>
-
-        <PopoverContent align="end" class="w-56 p-0">
-          <div class="flex items-center justify-end gap-3 px-3 py-2">
-            <button
-              type="button"
-              class="text-muted-foreground hover:text-foreground cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-50"
-              :disabled="allColumnsVisible"
-              @click="selectAllColumns"
-            >
-              全选
-            </button>
-            <button
-              type="button"
-              class="text-muted-foreground hover:text-foreground cursor-pointer text-xs"
-              @click="resetColumns"
-            >
-              重置
-            </button>
-          </div>
-          <Separator />
-          <div class="max-h-64 overflow-y-auto py-1">
-            <div
-              v-for="column in columns"
-              :key="column.key"
-              data-column-item
-              :data-column-key="column.key"
-              class="hover:bg-accent/50 flex h-8 cursor-pointer items-center gap-2 px-3"
-              @click="toggleColumnVisible(column.key)"
-            >
-              <Checkbox
-                :checked="isColumnVisible(column.key)"
-                :disabled="!canHideColumn(column.key)"
-                @click.stop
-              />
-              <span class="min-w-0 flex-1 truncate">{{ column.title }}</span>
-              <!-- 有效 fixed 列（数字 width）标识 -->
-              <svg
-                v-if="column.fixed !== undefined && typeof column.width === 'number'"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                class="text-muted-foreground size-3 shrink-0"
-                aria-hidden="true"
+          <template #content>
+            <div class="flex items-center justify-end gap-3 px-3 py-2">
+              <button
+                type="button"
+                class="text-muted-foreground hover:text-foreground cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-50"
+                :disabled="allColumnsVisible"
+                @click="selectAllColumns"
               >
-                <path d="M12 17v5" />
-                <path
-                  d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"
-                />
-              </svg>
+                全选
+              </button>
+              <button
+                type="button"
+                class="text-muted-foreground hover:text-foreground cursor-pointer text-xs"
+                @click="resetColumns"
+              >
+                重置
+              </button>
             </div>
-          </div>
-        </PopoverContent>
-      </Popover>
+            <Separator />
+            <div class="max-h-64 overflow-y-auto py-1">
+              <div
+                v-for="column in columns"
+                :key="column.key"
+                data-column-item
+                :data-column-key="column.key"
+                class="hover:bg-accent/50 flex h-8 cursor-pointer items-center gap-2 px-3"
+                @click="toggleColumnVisible(column.key)"
+              >
+                <Checkbox
+                  :checked="isColumnVisible(column.key)"
+                  :disabled="!canHideColumn(column.key)"
+                  @click.stop
+                />
+                <span class="min-w-0 flex-1 truncate">{{ column.title }}</span>
+                <!-- 有效 fixed 列（数字 width）标识 -->
+                <svg
+                  v-if="column.fixed !== undefined && typeof column.width === 'number'"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  class="text-muted-foreground size-3 shrink-0"
+                  aria-hidden="true"
+                >
+                  <path d="M12 17v5" />
+                  <path
+                    d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"
+                  />
+                </svg>
+              </div>
+            </div>
+          </template>
+        </Popover>
+        <!-- 纯受控气泡（无默认插槽，不渲染触发器）：开合由触发钮 pointerenter/leave 驱动 -->
+        <Tooltip :open="settingsTipOpen" content="列设置" />
+      </template>
     </div>
 
     <!-- 滚动容器：横向滚动时 fixed 列 sticky 生效；virtual 模式兼任纵向滚动（分页条不参与滚动） -->
