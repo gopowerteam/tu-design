@@ -6,8 +6,7 @@ import { SLIDER, VALUE, bindField } from "./bind";
 
 /**
  * radioGroup widget：单选组（值 prop 为 value）。
- * 命名穿透：组件已提供 options 声明式选项 prop（内部归一化 string），整体直传，
- * widget 不再组装 RadioGroupItem。
+ * 命名穿透：选项字段为组件 required prop `items`，整体直传，widget 不做组装。
  */
 export function renderRadioGroupItem<T extends object>(
   options: RadioGroupWidgetOptions,

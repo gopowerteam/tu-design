@@ -160,14 +160,14 @@ describe("checked 形态 widgets", () => {
 });
 
 describe("value 形态 widgets", () => {
-  it("radioGroup：options 原名穿透直传 + value 回显 + update:value 写回", () => {
+  it("radioGroup：items 原名穿透直传 + value 回显 + update:value 写回", () => {
     const { wrapper, field } = makeHost("b", (ctx) =>
-      widgetRenders<{ v: string }>().radioGroup({ options: ["a", "b", "c"] })({ ...ctx, item }),
+      widgetRenders<{ v: string }>().radioGroup({ items: ["a", "b", "c"] })({ ...ctx, item }),
     );
     const group = wrapper.findComponent(RadioGroup);
     expect(group.props("value")).toBe("b");
-    // v3 命名穿透：组件新增 options prop 后，DSL 参数原名直达，widget 不做组装
-    expect(group.props("options")).toEqual(["a", "b", "c"]);
+    // v3 命名穿透：选项字段即组件 prop 名 items，DSL 参数原名直达，widget 不做组装
+    expect(group.props("items")).toEqual(["a", "b", "c"]);
     group.vm.$emit("update:value", "c");
     expect(field().state.value).toBe("c");
   });

@@ -130,7 +130,7 @@ npx tu-design add form-render
 | `invalid` / `class` / `id`                                                                | FormControl / FormItem 的 aria 与样式接线 |
 | `defaultValue` / `defaultChecked`                                                         | 与 `items.default` 单一真相源冲突         |
 
-特例：`r.input` / `r.textarea` 的 `placeholder` / `type` / `rows` 为原生 attr 透传；`r.radioGroup` / `r.treeSelect` / `r.cascader` 的选项字段为 `options`——与对应组件的选项 prop 同名（命名穿透：参数名即组件 prop 名）。极端场景仍有 `componentProps` 逃逸口兜底。
+特例：`r.input` / `r.textarea` 的 `placeholder` / `type` / `rows` 为原生 attr 透传；`r.select` / `r.radioGroup` / `r.treeSelect` / `r.cascader` 的选项字段与对应组件的选项 prop 同名（`select`/`radioGroup` 为 `items`，`treeSelect`/`cascader` 为 `options`——命名穿透：参数名即组件 prop 名）。极端场景仍有 `componentProps` 逃逸口兜底。
 
 ## 提交与重置
 

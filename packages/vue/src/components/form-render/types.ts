@@ -98,8 +98,13 @@ export type CheckboxWidgetOptions = SfcOptions<typeof Checkbox>;
 
 export type SwitchWidgetOptions = SfcOptions<typeof Switch>;
 
-/** 命名穿透：组件已提供 options 声明式选项 prop（v3 原则——原名直用，组件内部归一化 string） */
-export type RadioGroupWidgetOptions = SfcOptions<typeof RadioGroup>;
+/**
+ * radioGroup widget：单选组（值 prop 为 value）。items 为组件 required prop，
+ * 显式必填（Partial 化会退化为可选）；选项字段与组件 prop 同名（命名穿透）。
+ */
+export type RadioGroupWidgetOptions = Omit<SfcOptions<typeof RadioGroup>, "items"> & {
+  items: WidgetItemOption[];
+};
 
 /** TreeSelect / Cascader：选项 prop 原名 options，受控走 modelValue（ControlledKey 自动剔除） */
 export type TreeSelectWidgetOptions = SfcOptions<typeof TreeSelect>;
