@@ -21,16 +21,22 @@ npx tu-design add toast
 
 ## 基础用法
 
-应用入口挂载 Provider，之后任何地方调用 `useToast()`：
+在根组件挂载一次 Provider，之后任何地方调用 `useToast()`：
 
-```ts
-// main.ts
-import { createApp } from "vue";
-import { ToastProvider } from "@tu-design/vue";
-import App from "./App.vue";
+```vue
+<!-- App.vue -->
+<script setup lang="ts">
+import { useToast } from "@tu-design/vue";
 
-createApp(App).use(...).mount(...);
-// 在根组件模板中放置一次 <ToastProvider /> 即可
+const toast = useToast();
+</script>
+
+<template>
+  <!-- 应用根部挂载一次，负责渲染所有 toast -->
+  <TToastProvider />
+
+  <button @click="toast.success({ title: '已保存', description: '更改已生效' })">保存</button>
+</template>
 ```
 
 <DemoPreview file="toast/ToastDemo.vue" />
@@ -43,9 +49,13 @@ createApp(App).use(...).mount(...);
 
 ## Placement
 
-Provider 的 `placement` 设定全局默认位置；单条调用可传 `placement` 临时覆盖：
+弹出位置由 Provider 的 `placement` 统一设定：
 
 <DemoPreview file="toast/ToastPlacement.vue" />
+
+::: warning 已知限制
+上游 Ark UI Toaster 为单 region 渲染，`placement` 是 **Provider 级配置**；单条 toast 覆盖位置暂不支持，计划在后续版本引入多 region 池支持。
+:::
 
 ## Promise
 
@@ -81,7 +91,7 @@ Provider 的 `placement` 设定全局默认位置；单条调用可传 `placemen
 | `promise(promise, options, shared?)` | 跟踪 Promise 状态，返回 `{ id, unwrap }`                              |
 | `dismiss(id?)`                       | 关闭指定 toast；不传 id 关闭全部                                      |
 
-`options` 支持 `title`、`description`、`duration`、`type`、`placement`、`action: { label }`（渲染 `ActionTrigger`）等字段。
+`options` 支持 `title`、`description`、`duration`、`type`、`action: { label }`（渲染 `ActionTrigger`）等字段。
 
 ### Slots
 

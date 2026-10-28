@@ -30,6 +30,14 @@ describe("Alert", () => {
     expect(w2.find("svg").exists()).toBe(false);
   });
 
+  it("各变体图标形状互不相同（a11y：不单靠颜色区分）", () => {
+    const variants = ["default", "info", "success", "warning", "error"] as const;
+    const paths = variants.map((variant) =>
+      mount(Alert, { props: { variant } }).find("svg path").attributes("d"),
+    );
+    expect(new Set(paths).size).toBe(variants.length);
+  });
+
   it("description prop 与 default slot 均可渲染描述", () => {
     const w = mount(Alert, { props: { title: "t", description: "d" } });
     expect(w.text()).toContain("d");

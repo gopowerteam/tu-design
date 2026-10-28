@@ -27,7 +27,7 @@ npx tu-design add progress
 
 ## 语义色
 
-`type` 映射语义 token：`default` 用 primary，`info`/`success`/`warning` 用对应语义色，`error` 映射 `destructive`：
+`variant` 映射语义 token：`default` 用 primary，`info`/`success`/`warning` 用对应语义色，`error` 映射 `destructive`：
 
 <DemoPreview file="progress/ProgressTypesDemo.vue" />
 
@@ -45,7 +45,14 @@ npx tu-design add progress
 
 ## 组件结构
 
-Progress 为单组件，无子组件；内部组合 `@ark-ui/vue` 的 Progress 原语（`Root`/`Label`/`Track`/`Range`/`ValueText`）。无障碍语义由 Ark 保留：`role="progressbar"` 与 `aria-valuemin`/`aria-valuemax`/`aria-valuenow` 挂载在 Track 上，根元素携带 `data-value`/`data-state`（`loading`/`indeterminate`/`complete`）。
+Progress 为单组件，无子组件；内部组合 `@ark-ui/vue` 的 Progress 原语（`Root`/`Label`/`Track`/`Range`/`ValueText`）。
+
+## 无障碍
+
+- 无障碍语义由 Ark 保留：`role="progressbar"` 与 `aria-valuemin`/`aria-valuemax`/`aria-valuenow` 挂载在 Track 上；
+- 根元素携带 `data-value` 与 `data-state`（`loading`/`indeterminate`/`complete`），可用于状态驱动样式；
+- `label` 经 Ark `Progress.Label` 与进度条原生关联（`for` 指向根元素 id）；
+- 不确定态（`indeterminate` 或 `value` 传 `null`）时不再暴露 `aria-valuenow`。
 
 ## API
 
@@ -57,7 +64,7 @@ Progress 为单组件，无子组件；内部组合 `@ark-ui/vue` 的 Progress �
 | `max`           | `number`                                                   | `100`       | 量程上限                                       |
 | `label`         | `string`                                                   | —           | 进度标签文本                                   |
 | `show-value`    | `boolean`                                                  | `false`     | 是否显示百分比文本                             |
-| `type`          | `'default' \| 'info' \| 'success' \| 'warning' \| 'error'` | `'default'` | 语义色                                         |
+| `variant`       | `'default' \| 'info' \| 'success' \| 'warning' \| 'error'` | `'default'` | 语义变体                                       |
 | `indeterminate` | `boolean`                                                  | `false`     | 不确定态（忽略 `value`，恒以 `null` 传给 Ark） |
 | `class`         | `string`                                                   | —           | 追加/覆盖根元素样式类                          |
 

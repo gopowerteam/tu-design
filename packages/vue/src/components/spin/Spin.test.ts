@@ -10,7 +10,9 @@ describe("Spin", () => {
     expect(status.attributes("aria-busy")).toBe("true");
     expect(status.attributes("aria-label")).toBe("加载中");
     expect(status.find("svg").classes()).toContain("animate-spin");
-    expect(w.attributes("aria-busy")).toBe("true");
+    // aria-busy 只在状态元素上，根元素不重复播报；独立态不置 inert
+    expect(w.attributes("aria-busy")).toBeUndefined();
+    expect(w.attributes("inert")).toBeUndefined();
   });
 
   it("独立态：spinning=false 时不渲染任何内容", () => {
@@ -41,17 +43,30 @@ describe("Spin", () => {
     expect(overlay.classes()).toContain("absolute");
     expect(overlay.classes()).toContain("bg-background/60");
     expect(overlay.find("svg").classes()).toContain("animate-spin");
-    expect(w.attributes("aria-busy")).toBe("true");
+    // 包裹态 spinning：根元素置 inert 隔离被遮罩内容的焦点与交互
+    expect(w.attributes("inert")).toBe("");
   });
 
-  it("包裹态：spinning=false 隐藏遮罩、内容保留、aria-busy 同步为 false", () => {
+  it("包裹态：spinning=false 隐藏遮罩、内容保留、inert 解除", () => {
     const w = mount(Spin, {
       props: { spinning: false },
       slots: { default: "<p>内容区</p>" },
     });
     expect(w.text()).toContain("内容区");
     expect(w.find('[role="status"]').exists()).toBe(false);
-    expect(w.attributes("aria-busy")).toBe("false");
+    expect(w.attributes("inert")).toBeUndefined();
+  });
+
+  it("包裹态：inert 属性随 spinning 切换", async () => {
+    const w = mount(Spin, {
+      props: { spinning: true },
+      slots: { default: "<button>操作</button>" },
+    });
+    expect(w.attributes("inert")).toBe("");
+    await w.setProps({ spinning: false });
+    expect(w.attributes("inert")).toBeUndefined();
+    await w.setProps({ spinning: true });
+    expect(w.attributes("inert")).toBe("");
   });
 
   it("用户 class 合并保留", () => {

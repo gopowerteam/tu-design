@@ -58,8 +58,9 @@ Spin 不声明自定义事件，原生事件随 attrs 透传到根元素。
 
 ## 无障碍
 
-- 加载元素带 `role="status"` 与 `aria-label`（默认「加载中」，可用 `label` 覆写），屏幕阅读器会播报加载状态。
-- 根元素 `aria-busy` 始终与 `spinning` 同步；包裹态下遮罩仅在 `spinning=true` 时渲染，`spinning=false` 时 DOM 中不存在状态元素。
+- 加载元素带 `role="status"` 与 `aria-label`（默认「加载中」，可用 `label` 覆写），`aria-busy` 仅挂在该状态元素上并同步 `spinning`，屏幕阅读器会播报加载状态（根元素不重复声明，避免双重播报）。
+- 包裹态下 `spinning=true` 时根元素置 `inert`：被遮罩的内容无法聚焦、点击或滚动，Tab 焦点不会落入遮挡区域；`spinning=false` 时 `inert` 解除、内容恢复交互。
+- 遮罩仅在 `spinning=true` 时渲染，`spinning=false` 时 DOM 中不存在状态元素。
 
 ## 主题定制
 

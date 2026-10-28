@@ -79,16 +79,16 @@ describe("Progress", () => {
     w2.unmount();
   });
 
-  it("type 映射语义着色 class（default 用 primary）", () => {
+  it("variant 映射语义着色 class（default 用 primary）", () => {
     const cases = [
-      { type: undefined, expected: "bg-primary" },
-      { type: "info", expected: "bg-info" },
-      { type: "success", expected: "bg-success" },
-      { type: "warning", expected: "bg-warning" },
-      { type: "error", expected: "bg-destructive" },
+      { variant: undefined, expected: "bg-primary" },
+      { variant: "info", expected: "bg-info" },
+      { variant: "success", expected: "bg-success" },
+      { variant: "warning", expected: "bg-warning" },
+      { variant: "error", expected: "bg-destructive" },
     ] as const;
-    for (const { type, expected } of cases) {
-      const w = mountProgress({ value: 40, type });
+    for (const { variant, expected } of cases) {
+      const w = mountProgress({ value: 40, variant });
       expect(range()!.className).toContain(expected);
       w.unmount();
     }

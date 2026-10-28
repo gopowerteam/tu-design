@@ -33,7 +33,9 @@ const spinVariants = cva("text-primary", {
   },
 });
 
-// 根元素 aria-busy 始终同步 spinning；包裹态（默认插槽有内容）渲染内容 + 半透明遮罩，独立态仅渲染 spinner
+// aria-busy + aria-label 只挂在 role="status" 状态元素上（避免根/状态元素双重播报）；
+// 包裹态（默认插槽有内容）渲染内容 + 半透明遮罩，独立态仅渲染 spinner；
+// 包裹态 spinning 时根元素置 inert，阻止被遮罩内容聚焦/交互
 const slots = useSlots();
 const hasContent = computed(() => !!slots.default);
 </script>
@@ -42,7 +44,7 @@ const hasContent = computed(() => !!slots.default);
   <div
     v-if="hasContent || spinning"
     :class="cn(hasContent ? 'relative' : 'inline-flex', props.class)"
-    :aria-busy="spinning"
+    :inert="hasContent && spinning"
   >
     <slot v-if="hasContent" />
 

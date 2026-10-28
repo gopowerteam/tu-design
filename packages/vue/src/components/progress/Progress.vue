@@ -3,8 +3,8 @@ import { computed, ref } from "vue";
 import { Progress as ArkProgress } from "@ark-ui/vue/progress";
 import { cn } from "@/lib/utils";
 
-/** 语义色类型 */
-type ProgressType = "default" | "info" | "success" | "warning" | "error";
+/** 语义变体 */
+type ProgressVariant = "default" | "info" | "success" | "warning" | "error";
 
 const props = withDefaults(
   defineProps<{
@@ -16,14 +16,14 @@ const props = withDefaults(
     label?: string;
     /** 是否显示百分比文本 @default false */
     showValue?: boolean;
-    /** 语义色：default 用 primary，error 映射 destructive @default "default" */
-    type?: ProgressType;
+    /** 语义变体：default 用 primary，error 映射 destructive @default "default" */
+    variant?: ProgressVariant;
     /** 不确定态（忽略 value，恒以 null 传给 Ark） */
     indeterminate?: boolean;
     /** 追加/覆盖根元素样式类 */
     class?: string;
   }>(),
-  { max: 100, showValue: false, type: "default", indeterminate: false },
+  { max: 100, showValue: false, variant: "default", indeterminate: false },
 );
 
 const emit = defineEmits<{ "update:value": [value: number | null] }>();
@@ -41,7 +41,7 @@ function handleUpdate(value: number | null) {
   emit("update:value", value);
 }
 
-// type → 语义 token 着色（default 用 primary）
+// variant → 语义 token 着色（default 用 primary）
 const rangeClass = computed(
   () =>
     ({
@@ -50,7 +50,7 @@ const rangeClass = computed(
       success: "bg-success",
       warning: "bg-warning",
       error: "bg-destructive",
-    })[props.type],
+    })[props.variant],
 );
 </script>
 

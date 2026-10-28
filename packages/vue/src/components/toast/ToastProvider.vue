@@ -37,7 +37,7 @@ const typeClass: Record<string, string> = {
 };
 
 const rootBase =
-  "flex w-[22rem] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-md border p-4 shadow-lg duration-200 animate-in fade-in slide-in-from-bottom-2";
+  "flex w-[22rem] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-md border p-4 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[placement*=top]:data-[state=open]:slide-in-from-top-2 data-[placement*=top]:data-[state=closed]:slide-out-to-top-2 data-[placement*=bottom]:data-[state=open]:slide-in-from-bottom-2 data-[placement*=bottom]:data-[state=closed]:slide-out-to-bottom-2";
 
 const rootClass = computed(
   () => (type: string) => cn(rootBase, typeClass[type] ?? typeClass.default),

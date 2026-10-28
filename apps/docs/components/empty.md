@@ -53,9 +53,9 @@ Empty 不声明自定义事件，原生事件随 attrs 透传到根元素。
 | `icon`    | 覆盖默认空盒插画（默认内联 SVG）   |
 | `default` | 底部自定义内容区，通常放置操作按钮 |
 
-### Accessibility
+## 无障碍
 
-容器带 `role="status"`，内置插画 SVG 标记 `aria-hidden="true"`。
+容器带 `role="status"`，内置插画 SVG 已标记 `aria-hidden="true"`，对屏幕阅读器隐藏装饰性图形。
 
 ## 主题定制
 

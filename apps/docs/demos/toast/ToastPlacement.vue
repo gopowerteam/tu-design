@@ -6,12 +6,15 @@
         :key="p.value"
         variant="outline"
         size="sm"
-        @click="toast.info({ title: `位置：${p.value}`, placement: p.value })"
+        @click="toast.info({ title: `弹出位置：${p.label}` })"
       >
         {{ p.label }}
       </TButton>
     </div>
-    <p class="text-xs text-muted-foreground">单条 toast 可通过 placement 覆盖 Provider 默认位置</p>
+    <p class="text-xs text-muted-foreground">
+      弹出位置由应用根部 <code>&lt;ToastProvider&gt;</code> 的
+      <code>placement</code> 决定（当前站点为 bottom-end）；上游渲染层暂不支持单条 toast 覆盖位置
+    </p>
   </div>
 </template>
 
