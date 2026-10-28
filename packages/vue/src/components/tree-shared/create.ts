@@ -12,7 +12,6 @@ import type {
   InputMergedKeys,
   Key,
   LevelTreeNodeMap,
-  MergedKeys,
   RawNode,
   TreeMate,
   TreeMateOptions,
