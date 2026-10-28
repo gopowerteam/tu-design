@@ -87,12 +87,11 @@ export type TextareaWidgetOptions = SfcOptions<typeof Textarea> & {
 
 /**
  * v3 命名穿透：选项字段即组件 prop 名 `items`——显式必填（Partial 化会退化为可选，
- * 缺失时 Select.vue collection 计算在首渲染崩溃）；placeholder 不透传给 Select Root
- * （Omit 在此为前向防御，组件当前无此 prop），解构后仅给 SelectValueText。
+ * 缺失时 Select.vue collection 计算在首渲染崩溃）；placeholder 已是 Select 单组件
+ * 的正式 prop，不再 Omit，渲染时做 item 级缺省回退（I1）。
  */
-export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "placeholder" | "items"> & {
+export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "items"> & {
   items: WidgetItemOption[];
-  placeholder?: string;
 };
 
 export type CheckboxWidgetOptions = SfcOptions<typeof Checkbox>;
