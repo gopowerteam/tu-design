@@ -84,7 +84,7 @@
       "name": "dropdown-menu",
       "title": "DropdownMenu",
       "type": "registry:ui",
-      "description": "下拉菜单：基于 Ark UI Menu 原语，含键盘导航、选中回调与分组/分隔线，Trigger 支持 asChild。"
+      "description": "下拉菜单：单组件模式，items 描述菜单项（含分组/标题/分隔线，支持嵌套），内置键盘导航与选中回调，默认插槽为触发元素（asChild 透传）。"
     },
     {
       "name": "form",
@@ -138,7 +138,7 @@
       "name": "popover",
       "title": "Popover",
       "type": "registry:ui",
-      "description": "气泡弹层：基于 Ark UI Popover 原语，受控/非受控开关，Trigger 支持 asChild。"
+      "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。"
     },
     {
       "name": "radio-group",
@@ -150,7 +150,7 @@
       "name": "select",
       "title": "Select",
       "type": "registry:ui",
-      "description": "下拉选择框：基于 Ark UI Select 原语，含键盘导航、选中回显与勾选指示，Trigger 支持 asChild。"
+      "description": "下拉选择框：单组件 API，传入 items 数据驱动渲染，内置触发器回显、键盘导航与勾选指示，支持 #item 插槽自定义选项。"
     },
     {
       "name": "separator",
