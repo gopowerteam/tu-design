@@ -9,8 +9,15 @@ describe("TuDesignResolver", () => {
     expect(resolver("TButton")).toEqual({ name: "Button", from: "@tu-design/vue" });
   });
 
-  it("TCardHeader 解析为 CardHeader", () => {
-    expect(resolver("TCardHeader")).toEqual({ name: "CardHeader", from: "@tu-design/vue" });
+  it("TCard 解析为 Card", () => {
+    expect(resolver("TCard")).toEqual({ name: "Card", from: "@tu-design/vue" });
+  });
+
+  it("已删除的复合子组件不再解析（单组件化收敛）", () => {
+    expect(resolver("TCardHeader")).toBeUndefined();
+    expect(resolver("TSelectTrigger")).toBeUndefined();
+    expect(resolver("TDialogTrigger")).toBeUndefined();
+    expect(resolver("TRadioGroupItem")).toBeUndefined();
   });
 
   it("拒绝无前缀组件名", () => {

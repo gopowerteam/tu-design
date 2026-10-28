@@ -36,7 +36,7 @@
       "name": "card",
       "title": "Card",
       "type": "registry:ui",
-      "description": "卡片容器族：Header/Title/Description/Content/Footer/Action/Cover，支持尺寸、视觉变体、分段分隔与可关闭。"
+      "description": "卡片容器：单组件 API，title/description 头部 + 命名插槽（cover/action/footer/header），支持尺寸、视觉变体、分段分隔与可关闭。"
     },
     {
       "name": "cascader",
@@ -78,7 +78,7 @@
       "name": "dialog",
       "title": "Dialog",
       "type": "registry:ui",
-      "description": "模态对话框：基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 asChild 与 v-model:open。"
+      "description": "模态对话框单组件：#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 v-model:open。"
     },
     {
       "name": "dropdown-menu",
