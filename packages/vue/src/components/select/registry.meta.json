@@ -1,5 +1,5 @@
 {
-  "description": "下拉选择框：基于 Ark UI Select 原语，含键盘导航、选中回显与勾选指示，Trigger 支持 asChild。",
+  "description": "下拉选择框：单组件 API，传入 items 数据驱动渲染，内置触发器回显、键盘导航与勾选指示，支持 #item 插槽自定义选项。",
   "registryDependencies": ["utils"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

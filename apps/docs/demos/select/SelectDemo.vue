@@ -1,13 +1,6 @@
 <template>
   <div class="flex justify-center">
-    <TSelect v-model="framework" :items="frameworks">
-      <TSelectTrigger class="w-64">
-        <TSelectValueText placeholder="选择框架" />
-      </TSelectTrigger>
-      <TSelectContent>
-        <TSelectItem v-for="item in frameworks" :key="item.value" :item="item" />
-      </TSelectContent>
-    </TSelect>
+    <TSelect v-model="framework" :items="frameworks" placeholder="选择框架" trigger-class="w-64" />
   </div>
 </template>
 

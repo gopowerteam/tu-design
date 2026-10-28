@@ -1,7 +1,8 @@
-import { mount } from "@vue/test-utils";
+import { mount, type DOMWrapper } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValueText } from "./index";
+import { Select } from "./index";
+import type { SelectItemOption } from "./index";
 
 const FRAMEWORKS = ["Vue", "React", "Svelte"];
 
@@ -17,27 +18,10 @@ afterEach(() => {
   document.body.querySelectorAll('[data-scope="select"]').forEach((n) => n.remove());
 });
 
-interface HostOptions {
-  props?: Record<string, unknown>;
-}
-
-function mountSelect(options: HostOptions = {}) {
-  const { props = {} } = options;
+function mountSelect(props: Record<string, unknown> = {}, slots: Record<string, unknown> = {}) {
   const Host = defineComponent({
     setup() {
-      return () =>
-        h(
-          Select,
-          { items: FRAMEWORKS, ...props },
-          {
-            default: () => [
-              h(SelectTrigger, null, () => h(SelectValueText, { placeholder: "选择框架" })),
-              h(SelectContent, null, () =>
-                FRAMEWORKS.map((f) => h(SelectItem, { item: f, key: f })),
-              ),
-            ],
-          },
-        );
+      return () => h(Select, { items: FRAMEWORKS, ...props }, slots);
     },
   });
   return mount(Host, { attachTo: document.body });
@@ -53,24 +37,27 @@ function hover(el: Element) {
   el.dispatchEvent(move);
 }
 
-describe("Select", () => {
-  it("初始显示 placeholder，点击 Trigger 打开列表", async () => {
-    const w = mountSelect();
-    expect(trigger()!.textContent).toContain("选择框架");
+async function openList(w: { find: (sel: string) => DOMWrapper<Element> }) {
+  await w.find('[data-part="trigger"]').trigger("click");
+  await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+}
 
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+describe("Select", () => {
+  it("初始显示默认 placeholder，点击 Trigger 打开列表渲染全部选项", async () => {
+    const w = mountSelect();
+    expect(trigger()!.textContent).toContain("请选择");
+
+    await openList(w);
     expect(items().length).toBe(3);
     w.unmount();
   });
 
-  it("悬停并点击选项后更新值并关闭", async () => {
+  it("placeholder 可自定义，选中后回显选中值", async () => {
     const onUpdate = vi.fn();
-    const w = mountSelect({ props: { "onUpdate:modelValue": onUpdate } });
+    const w = mountSelect({ placeholder: "选择框架", "onUpdate:modelValue": onUpdate });
+    expect(trigger()!.textContent).toContain("选择框架");
 
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
-
+    await openList(w);
     const vueItem = items().find((el) => el.textContent?.includes("Vue"))!;
     hover(vueItem);
     vueItem.click();
@@ -83,7 +70,77 @@ describe("Select", () => {
     w.unmount();
   });
 
-  it("v-model 受控回显", async () => {
+  it("v-model 双向：受控回显 + 选择后写回", async () => {
+    const value = ref("React");
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(Select, {
+            items: FRAMEWORKS,
+            modelValue: value.value,
+            "onUpdate:modelValue": (v: string) => (value.value = v),
+          });
+      },
+    });
+    const w = mount(Host, { attachTo: document.body });
+    await vi.waitFor(() => expect(trigger()!.textContent).toContain("React"));
+
+    await openList(w);
+    const svelte = items().find((el) => el.textContent?.includes("Svelte"))!;
+    hover(svelte);
+    svelte.click();
+    await vi.waitFor(() => expect(value.value).toBe("Svelte"));
+    w.unmount();
+  });
+
+  it("非受控 defaultValue 提供初始回显", async () => {
+    const w = mountSelect({ defaultValue: "Svelte" });
+    await vi.waitFor(() => expect(trigger()!.textContent).toContain("Svelte"));
+    w.unmount();
+  });
+
+  it("受控 open：open=true 恒开，点击 Trigger 仅上报 update:open", async () => {
+    const onOpenUpdate = vi.fn();
+    const w = mountSelect({ open: true, "onUpdate:open": onOpenUpdate });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+
+    await w.find('[data-part="trigger"]').trigger("click");
+    await vi.waitFor(() => expect(onOpenUpdate).toHaveBeenCalledWith(false));
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    w.unmount();
+  });
+
+  it("非受控开合：Escape 关闭列表", async () => {
+    const w = mountSelect();
+    await openList(w);
+
+    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
+    await vi.waitFor(() => {
+      const el = content();
+      expect(el === null || el.dataset.state === "closed").toBe(true);
+    });
+    w.unmount();
+  });
+
+  it("disabled 项带 data-disabled 且点击不更新值", async () => {
+    const onUpdate = vi.fn();
+    const cities: (string | SelectItemOption)[] = [
+      "杭州",
+      { label: "深圳", value: "sz", disabled: true },
+    ];
+    const w = mountSelect({ items: cities, "onUpdate:modelValue": onUpdate });
+
+    await openList(w);
+    const sz = items().find((el) => el.textContent?.includes("深圳"))!;
+    expect("disabled" in sz.dataset).toBe(true);
+
+    hover(sz);
+    sz.click();
+    expect(onUpdate).not.toHaveBeenCalled();
+    w.unmount();
+  });
+
+  it("#item 插槽逃生口：作用域含 item/label/selected，回显仍取 collection label", async () => {
     const value = ref("React");
     const Host = defineComponent({
       setup() {
@@ -96,38 +153,21 @@ describe("Select", () => {
               "onUpdate:modelValue": (v: string) => (value.value = v),
             },
             {
-              default: () => [
-                h(SelectTrigger, null, () => h(SelectValueText, { placeholder: "选择框架" })),
-                h(SelectContent, null, () =>
-                  FRAMEWORKS.map((f) => h(SelectItem, { item: f, key: f })),
-                ),
-              ],
+              item: (scope: { item: unknown; label: string; selected: boolean }) =>
+                h("span", { "data-testid": "custom-item" }, [
+                  `${scope.label}${scope.selected ? "!" : ""}`,
+                ]),
             },
           );
       },
     });
     const w = mount(Host, { attachTo: document.body });
+
+    await openList(w);
+    const rendered = items().map((el) => el.textContent);
+    expect(rendered).toEqual(["Vue", "React!", "Svelte"]);
+    // 回显与插槽解耦：ValueText 取 collection 的 label
     await vi.waitFor(() => expect(trigger()!.textContent).toContain("React"));
-
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
-    const svelte = items().find((el) => el.textContent?.includes("Svelte"))!;
-    hover(svelte);
-    svelte.click();
-    await vi.waitFor(() => expect(value.value).toBe("Svelte"));
-    w.unmount();
-  });
-
-  it("Escape 关闭列表", async () => {
-    const w = mountSelect();
-    await w.find('[data-part="trigger"]').trigger("click");
-    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
-
-    document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    await vi.waitFor(() => {
-      const el = content();
-      expect(el === null || el.dataset.state === "closed").toBe(true);
-    });
     w.unmount();
   });
 });

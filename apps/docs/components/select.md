@@ -1,11 +1,11 @@
 ---
 title: Select 选择器
-description: 下拉选择框：基于 Ark UI Select 原语，内置键盘导航、选中回显与勾选指示，Trigger 支持 asChild。
+description: 下拉选择框：单组件 API，传入 items 数据驱动渲染，内置键盘导航、选中回显与勾选指示，支持 #item 插槽自定义选项。
 ---
 
 # Select
 
-下拉选择框：基于 Ark UI Select 原语，内置键盘导航、选中回显与勾选指示。`TSelectTrigger` 支持 `asChild`。
+下拉选择框：单组件封装 Ark UI Select 原语，`items` 数据驱动渲染，内置键盘导航、选中回显与勾选指示。
 
 安装：
 
@@ -15,7 +15,7 @@ npx tu-design add select
 
 ## 基础用法
 
-`items` 声明选项（用于键盘导航与回显的 collection），面板内用 `TSelectItem` 逐项渲染：
+`items` 声明选项（对象项 `{ label, value }`），触发器回显、弹层与选项由组件内部组装：
 
 <DemoPreview file="select/SelectDemo.vue" />
 
@@ -25,37 +25,26 @@ npx tu-design add select
 
 <DemoPreview file="select/SelectStrings.vue" />
 
-## 组件结构
+## 自定义选项渲染
 
-| 组件               | 说明                                          |
-| ------------------ | --------------------------------------------- |
-| `TSelect`          | 根组件，`items` 构建 collection，管理值与开合 |
-| `TSelectTrigger`   | 触发器（内置 chevron，支持 `asChild`）        |
-| `TSelectValueText` | 选中回显（自含渲染，不接收插槽内容）          |
-| `TSelectContent`   | 弹层面板容器                                  |
-| `TSelectItem`      | 选项（文本取自 `item`，右侧勾选指示）         |
+`#item` 插槽接管单个选项的渲染，作用域提供 `item`（原始项）、`label`、`selected`；未提供时使用内置渲染（label + 右侧勾选指示）：
+
+<DemoPreview file="select/SelectCustomItem.vue" />
 
 ## API
 
 ### Props
 
-#### TSelect
-
-| Prop                             | 类型                                        | 默认值  | 说明                 |
-| -------------------------------- | ------------------------------------------- | ------- | -------------------- |
-| `items`                          | `(string \| { label, value, disabled? })[]` | 必填    | 选项列表             |
-| `v-model`                        | `string`                                    | —       | 当前值；不传为非受控 |
-| `default-value`                  | `string`                                    | —       | 非受控时的初始值     |
-| `open` / `default-open`          | `boolean`                                   | —       | 弹层开合             |
-| `lazy-mount` / `unmount-on-exit` | `boolean`                                   | `false` | 内容挂载策略         |
-
-#### TSelectTrigger / TSelectItem
-
-| Prop                  | 类型                         | 默认值  | 说明               |
-| --------------------- | ---------------------------- | ------- | ------------------ |
-| `as-child`（Trigger） | `boolean`                    | `false` | 以子元素为渲染目标 |
-| `item`（Item）        | `string \| { label, value }` | 必填    | 对应选项           |
-| `class`               | `string`                     | —       | 追加/覆盖样式      |
+| Prop            | 类型                                        | 默认值     | 说明                       |
+| --------------- | ------------------------------------------- | ---------- | -------------------------- |
+| `items`         | `(string \| { label, value, disabled? })[]` | 必填       | 选项列表                   |
+| `v-model`       | `string`                                    | —          | 当前值；不传为非受控       |
+| `default-value` | `string`                                    | —          | 非受控时的初始值           |
+| `open`          | `boolean`                                   | —          | 弹层开合受控；不传为非受控 |
+| `default-open`  | `boolean`                                   | `false`    | 非受控时的初始开合         |
+| `placeholder`   | `string`                                    | `"请选择"` | 未选中时触发器的占位文案   |
+| `trigger-class` | `string`                                    | —          | 透传合并到触发器的 class   |
+| `content-class` | `string`                                    | —          | 透传合并到弹层的 class     |
 
 ### Events
 
@@ -66,18 +55,15 @@ npx tu-design add select
 
 ### Slots
 
-| 组件                               | 插槽      | 说明                                                 |
-| ---------------------------------- | --------- | ---------------------------------------------------- |
-| `TSelect`                          | `default` | 组装 `TSelectTrigger` 与 `TSelectContent`            |
-| `TSelectTrigger`                   | `default` | 触发器内容（`asChild` 时不渲染内置 chevron）         |
-| `TSelectContent`                   | `default` | 选项列表                                             |
-| `TSelectItem` / `TSelectValueText` | —         | 无插槽：Item 文本取自 `item`，ValueText 自含选中回显 |
+| 插槽    | 作用域                      | 说明                                          |
+| ------- | --------------------------- | --------------------------------------------- |
+| `#item` | `{ item, label, selected }` | 自定义选项渲染；未提供时渲染 label 与勾选指示 |
 
 ## 说明
 
 - 单选语义：`v-model` 为 `string`（Ark 内部以数组表示，包装层已转换）
-- `TSelectValueText` 自含选中回显，不要向其传插槽内容
 - 键盘 `↑`/`↓` 高亮、`Enter` 选中、`Escape` 关闭
+- `#item` 插槽只影响面板内选项的展示，触发器回显始终取选项的 `label`
 
 ## 主题定制
 
@@ -96,11 +82,6 @@ Select 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
 
 ```html
 <div style="--accent: oklch(0.9 0.06 260)">
-  <TSelect v-model="value" :items="items">
-    <TSelectTrigger />
-    <TSelectContent>
-      <TSelectItem v-for="i in items" :key="i.value" :item="i" />
-    </TSelectContent>
-  </TSelect>
+  <TSelect v-model="value" :items="items" />
 </div>
 ```
