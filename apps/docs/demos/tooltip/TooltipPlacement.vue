@@ -1,10 +1,12 @@
 <template>
   <div class="flex flex-wrap items-center justify-center gap-3">
-    <TTooltip v-for="p in placements" :key="p.value" :positioning="{ placement: p.value }">
-      <TTooltipTrigger as-child>
-        <TButton variant="outline" size="sm">{{ p.label }}</TButton>
-      </TTooltipTrigger>
-      <TTooltipContent>{{ p.label }}方弹出（placement: {{ p.value }}）</TTooltipContent>
+    <TTooltip
+      v-for="p in placements"
+      :key="p.value"
+      :positioning="{ placement: p.value }"
+      :content="`${p.label}方弹出（placement: ${p.value}）`"
+    >
+      <TButton variant="outline" size="sm">{{ p.label }}</TButton>
     </TTooltip>
   </div>
 </template>
