@@ -1,17 +1,23 @@
 <script setup lang="ts">
-import { computed, ref, useSlots } from "vue";
+import { computed, ref } from "vue";
 import { RadioGroup as ArkRadioGroup } from "@ark-ui/vue/radio-group";
 import { cn } from "@/lib/utils";
-import RadioGroupItem from "./RadioGroupItem.vue";
 
-// 声明式选项；string 快捷写法等价于 { label, value } 同值
+/** 单个选项配置项 */
 interface RadioGroupOption {
-  label: string;
+  /** 选中后写入组值的唯一标识 */
   value: string;
+  /** 选项文案 */
+  label: string;
+  /** 是否禁用该项（禁用项不响应点击且不参与键盘导航） */
   disabled?: boolean;
+  /** 追加到选项根元素的样式类 */
+  class?: string;
 }
 
 interface Props {
+  /** 选项列表（必填） */
+  items: RadioGroupOption[];
   /** 当前值（配合 v-model:value）；不传时为非受控（内部 ref 维护） */
   value?: string;
   defaultValue?: string;
@@ -25,8 +31,6 @@ interface Props {
   /** 校验无效态；zag 会级联 data-invalid 到 root/item/item-control */
   invalid?: boolean;
   orientation?: "horizontal" | "vertical";
-  /** 声明式选项；与默认插槽同时提供时插槽优先 */
-  options?: (string | RadioGroupOption)[];
   class?: string;
 }
 
@@ -34,9 +38,7 @@ const props = defineProps<Props>();
 
 const emit = defineEmits<{ "update:value": [value: string] }>();
 
-const slots = useSlots();
-
-// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Checkbox/Dialog 同款约定）
+// 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Tabs/Checkbox 同款约定）
 const internalValue = ref<string | null>(props.defaultValue ?? null);
 const currentValue = computed(() => props.value ?? internalValue.value);
 
@@ -45,17 +47,6 @@ function handleUpdate(value: string | null) {
   if (value === null) return;
   internalValue.value = value;
   emit("update:value", value);
-}
-
-// 规范化 options：string → { label, value }
-const normalizedOptions = computed<RadioGroupOption[]>(() =>
-  (props.options ?? []).map((option) =>
-    typeof option === "string" ? { label: option, value: option } : option,
-  ),
-);
-
-if (import.meta.env.DEV && slots.default && props.options?.length) {
-  console.warn("[tu-design] <RadioGroup> 默认插槽与 options 同时提供，插槽优先，options 将被忽略");
 }
 </script>
 
@@ -78,16 +69,26 @@ if (import.meta.env.DEV && slots.default && props.options?.length) {
     "
     @update:model-value="handleUpdate"
   >
-    <slot v-if="$slots.default" />
-    <template v-else>
-      <RadioGroupItem
-        v-for="option in normalizedOptions"
-        :key="option.value"
-        :value="option.value"
-        :disabled="option.disabled"
-      >
-        {{ option.label }}
-      </RadioGroupItem>
-    </template>
+    <ArkRadioGroup.Item
+      v-for="item in props.items"
+      :key="item.value"
+      :value="item.value"
+      :disabled="item.disabled"
+      :class="cn('flex items-center gap-2', item.class)"
+    >
+      <!-- 隐藏原生 input 始终渲染：name/required 等表单语义不因自定义渲染丢失 -->
+      <ArkRadioGroup.ItemHiddenInput />
+      <!-- #item 逃生口：接管圆点控件与文本的渲染；未提供时使用内置渲染 -->
+      <slot name="item" :item="item" :checked="item.value === currentValue">
+        <ArkRadioGroup.ItemControl
+          class="border-input text-primary shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 group flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]"
+        >
+          <div
+            class="bg-primary group-data-[invalid]:bg-destructive size-2 rounded-full opacity-0 transition-opacity group-data-[state=checked]:opacity-100"
+          />
+        </ArkRadioGroup.ItemControl>
+        <ArkRadioGroup.ItemText class="text-sm">{{ item.label }}</ArkRadioGroup.ItemText>
+      </slot>
+    </ArkRadioGroup.Item>
   </ArkRadioGroup.Root>
 </template>

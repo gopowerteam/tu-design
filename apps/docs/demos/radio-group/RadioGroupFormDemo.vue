@@ -2,7 +2,7 @@
 import * as v from "valibot";
 import { useForm } from "@tanstack/vue-form";
 
-const notifyOptions = [
+const notifyItems = [
   { label: "邮件通知", value: "email" },
   { label: "短信通知", value: "sms" },
 ];
@@ -29,7 +29,7 @@ const form = useForm({
             name="notify"
             required
             :invalid="field.state.meta.errors.length > 0"
-            :options="notifyOptions"
+            :items="notifyItems"
             @update:value="field.handleChange"
             @focusout="field.handleBlur"
           />
