@@ -1,5 +1,5 @@
 {
   "description": "下拉选择框：单组件 API，传入 items 数据驱动渲染，内置触发器回显、键盘导航与勾选指示，支持 #item 插槽自定义选项。",
-  "registryDependencies": ["utils"],
+  "registryDependencies": ["utils", "overlay-shared"],
   "dependencies": { "@ark-ui/vue": "catalog:" }
 }

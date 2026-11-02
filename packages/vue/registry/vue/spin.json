@@ -14,7 +14,7 @@
     },
     {
       "path": "spin/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/spin/index.ts",
       "content": "export { default as Spin } from \"./Spin.vue\";\n"
     }

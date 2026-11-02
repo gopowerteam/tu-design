@@ -9,6 +9,7 @@ import type {
 import { computed, provide, ref } from "vue";
 import { Button } from "@/components/button";
 import { FORM_KEY } from "@/components/form/context";
+import { cn } from "@/lib/utils";
 import FormRenderField from "./FormRenderField.vue";
 import { widgetRenders } from "./widgets";
 
@@ -116,7 +117,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="grid gap-4" :style="gridStyle">
+  <div :class="cn('grid gap-4', $attrs.class)" :style="gridStyle">
     <div v-for="item in visibleItems" :key="String(item.key)" :style="spanStyle(item.span)">
       <FormRenderField :item="item" :widget="widgetOf(item)" :values="valuesRef" />
     </div>

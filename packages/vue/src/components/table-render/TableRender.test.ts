@@ -459,6 +459,38 @@ describe("TableRender 渲染与交互", () => {
     expect(last.page.pageIndex).toBe(1);
   });
 
+  // 页码窗口两端各有一个「…」占位，必须各自独立渲染并在切页时正确重排
+  it("双省略号页码窗口渲染两个独立占位并随切页重排", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { wrapper, def } = makeServerRender(onLoad);
+    await flushPromises();
+
+    def().setPageIndex(5);
+    await flushPromises();
+
+    const ellipses = wrapper.findAll('[data-part="ellipsis"]');
+    expect(ellipses).toHaveLength(2);
+    expect(new Set(ellipses.map((e) => e.attributes("id"))).size).toBe(2);
+    expect(wrapper.findAll('[data-part="item"]').map((i) => i.attributes("data-index"))).toEqual([
+      "1",
+      "4",
+      "5",
+      "6",
+      "10",
+    ]);
+
+    def().setPageIndex(2);
+    await flushPromises();
+    expect(wrapper.findAll('[data-part="ellipsis"]')).toHaveLength(1);
+    expect(wrapper.findAll('[data-part="item"]').map((i) => i.attributes("data-index"))).toEqual([
+      "1",
+      "2",
+      "3",
+      "10",
+    ]);
+    wrapper.unmount();
+  });
+
   it("单页时隐藏分页条（R13）", () => {
     const { wrapper } = makeTableRender({ data: USERS.slice(0, 3) });
     expect(wrapper.find("select").exists()).toBe(false);
@@ -1099,10 +1131,10 @@ describe("TableRender 固定列（fixed）", () => {
     const { wrapper } = makeTableRender({ columns: fixedCols() });
 
     const head = wrapper.findAll("thead th");
-    // 姓名（fixed-left）：sticky left 0，表头 z 20，bg + 左组交界边框
+    // 姓名（fixed-left）：sticky left 0，表头 z 高于表体，bg + 左组交界边框
     expect(cellStyle(head[0]).position).toBe("sticky");
     expect(cellStyle(head[0]).left).toBe("0px");
-    expect(cellStyle(head[0]).zIndex).toBe("20");
+    expect(cellStyle(head[0]).zIndex).toBe("var(--z-sticky-head)");
     expect(head[0]!.classes()).toContain("bg-background");
     expect(head[0]!.classes()).toContain("border-r");
     // 年龄（普通列）：无 sticky
@@ -1111,7 +1143,7 @@ describe("TableRender 固定列（fixed）", () => {
     const tds = () => wrapper.findAll("tbody tr")[0]!.findAll("td");
     expect(cellStyle(tds()[0]).position).toBe("sticky");
     expect(cellStyle(tds()[0]).left).toBe("0px");
-    expect(cellStyle(tds()[0]).zIndex).toBe("10"); // 表体 z 低于表头
+    expect(cellStyle(tds()[0]).zIndex).toBe("var(--z-sticky)"); // 表体 z 低于表头
     expect(cellStyle(tds()[1]).position).toBe("");
     // ID（fixed-right）：sticky right 0 + 右组交界边框
     expect(cellStyle(tds()[2]).right).toBe("0px");

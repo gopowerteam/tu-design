@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref, useAttrs } from "vue";
+import { useAttrs } from "vue";
 import { Menu as ArkMenu } from "@ark-ui/vue/menu";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import MenuItems from "./MenuItems.vue";
 import type { MenuItemOption } from "./types";
 
@@ -32,13 +33,11 @@ const emit = defineEmits<{
 const attrs = useAttrs();
 
 // 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog/DatePicker 同款）
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 
 function handleSelect(details: { value: string }) {
   emit("select", details);
@@ -46,7 +45,7 @@ function handleSelect(details: { value: string }) {
 
 // 样式类（收编自原 DropdownMenuContent.vue）
 const contentCls =
-  "bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95";
+  "bg-popover text-popover-foreground z-[var(--z-overlay)] min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95";
 </script>
 
 <template>
@@ -54,7 +53,7 @@ const contentCls =
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
-    @update:open="handleUpdate"
+    @update:open="setOpen"
     @select="handleSelect"
   >
     <!-- 默认插槽 = 触发元素本身（asChild 透传，行为合并不额外包裹元素） -->
@@ -62,7 +61,7 @@ const contentCls =
       <slot />
     </ArkMenu.Trigger>
 
-    <ArkMenu.Positioner class="z-50">
+    <ArkMenu.Positioner class="z-[var(--z-overlay)]">
       <ArkMenu.Content v-bind="attrs" :class="cn(contentCls, props.contentClass)">
         <MenuItems :items="props.items">
           <template v-if="$slots.item" #item="slotProps">

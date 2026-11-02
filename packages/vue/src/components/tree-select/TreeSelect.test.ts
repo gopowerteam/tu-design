@@ -49,6 +49,19 @@ afterEach(() => {
 });
 
 describe("TreeSelect", () => {
+  it("弹层开合发出 update:open，并兼容 update:show（弃用提示）", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onOpen = vi.fn();
+    const onShow = vi.fn();
+    const w = mountTreeSelect({ "onUpdate:open": onOpen, "onUpdate:show": onShow });
+    await openPanel(w);
+    expect(onOpen).toHaveBeenCalledWith(true);
+    expect(onShow).toHaveBeenCalledWith(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("update:show 已弃用"));
+    warn.mockRestore();
+    w.unmount();
+  });
+
   it("点击触发器打开面板，展开后点击子节点回显并关闭", async () => {
     const onUpdate = vi.fn();
     const w = mountTreeSelect({ "onUpdate:modelValue": onUpdate });
@@ -335,6 +348,37 @@ describe("TreeSelect 键盘与过滤", () => {
     await vi.waitFor(() => {
       expect(nodes().map((n) => n.dataset.key)).toEqual(["a", "b"]);
     });
+    w.unmount();
+  });
+
+  // 移除标签必须走与点选同一套级联归一：纯 filter 会留下孤儿子级
+  it("勾选模式移除父级标签级联清掉子级", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTreeSelect({
+      checkable: true,
+      cascade: true,
+      defaultValue: ["a", "b", "c", "d", "e"],
+      "onUpdate:modelValue": onUpdate,
+    });
+    await w.find('[data-part="tag"][data-key="a"] [data-part="tag-remove"]').trigger("click");
+    expect(onUpdate).toHaveBeenCalledWith([]);
+    w.unmount();
+  });
+
+  // 初始化时 options 还是空树，defaultExpandAll 算出来是 []；异步数据到达后必须重算
+  it("defaultExpandAll 对异步到达的 options 生效", async () => {
+    const Host = defineComponent({
+      setup() {
+        const options = ref<TreeOption[]>([]);
+        onMounted(() => {
+          options.value = TREE;
+        });
+        return () => h(TreeSelect, { options: options.value, defaultExpandAll: true });
+      },
+    });
+    const w = mount(Host, { attachTo: document.body });
+    await openPanel(w);
+    await vi.waitFor(() => expect(nodes().length).toBe(5));
     w.unmount();
   });
 });

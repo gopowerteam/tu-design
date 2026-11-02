@@ -27,6 +27,11 @@ function mountOpen(
           {
             open: open.value,
             "onUpdate:open": (v: boolean) => (open.value = v),
+            // title 为必填 prop，h() 的字面量需自带一份合法默认值（下方 ...props 一律覆盖）
+            title: "确认",
+            confirmText: "确定",
+            cancelText: "取消",
+            destructive: false,
             ...props,
             ...listeners,
           },

@@ -13,7 +13,7 @@
     },
     {
       "path": "card/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/card/index.ts",
       "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Card } from \"./Card.vue\";\n\nexport const cardVariants = cva(\n  \"relative rounded-xl border border-border bg-card text-card-foreground shadow-xs\",\n  {\n    variants: {\n      size: {\n        sm: \"rounded-lg text-sm [&>[data-slot=card-header]]:p-4 [&>[data-slot=card-content]]:px-4 [&>[data-slot=card-footer]]:px-4\",\n        default: \"\",\n        lg: \"rounded-2xl text-base [&>[data-slot=card-header]]:p-8 [&>[data-slot=card-content]]:px-8 [&>[data-slot=card-footer]]:px-8\",\n      },\n      bordered: { true: \"\", false: \"border-0 shadow-none\" },\n      hoverable: { true: \"transition-shadow hover:shadow-md\" },\n      interactive: {\n        true: \"cursor-pointer transition-[box-shadow,translate] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0\",\n      },\n      embedded: { true: \"bg-muted/30\" },\n    },\n    defaultVariants: {\n      size: \"default\",\n      bordered: true,\n    },\n  },\n);\n\nexport type CardVariants = VariantProps<typeof cardVariants>;\n"
     }

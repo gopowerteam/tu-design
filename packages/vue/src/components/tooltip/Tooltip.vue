@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref, useSlots } from "vue";
+import { computed, useSlots } from "vue";
 import { Tooltip as ArkTooltip } from "@ark-ui/vue/tooltip";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 const props = defineProps({
   /** 提示文字；#content 插槽可覆盖以渲染富内容 */
@@ -31,13 +32,11 @@ const slots = useSlots();
 
 // open 用 default: undefined 禁用 Boolean casting，保证「未传」可辨（Dialog 同款约定）
 // 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog 同款）
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 </script>
 
 <template>
@@ -47,7 +46,7 @@ function handleUpdate(open: boolean) {
     :close-delay="props.closeDuration"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
-    @update:open="handleUpdate"
+    @update:open="setOpen"
   >
     <!-- 默认插槽即触发元素本身：Ark Trigger asChild 把行为（hover/focus、aria）合并其上，
        不额外包裹元素。省略默认插槽即为纯受控气泡（open 驱动，配合 #content） -->
@@ -55,12 +54,12 @@ function handleUpdate(open: boolean) {
       <slot />
     </ArkTooltip.Trigger>
 
-    <ArkTooltip.Positioner class="z-50">
+    <ArkTooltip.Positioner class="z-[var(--z-overlay)]">
       <ArkTooltip.Content
         v-bind="props.contentProps"
         :class="
           cn(
-            'bg-primary text-primary-foreground z-50 w-fit rounded-md px-3 py-1.5 text-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+            'bg-primary text-primary-foreground z-[var(--z-overlay)] w-fit rounded-md px-3 py-1.5 text-sm data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             props.contentClass,
           )
         "

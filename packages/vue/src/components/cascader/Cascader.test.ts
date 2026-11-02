@@ -58,6 +58,20 @@ async function openPanel(w: ReturnType<typeof mountCascader>) {
 }
 
 describe("Cascader", () => {
+  it("弹层开合发出 update:open，并兼容 update:show（弃用提示）", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const onOpen = vi.fn();
+    const onShow = vi.fn();
+    const w = mountCascader({
+      props: { "onUpdate:open": onOpen, "onUpdate:show": onShow },
+    });
+    await openPanel(w);
+    expect(onOpen).toHaveBeenCalledWith(true);
+    expect(onShow).toHaveBeenCalledWith(true);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("update:show 已弃用"));
+    warn.mockRestore();
+  });
+
   it("单选点击叶子回显路径并关闭", async () => {
     const onUpdate = vi.fn();
     const w = mountCascader({ props: { "onUpdate:modelValue": onUpdate } });
@@ -171,6 +185,22 @@ describe("Cascader", () => {
     await vi.waitFor(() => expect(rows().length).toBe(3)); // 第一列 a,x + 第二列 b
     await t().trigger("keydown", { key: "ArrowDown" }); // 列内：b 不动（跨列实现会循环跳到 a）
     await vi.waitFor(() => expect(rowOf("b")!.hasAttribute("data-active")).toBe(true));
+    w.unmount();
+  });
+
+  // 与点选同一套级联归一：纯 filter 会留下孤儿子级
+  it("勾选模式移除父级标签级联清掉子级", async () => {
+    const onUpdate = vi.fn();
+    const w = mountCascader({
+      props: {
+        checkable: true,
+        cascade: true,
+        defaultValue: ["a", "b", "c"],
+        "onUpdate:modelValue": onUpdate,
+      },
+    });
+    await w.find('[data-part="tag"][data-key="a"] [data-part="tag-remove"]').trigger("click");
+    expect(onUpdate).toHaveBeenCalledWith([]);
     w.unmount();
   });
 });

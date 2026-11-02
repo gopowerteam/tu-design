@@ -1,11 +1,24 @@
 import type { ColumnRender, ColumnRenders } from "./column-renders";
 import type { FormRenderDefinition } from "../form-render";
-import type { Table as TanstackTable } from "@tanstack/vue-table";
-import type { MaybeRefOrGetter, Ref } from "vue";
+import type { Row, Table as TanstackTable } from "@tanstack/vue-table";
+import type { MaybeRefOrGetter, Ref, VNodeChild } from "vue";
 
 /** 任意数据行（表格是弱类型数据容器，行结构由调用方的 T 决定） */
 export interface DataRecord {
   [key: string]: any;
+}
+
+/** 表体行渲染单元：TanStack Row 引用 + 可见列值矩阵（TableRender → TableBodyRow） */
+export interface TableBodyLine {
+  /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded */
+  row: Row<DataRecord>;
+  key: string;
+  index: number;
+  record: DataRecord;
+  /** 行级可选过滤（S5）：selectable 谓词交由引擎 enableRowSelection 判定 */
+  canSelect: boolean;
+  /** 可见列的值矩阵（列显隐只裁剪列；R25 状态不受影响） */
+  cells: VNodeChild[];
 }
 
 /**

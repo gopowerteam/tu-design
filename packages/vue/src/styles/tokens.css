@@ -28,6 +28,10 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
+  /* 层叠序：表体 sticky < 表头 sticky < 浮层/弹窗（同级浮层按 DOM 挂载次序叠放） */
+  --z-sticky: 10;
+  --z-sticky-head: 20;
+  --z-overlay: 50;
 }
 
 .dark {

@@ -30,38 +30,21 @@ describe("TuDesignResolver", () => {
     expect(resolver("TFoo")).toBeUndefined();
   });
 
-  it("白名单与组件库组件导出同步（排除非组件导出）", () => {
-    // 非组件值导出：utils 函数、cva variants 工厂、resolver 自身、form-render/table-render API
-    const nonComponentExports = new Set([
-      "cn",
-      "avatarVariants",
-      "avatarGroupKey",
-      "badgeVariants",
-      "buttonVariants",
-      "cardVariants",
-      "COMPONENT_NAMES",
-      "TuDesignResolver",
-      "numberOrNull",
-      "formatCurrency",
-      "parseCurrency",
-      "defineForm",
-      "useFormRender",
-      "widgetRenders",
-      "bindField",
-      "CHECKED",
-      "MODEL_VALUE",
-      "SLIDER",
-      "VALUE",
-      "defineTable",
-      "defineColumns",
-      "useTableRender",
-      "columnRenders",
-      "useToast",
-      "alertVariants",
-      "alertIconVariants",
-      "alertIconPaths",
-    ]);
-    const exported = Object.keys(lib).filter((k) => !nonComponentExports.has(k));
+  it("白名单与组件库组件导出同步（自动识别组件导出）", () => {
+    // 组件导出统一是 SFC/defineComponent 产物（setup/render/__name 特征）；函数、常量、
+    // cva 工厂与 API 导出自然排除。新增非组件导出无需维护黑名单（旧实现手维护
+    // nonComponentExports，新增导出就得改测试，容易与 resolver 漂移）。
+    const exported = Object.entries(lib)
+      .filter(([, value]) => isComponent(value))
+      .map(([name]) => name);
     expect(exported.sort()).toEqual([...COMPONENT_NAMES].sort());
   });
 });
+
+function isComponent(value: unknown): boolean {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    ("setup" in value || "render" in value || "__name" in value)
+  );
+}

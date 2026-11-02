@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import type { DateValue } from "@ark-ui/vue/date-picker";
-import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, provide, ref } from "vue";
-import { cn } from "@/lib/utils";
+import { computed, provide } from "vue";
 import { Calendar as TCalendar } from "../calendar";
-// SFC 仅 default export，必须默认导入
-import CalendarIcon from "../date-shared/CalendarIcon.vue";
-import ClearIcon from "../date-shared/ClearIcon.vue";
-import {
-  CALENDAR_IN_PICKER,
-  controlCls,
-  formatIsoMonth,
-  iconBtnCls,
-  parseIsoMonth,
-} from "../date-shared/shared";
+import PickerShell from "../date-shared/PickerShell.vue";
+import { CALENDAR_IN_PICKER, formatIsoMonth, parseIsoMonth } from "../date-shared/shared";
+import { usePickerBridge } from "../date-shared/usePickerBridge";
 
 const props = defineProps({
   /** 受控月份（"yyyy-MM"）；undefined 走内部非受控，null 表示空 */
@@ -50,17 +41,18 @@ defineOptions({ inheritAttrs: false });
 // 弹层内的 TCalendar 探测到宿主标记 → embedded 内嵌形态（纯卡片内核，不自建 Root，值归本 Picker）
 provide(CALENDAR_IN_PICKER, true);
 
-// —— 受控桥接（与 DatePicker 同款简化版：单值无 mirror 需求）——
-const internalValue = ref<string | null>(props.defaultValue ?? null);
-const selected = computed(() => {
-  const raw = props.modelValue !== undefined ? props.modelValue : internalValue.value;
-  return parseIsoMonth(raw ?? "");
+const { rootValue, isOpen, setOpen, handleValueUpdate } = usePickerBridge({
+  modelValue: () => props.modelValue,
+  defaultValue: () => props.defaultValue,
+  open: () => props.open,
+  defaultOpen: () => props.defaultOpen,
+  disabled: () => props.disabled,
+  readOnly: () => props.readOnly,
+  parse: parseIsoMonth,
+  toPublicValue: formatIsoMonth,
+  onUpdateModelValue: (value) => emit("update:modelValue", value),
+  onUpdateOpen: (open) => emit("update:open", open),
 });
-// zag value 为 DateValue[] 数组形态，单选语义收敛为 [date] | []
-const rootValue = computed<DateValue[]>(() => (selected.value ? [selected.value] : []));
-
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
 
 const minDate = computed(() => parseIsoMonth(props.min ?? ""));
 // zag 月格值继承 focusedValue 的 day（normalizeValue: focusedValue.set({month})，可能是
@@ -70,77 +62,29 @@ const maxDate = computed<DateValue | undefined>(() => {
   const anchor = parseIsoMonth(props.max ?? "");
   return anchor ? anchor.set({ day: 31 }) : undefined;
 });
-
-function handleValueUpdate(next: DateValue[]) {
-  const value = next[0] ? formatIsoMonth(next[0]) : null;
-  internalValue.value = value;
-  emit("update:modelValue", value);
-}
-
-function handleOpenUpdate(next: boolean) {
-  internalOpen.value = next;
-  emit("update:open", next);
-}
-
-// 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；
-// 显式驱动保证各环境行为一致并显式走受控 emit）
-function openFromInput() {
-  if (props.disabled || props.readOnly || isOpen.value) return;
-  handleOpenUpdate(true);
-}
 </script>
 
 <template>
-  <ArkDatePicker.Root
+  <PickerShell
+    v-bind="$attrs"
     :model-value="rootValue"
     :open="isOpen"
     :locale="props.locale"
-    :min-view="'month'"
-    :max-view="'month'"
+    min-view="month"
+    max-view="month"
     :min="minDate"
     :max="maxDate"
     :close-on-select="props.closeOnSelect"
     :read-only="props.readOnly"
     :disabled="props.disabled"
+    :invalid="props.invalid"
+    :placeholder="props.placeholder"
+    :class="props.class"
     :format="formatIsoMonth"
     :parse="parseIsoMonth"
     @update:model-value="handleValueUpdate"
-    @update:open="handleOpenUpdate"
+    @update:open="setOpen"
   >
-    <ArkDatePicker.Control
-      :class="cn(controlCls, props.class)"
-      :data-invalid="props.invalid ? '' : undefined"
-    >
-      <ArkDatePicker.Input
-        v-bind="$attrs"
-        :placeholder="props.placeholder"
-        :aria-invalid="props.invalid || undefined"
-        class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm tabular-nums outline-none"
-        @click="openFromInput"
-        @keydown.down.prevent="openFromInput"
-      />
-      <ArkDatePicker.ClearTrigger :class="iconBtnCls">
-        <ClearIcon />
-      </ArkDatePicker.ClearTrigger>
-      <ArkDatePicker.Trigger :class="iconBtnCls">
-        <CalendarIcon />
-      </ArkDatePicker.Trigger>
-    </ArkDatePicker.Control>
-
-    <!-- 弹层 Teleport 到 body：脱离表单 DOM——隔离外层 FormControl 的 group class
-       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患。 -->
-    <Teleport to="body">
-      <ArkDatePicker.Positioner class="z-50">
-        <ArkDatePicker.Content
-          :class="
-            cn(
-              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 rounded-md border shadow-md',
-            )
-          "
-        >
-          <TCalendar mode="month" />
-        </ArkDatePicker.Content>
-      </ArkDatePicker.Positioner>
-    </Teleport>
-  </ArkDatePicker.Root>
+    <TCalendar mode="month" />
+  </PickerShell>
 </template>

@@ -457,7 +457,6 @@ export function useTableRender<T extends DataRecord>(
 
   // visibleKeys 受控：外部变更同步投影（规范化后语义等值跳过，防回弹）
   watch(controlledVisibleKeys, (next) => {
-    console.log("DBG vk watch fired:", JSON.stringify(next));
     if (next === undefined) return;
     const normalized = normalizeVisibleKeys(next);
     if (sameVisibleKeys(normalized, visibleKeysInternal.value)) return;

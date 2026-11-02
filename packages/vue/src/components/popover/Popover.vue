@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import type { ClassValue } from "clsx";
 import type { PropType } from "vue";
-import { computed, ref, useAttrs } from "vue";
+import { computed, useAttrs } from "vue";
 import type { PopoverRootProps } from "@ark-ui/vue/popover";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 /** 面板相对触发器的对齐方向 */
 type Align = "start" | "center" | "end";
@@ -38,13 +39,11 @@ const emit = defineEmits<{ "update:open": [open: boolean] }>();
 const attrs = useAttrs();
 
 // —— 受控桥接（Dialog 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 
 // align → Ark positioning.placement（横轴对齐，主轴默认 bottom 与 Ark 原语一致）；
 // 外部经 attrs 传入的 positioning 已显式指定 placement 时以其为准，其余字段原样合并
@@ -58,7 +57,7 @@ const rootPositioning = computed<ArkPositioning>(() => {
 // 面板样式：内置类 + contentClass + contentProps.class 三方合并（twMerge 自动去冲突，后者优先）
 const contentClass = computed(() =>
   cn(
-    "bg-popover text-popover-foreground z-50 w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+    "bg-popover text-popover-foreground z-[var(--z-overlay)] w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
     props.contentClass,
     props.contentProps?.["class"] as ClassValue,
   ),
@@ -72,13 +71,13 @@ const contentClass = computed(() =>
     :positioning="rootPositioning"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
-    @update:open="handleUpdate"
+    @update:open="setOpen"
   >
     <!-- 默认插槽即触发元素本体（asChild 语义合并到子元素，不额外包裹，原 PopoverTrigger 同款实现） -->
     <ArkPopover.Trigger as-child>
       <slot />
     </ArkPopover.Trigger>
-    <ArkPopover.Positioner class="z-50">
+    <ArkPopover.Positioner class="z-[var(--z-overlay)]">
       <ArkPopover.Content v-bind="props.contentProps" :class="contentClass">
         <slot name="content" />
       </ArkPopover.Content>

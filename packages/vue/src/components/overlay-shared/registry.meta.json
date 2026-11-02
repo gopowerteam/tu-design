@@ -1,0 +1,3 @@
+{
+  "description": "弹层家族共享逻辑：受控开合桥接（useControlledBoolean）与确认 pending 语义（useConfirmPending）。"
+}

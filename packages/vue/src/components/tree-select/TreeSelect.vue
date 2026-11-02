@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, getCurrentInstance, nextTick, ref, watch } from "vue";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import ChevronIcon from "../tree-shared/ChevronIcon.vue";
 import ClearIcon from "../tree-shared/ClearIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
@@ -55,9 +56,15 @@ const props = defineProps({
 
 const emit = defineEmits<{
   "update:modelValue": [value: Key | Key[] | undefined];
+  /** @deprecated 请改用 update:open（v-model:open）；下一个 minor 移除 */
   "update:show": [open: boolean];
+  "update:open": [open: boolean];
   "update:expandedKeys": [keys: Key[]];
 }>();
+
+if (import.meta.env.DEV && getCurrentInstance()?.vnode.props?.["onUpdate:show"]) {
+  console.warn("[tu-design] <TreeSelect> update:show 已弃用，请改用 update:open（v-model:open）。");
+}
 
 // —— 受控桥接（Select/DatePicker 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——
 const internalValue = ref<Key | Key[] | undefined>(props.defaultValue);
@@ -74,6 +81,18 @@ const internalExpanded = ref<Key[]>(
     : [...props.defaultExpandedKeys],
 );
 const expandedKeys = computed<Key[]>(() => props.expandedKeys ?? internalExpanded.value);
+
+// defaultExpandAll 只在 options 首次非空时播种：首次计算时异步数据通常还是空树
+let expandAllSeeded = !props.defaultExpandAll || treeMate.value.treeNodes.length > 0;
+watch(
+  () => props.options,
+  () => {
+    if (expandAllSeeded || !props.defaultExpandAll || props.expandedKeys !== undefined) return;
+    if (treeMate.value.treeNodes.length === 0) return;
+    expandAllSeeded = true;
+    internalExpanded.value = treeMate.value.getNonLeafKeys({ preserveGroup: true });
+  },
+);
 
 function handleExpandedUpdate(keys: Key[]) {
   internalExpanded.value = keys;
@@ -159,7 +178,7 @@ function selectNode(node: TreeNode) {
     updateValue(next);
   } else {
     updateValue(node.key);
-    handleOpenUpdate(false);
+    setOpen(false);
   }
 }
 
@@ -177,9 +196,12 @@ watch(checkOptions, () => {
 });
 
 function removeTag(key: Key) {
-  const next = toArrayValue(value.value).filter((k) => k !== key);
-  internalValue.value = next;
-  emit("update:modelValue", next);
+  if (props.checkable) {
+    const merged = treeMate.value.uncheck(key, normalizeValue(value.value), checkOptions.value);
+    updateValue(merged.checkedKeys);
+    return;
+  }
+  updateValue(toArrayValue(value.value).filter((k) => k !== key));
 }
 
 const hasValue = computed(() => tags.value.length > 0);
@@ -191,18 +213,19 @@ function handleClear() {
 }
 
 // —— 弹层开合（点击/键盘 ↓ 显式驱动，保证各环境一致）——
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleOpenUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:show", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => {
+    emit("update:open", open);
+    emit("update:show", open);
+  },
+});
 
 function openFromInput() {
   if (props.disabled || isOpen.value) return;
   syncPanelWidth();
-  handleOpenUpdate(true);
+  setOpen(true);
 }
 
 // —— 面板宽度对齐触发器 ——
@@ -305,7 +328,7 @@ watch(isOpen, (open) => {
 </script>
 
 <template>
-  <ArkPopover.Root :open="isOpen" @update:open="handleOpenUpdate">
+  <ArkPopover.Root :open="isOpen" @update:open="setOpen">
     <ArkPopover.Anchor as-child>
       <div
         ref="triggerEl"
@@ -385,11 +408,11 @@ watch(isOpen, (open) => {
 
     <!-- 弹层 Teleport 到 body：脱离表单 DOM，消除 overflow 容器裁剪隐患（DatePicker 同款） -->
     <Teleport to="body">
-      <ArkPopover.Positioner class="z-50">
+      <ArkPopover.Positioner class="z-[var(--z-overlay)]">
         <ArkPopover.Content
           :class="
             cn(
-              'bg-popover text-popover-foreground z-50 rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+              'bg-popover text-popover-foreground z-[var(--z-overlay)] rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             )
           "
           :style="{ minWidth: panelMinWidth }"

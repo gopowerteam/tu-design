@@ -8,6 +8,12 @@ afterEach(() => {
 });
 
 describe("DateRangePicker", () => {
+  /**
+   * 无 modelValue 时视图月取自「今天」，用例点的是写死的 2026-10 格子，
+   * 故用 defaultValue 把视图月钉死，避免跨月即失效的时间炸弹。
+   */
+  const OCT = ["2026-10-01", "2026-10-02"];
+
   /** 受控 open 挂载并等待弹层内容挂到 body（portal） */
   async function openPicker(props: Record<string, unknown> = {}) {
     const w = mount(DateRangePicker, { props: { open: true, ...props }, attachTo: document.body });
@@ -58,7 +64,7 @@ describe("DateRangePicker", () => {
 
   it("点起点再点终点 → emit 有序 [ISO, ISO] 元组", async () => {
     const onUpdate = vi.fn();
-    const w = await openPicker({ "onUpdate:modelValue": onUpdate });
+    const w = await openPicker({ defaultValue: OCT, "onUpdate:modelValue": onUpdate });
     cell("2026-10-09").click();
     await w.vm.$nextTick();
     cell("2026-10-15").click();
@@ -69,7 +75,7 @@ describe("DateRangePicker", () => {
 
   it("乱序点选（先终点后起点）→ emit 仍按 start ≤ end 归一", async () => {
     const onUpdate = vi.fn();
-    const w = await openPicker({ "onUpdate:modelValue": onUpdate });
+    const w = await openPicker({ defaultValue: OCT, "onUpdate:modelValue": onUpdate });
     cell("2026-10-15").click();
     await w.vm.$nextTick();
     cell("2026-10-09").click();
@@ -80,7 +86,7 @@ describe("DateRangePicker", () => {
 
   it("mirror 回归锁：受控父组件不回显时，pending start 不丢、第二次点击仍完成选择", async () => {
     const onUpdate = vi.fn();
-    const w = await openPicker({ "onUpdate:modelValue": onUpdate });
+    const w = await openPicker({ defaultValue: OCT, "onUpdate:modelValue": onUpdate });
     cell("2026-10-09").click();
     await w.vm.$nextTick();
     cell("2026-10-15").click();
@@ -142,7 +148,7 @@ describe("DateRangePicker", () => {
 
   it("closeOnSelect：选起点不关弹层，选终点才关", async () => {
     const onOpen = vi.fn();
-    const w = await openPicker({ "onUpdate:open": onOpen });
+    const w = await openPicker({ defaultValue: OCT, "onUpdate:open": onOpen });
     cell("2026-10-09").click();
     await w.vm.$nextTick();
     expect(onOpen).not.toHaveBeenCalledWith(false);

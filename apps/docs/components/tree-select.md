@@ -55,11 +55,11 @@ TreeSelect 为单组件，无子组件对外导出（树面板由内部 `TreePan
 
 ### Events
 
-| 事件                   | 载荷                        | 说明                                        |
-| ---------------------- | --------------------------- | ------------------------------------------- |
-| `update:model-value`   | `Key \| Key[] \| undefined` | 值变化；清空单选为 `undefined`，多选为 `[]` |
-| `update:show`          | `boolean`                   | 弹层开合                                    |
-| `update:expanded-keys` | `Key[]`                     | 展开变化                                    |
+| 事件                   | 载荷                        | 说明                                                         |
+| ---------------------- | --------------------------- | ------------------------------------------------------------ |
+| `update:model-value`   | `Key \| Key[] \| undefined` | 值变化；清空单选为 `undefined`，多选为 `[]`                  |
+| `update:open`          | `boolean`                   | 弹层开合（`v-model:open`）；`update:show` 为兼容别名，已弃用 |
+| `update:expanded-keys` | `Key[]`                     | 展开变化                                                     |
 
 ### Slots
 

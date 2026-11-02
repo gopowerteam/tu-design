@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
 import { computed } from "vue";
+import { cn } from "@/lib/utils";
 import ChevronIcon from "../tree-shared/ChevronIcon.vue";
 import type { Key, TreeNode } from "../tree-shared";
 import type { TreeOption } from "../tree-shared";
@@ -31,31 +32,35 @@ function label(node: TreeNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 
+// 每节点渲染都会查选中/展开/勾选态：先 Set 化，避免对数组逐项 includes 的 O(n·k)
+const selectedSet = computed(() => new Set(props.selectedKeys));
+const expandedSet = computed(() => new Set(props.expandedKeys));
+const checkedSet = computed(() => new Set(props.checkedKeys));
+const indeterminateSet = computed(() => new Set(props.indeterminateKeys));
+
 function hasChildren(node: TreeNode): boolean {
   return !node.isLeaf && !!node.children?.length;
 }
 
 function isExpanded(node: TreeNode): boolean {
-  return hasChildren(node) && props.expandedKeys.includes(node.key);
+  return hasChildren(node) && expandedSet.value.has(node.key);
 }
 
 function isSelected(node: TreeNode): boolean {
-  return props.checkable
-    ? props.checkedKeys.includes(node.key)
-    : props.selectedKeys.includes(node.key);
+  return props.checkable ? checkedSet.value.has(node.key) : selectedSet.value.has(node.key);
 }
 
 function isChecked(node: TreeNode): boolean {
-  return props.checkedKeys.includes(node.key);
+  return checkedSet.value.has(node.key);
 }
 
 function isIndeterminate(node: TreeNode): boolean {
-  return props.indeterminateKeys.includes(node.key);
+  return indeterminateSet.value.has(node.key);
 }
 </script>
 
 <template>
-  <div class="max-h-[280px] overflow-auto p-1" role="tree">
+  <div :class="cn('max-h-[280px] overflow-auto p-1', $attrs.class)" role="tree">
     <div
       v-for="node in nodes"
       :key="node.key"

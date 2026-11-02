@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
 import { computed } from "vue";
+import { cn } from "@/lib/utils";
 import type { Key } from "./interface";
 
 const props = defineProps({
@@ -27,7 +28,7 @@ const overflow = computed(() =>
 </script>
 
 <template>
-  <span class="flex min-w-0 flex-1 flex-wrap items-center gap-1">
+  <span :class="cn('flex min-w-0 flex-1 flex-wrap items-center gap-1', $attrs.class)">
     <span
       v-for="v in shown"
       :key="v.key"

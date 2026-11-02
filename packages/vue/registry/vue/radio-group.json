@@ -14,7 +14,7 @@
     },
     {
       "path": "radio-group/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/radio-group/index.ts",
       "content": "export { default as RadioGroup } from \"./RadioGroup.vue\";\n"
     }

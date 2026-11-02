@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import type { PropType } from "vue";
-import { computed, nextTick, ref, watch } from "vue";
+import { computed, getCurrentInstance, nextTick, ref, watch } from "vue";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import ChevronIcon from "../tree-shared/ChevronIcon.vue";
 import ClearIcon from "../tree-shared/ClearIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
@@ -57,8 +58,14 @@ const props = defineProps({
 
 const emit = defineEmits<{
   "update:modelValue": [value: Key | Key[] | undefined];
+  /** @deprecated 请改用 update:open（v-model:open）；下一个 minor 移除 */
   "update:show": [open: boolean];
+  "update:open": [open: boolean];
 }>();
+
+if (import.meta.env.DEV && getCurrentInstance()?.vnode.props?.["onUpdate:show"]) {
+  console.warn("[tu-design] <Cascader> update:show 已弃用，请改用 update:open（v-model:open）。");
+}
 
 // attrs（id/aria-*）转发给触发器，保证 TLabel/TFormControl 关联
 defineOptions({ inheritAttrs: false });
@@ -100,18 +107,19 @@ watch(
 );
 
 // —— 弹层开合（点击/键盘 ↓ 显式驱动，保证各环境一致）——
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleOpenUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:show", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => {
+    emit("update:open", open);
+    emit("update:show", open);
+  },
+});
 
 function openFromInput() {
   if (props.disabled || isOpen.value) return;
   syncPanelWidth();
-  handleOpenUpdate(true);
+  setOpen(true);
 }
 
 // —— 面板宽度对齐触发器 ——
@@ -131,6 +139,14 @@ function handleClear() {
 }
 
 function removeTag(key: Key) {
+  if (props.checkable) {
+    const merged = treeMate.value.uncheck(key, toArrayValue(value.value), {
+      cascade: props.cascade,
+      checkStrategy: props.checkStrategy,
+    });
+    commitValue(merged.checkedKeys);
+    return;
+  }
   commitValue(selectedKeys.value.filter((k) => k !== key));
 }
 
@@ -148,8 +164,10 @@ const columns = computed<TreeNode[][]>(() => {
   return result;
 });
 
+const expandedPathSet = computed(() => new Set(expandedPath.value));
+
 function isExpanded(node: TreeNode): boolean {
-  return expandedPath.value.includes(node.key);
+  return expandedPathSet.value.has(node.key);
 }
 
 function handleExpand(node: TreeNode) {
@@ -184,7 +202,7 @@ function handleSelect(node: TreeNode) {
     return;
   }
   commitValue(node.key);
-  handleOpenUpdate(false);
+  setOpen(false);
 }
 
 // —— 回显：showPath 拼 keyPath 标签 ——
@@ -291,7 +309,7 @@ watch(isOpen, (open) => {
 </script>
 
 <template>
-  <ArkPopover.Root :open="isOpen" @update:open="handleOpenUpdate">
+  <ArkPopover.Root :open="isOpen" @update:open="setOpen">
     <ArkPopover.Anchor as-child>
       <div
         ref="triggerEl"
@@ -353,7 +371,7 @@ watch(isOpen, (open) => {
         <ArkPopover.Content
           :class="
             cn(
-              'bg-popover text-popover-foreground z-50 rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+              'bg-popover text-popover-foreground z-[var(--z-overlay)] rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             )
           "
           :style="{ minWidth: panelMinWidth }"

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { Drawer as ArkDrawer } from "@ark-ui/vue/drawer";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 type Placement = "top" | "right" | "bottom" | "left";
 type Size = "sm" | "default" | "lg";
@@ -34,17 +35,15 @@ const emit = defineEmits<{ "update:open": [open: boolean] }>();
 
 // 对 Root 恒走受控模式（open 恒为布尔）：非受控语义由内部 ref 实现，
 // 与 Dialog 同款桥接，两种模式行为一致。
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 
 /** 关闭抽屉（#footer 作用域插槽注入） */
 function close() {
-  handleUpdate(false);
+  setOpen(false);
 }
 
 // 标题/描述有任一来源（props 或插槽）时才渲染头部区块
@@ -95,7 +94,7 @@ const isLateral = computed(() => props.placement === "left" || props.placement =
 // 侧向：基础 w-full（移动端全宽）+ sm: 断点档位宽度；顶/底向：基础 h-full + sm: 档位高度
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[var(--z-overlay)] flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
     config.value.content,
     isLateral.value
       ? cn("w-full", config.value.sizes[props.size])
@@ -110,16 +109,16 @@ const contentClass = computed(() =>
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
-    @update:open="handleUpdate"
+    @update:open="setOpen"
   >
     <ArkDrawer.Trigger v-if="$slots.trigger" as-child>
       <slot name="trigger" />
     </ArkDrawer.Trigger>
 
     <ArkDrawer.Backdrop
-      class="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
-    <ArkDrawer.Positioner :class="cn('fixed inset-0 z-50 flex', config.positioner)">
+    <ArkDrawer.Positioner :class="cn('fixed inset-0 z-[var(--z-overlay)] flex', config.positioner)">
       <ArkDrawer.Content :class="contentClass">
         <div v-if="hasHeader || $slots.title || $slots.description" class="flex flex-col gap-1.5">
           <ArkDrawer.Title

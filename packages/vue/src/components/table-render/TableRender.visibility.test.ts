@@ -373,6 +373,45 @@ describe("TableRender 列显隐（column visibility）", () => {
     wrapper.unmount();
   });
 
+  it("勾选框本身可切换列（此前只有整行可点，勾选框是死控件）", async () => {
+    const wrapper = mount(TableRender, {
+      props: { rowKey: "id", columns: baseColumns(), data: USERS.slice(0, 3) },
+      attachTo: document.body,
+    });
+    await flushPromises();
+    await openColumnSettings(wrapper);
+    const control = popoverContent()!.querySelector<HTMLElement>(
+      '[data-column-key="name"] [data-part="control"]',
+    );
+    if (!control) throw new Error("面板中找不到 name 列的勾选框");
+    control.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    await flushPromises();
+    expect(headerTexts(wrapper)).toEqual(["年龄"]);
+    wrapper.unmount();
+  });
+
+  it("受控 visibleKeys 变更不产生调试输出", async () => {
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const visibleKeys = ref<string[]>(["name", "age"]);
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(TableRender, {
+            rowKey: "id",
+            columns: baseColumns(),
+            data: USERS.slice(0, 3),
+            visibleKeys: visibleKeys.value,
+          });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+    visibleKeys.value = ["age"];
+    await flushPromises();
+    expect(log).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
   it("columnSettings: false：不渲染触发器，受控 visibleKeys 仍生效", async () => {
     const wrapper = mount(TableRender, {
       props: {

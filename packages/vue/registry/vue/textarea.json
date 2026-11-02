@@ -13,7 +13,7 @@
     },
     {
       "path": "textarea/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/textarea/index.ts",
       "content": "export { default as Textarea } from \"./Textarea.vue\";\n"
     }

@@ -14,7 +14,7 @@
     },
     {
       "path": "progress/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/progress/index.ts",
       "content": "export { default as Progress } from \"./Progress.vue\";\n"
     }

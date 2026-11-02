@@ -13,7 +13,7 @@
     },
     {
       "path": "avatar-group/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/avatar-group/index.ts",
       "content": "export { default as AvatarGroup } from \"./AvatarGroup.vue\";\n"
     }

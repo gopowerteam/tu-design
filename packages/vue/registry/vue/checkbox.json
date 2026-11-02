@@ -14,7 +14,7 @@
     },
     {
       "path": "checkbox/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/checkbox/index.ts",
       "content": "export { default as Checkbox } from \"./Checkbox.vue\";\n"
     }

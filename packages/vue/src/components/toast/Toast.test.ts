@@ -115,3 +115,33 @@ describe("ToastProvider", () => {
     w.unmount();
   });
 });
+
+// Provider 重挂载（HMR / v-if 路由切换 / 多应用）不得换掉 store：
+// 换 store 会丢队列，且先前 create() 返回的 id 在 dismiss/update 时全部指向不存在的 toast。
+describe("ToastProvider store 生命周期", () => {
+  it("同配置重挂载复用 store：先前 toast 与 id 仍有效", async () => {
+    const w1 = mount(ToastProvider);
+    const store = __getInternalToaster();
+    const id = useToast().success({ title: "留存", duration: 60_000 });
+    expect(store.getCount()).toBe(1);
+
+    w1.unmount();
+    const w2 = mount(ToastProvider);
+
+    expect(__getInternalToaster()).toBe(store);
+    expect(__getInternalToaster().getCount()).toBe(1);
+    useToast().dismiss(id);
+    w2.unmount();
+  });
+
+  it("配置变更才重建 store", async () => {
+    const w1 = mount(ToastProvider);
+    const first = __getInternalToaster();
+    w1.unmount();
+
+    const w2 = mount(ToastProvider, { props: { max: 9 } });
+    expect(__getInternalToaster()).not.toBe(first);
+    expect(__getInternalToaster().attrs.max).toBe(9);
+    w2.unmount();
+  });
+});

@@ -56,13 +56,13 @@
     },
     {
       "path": "form/context.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/form/context.ts",
       "content": "import type { AnyFieldApi, FormApi, VueFormApi } from \"@tanstack/vue-form\";\nimport type { ComputedRef, InjectionKey, Ref, ShallowRef } from \"vue\";\n\n/** useForm() 返回实例的宽松形态（provide/inject 边界会擦除泛型，any 化是契约） */\n/* prettier-ignore */\nexport type FormInstance =\n  FormApi<any, any, any, any, any, any, any, any, any, any, any, any> &\n  VueFormApi<any, any, any, any, any, any, any, any, any, any, any, any>;\n\n/** FormField 内部经 form.Field 插槽才能拿到 field 实例，用 ShallowRef 承载 provide 时序 */\nexport interface FieldContext {\n  field: ShallowRef<AnyFieldApi | undefined>;\n  name: string;\n}\n\n/** FormItem 提供给 FormLabel/FormControl/FormDescription/FormMessage 的静态 id 与 presence 上下文 */\nexport interface FormItemContext {\n  name: string;\n  /** 实例级唯一控件 id（useId 前缀 + 字段名），label/控件/aria 均由它派生 */\n  controlId: string;\n  descriptionId: string;\n  messageId: string;\n  hasDescription: Ref<boolean>;\n  hasMessage: Ref<boolean>;\n  isInvalid: ComputedRef<boolean>;\n}\n\nexport const FORM_KEY: InjectionKey<FormInstance> = Symbol(\"tu-form\");\nexport const FIELD_KEY: InjectionKey<FieldContext> = Symbol(\"tu-form-field\");\nexport const FORM_ITEM_KEY: InjectionKey<FormItemContext> = Symbol(\"tu-form-item\");\n"
     },
     {
       "path": "form/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/form/index.ts",
       "content": "export { default as Form } from \"./Form.vue\";\nexport { default as FormControl } from \"./FormControl.vue\";\nexport { default as FormDescription } from \"./FormDescription.vue\";\nexport { default as FormField } from \"./FormField.vue\";\nexport { default as FormItem } from \"./FormItem.vue\";\nexport { default as FormLabel } from \"./FormLabel.vue\";\nexport { default as FormMessage } from \"./FormMessage.vue\";\nexport { default as FormSubscribe } from \"./FormSubscribe.vue\";\n"
     }

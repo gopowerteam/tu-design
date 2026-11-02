@@ -13,7 +13,7 @@
     },
     {
       "path": "label/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/label/index.ts",
       "content": "export { default as Label } from \"./Label.vue\";\n"
     }

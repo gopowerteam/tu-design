@@ -14,7 +14,7 @@
     },
     {
       "path": "switch/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/switch/index.ts",
       "content": "export { default as Switch } from \"./Switch.vue\";\n"
     }

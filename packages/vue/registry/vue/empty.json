@@ -13,7 +13,7 @@
     },
     {
       "path": "empty/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/empty/index.ts",
       "content": "export { default as Empty } from \"./Empty.vue\";\n"
     }

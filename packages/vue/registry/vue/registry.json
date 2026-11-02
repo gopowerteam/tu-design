@@ -90,7 +90,7 @@
       "name": "date-shared",
       "title": "DateShared",
       "type": "registry:ui",
-      "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）与日历样式常量。"
+      "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）、日历样式常量与单值选择器外壳（PickerShell/usePickerBridge）。"
     },
     {
       "name": "dialog",
@@ -151,6 +151,12 @@
       "title": "NumberInput",
       "type": "registry:ui",
       "description": "数字输入框：内置加减步进按钮与数值边界，值以 number|null 受控（空值归一 null），支持 Intl 数字格式化。"
+    },
+    {
+      "name": "overlay-shared",
+      "title": "OverlayShared",
+      "type": "registry:ui",
+      "description": "弹层家族共享逻辑：受控开合桥接（useControlledBoolean）与确认 pending 语义（useConfirmPending）。"
     },
     {
       "name": "password-input",

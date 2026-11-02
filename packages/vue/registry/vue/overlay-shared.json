@@ -1,0 +1,20 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "overlay-shared",
+  "type": "registry:ui",
+  "description": "弹层家族共享逻辑：受控开合桥接（useControlledBoolean）与确认 pending 语义（useConfirmPending）。",
+  "files": [
+    {
+      "path": "overlay-shared/useConfirmPending.ts",
+      "type": "registry:lib",
+      "target": "components/ui/overlay-shared/useConfirmPending.ts",
+      "content": "import { ref, type ComponentInternalInstance } from \"vue\";\n\nexport interface ConfirmPendingOptions {\n  /** 当前组件实例：从 vnode 上取原始 onConfirm 监听器（emit 不回传返回值） */\n  instance: ComponentInternalInstance | null;\n  /** 无监听器时补发 confirm 事件 */\n  emitConfirm: () => void;\n  emitCancel: () => void;\n  /** 关闭弹层（走受控桥） */\n  close: () => void;\n}\n\n/**\n * 确认弹层公共 pending 语义：@confirm 处理器返回 Promise 时锁定关闭通道，\n * resolve 后自动关闭，reject 保持打开并退出 loading；同步处理器直接关闭。\n */\nexport function useConfirmPending(options: ConfirmPendingOptions) {\n  const loading = ref(false);\n\n  function handleConfirm() {\n    if (loading.value) return;\n    const handler = options.instance?.vnode.props?.onConfirm as\n      | ((...args: unknown[]) => unknown)\n      | undefined;\n    const result = handler?.();\n    if (!handler) options.emitConfirm();\n    if (result instanceof Promise) {\n      loading.value = true;\n      result\n        .then(() => {\n          loading.value = false;\n          options.close();\n        })\n        .catch(() => {\n          loading.value = false;\n        });\n    } else {\n      options.close();\n    }\n  }\n\n  function handleCancel() {\n    if (loading.value) return;\n    options.emitCancel();\n    options.close();\n  }\n\n  return { loading, handleConfirm, handleCancel };\n}\n"
+    },
+    {
+      "path": "overlay-shared/useControlledBoolean.ts",
+      "type": "registry:lib",
+      "target": "components/ui/overlay-shared/useControlledBoolean.ts",
+      "content": "import { computed, ref, type ComputedRef } from \"vue\";\n\nexport interface ControlledBooleanOptions {\n  /** 受控值；返回 undefined 表示非受控（内部状态接管） */\n  controlled: () => boolean | undefined;\n  /** 非受控初始值 */\n  defaultValue?: () => boolean;\n  /** 状态变更对外同步（一般 emit(\"update:open\", next)） */\n  onChange?: (next: boolean) => void;\n}\n\nexport interface ControlledBoolean {\n  isOpen: ComputedRef<boolean>;\n  setOpen: (next: boolean) => void;\n}\n\n/**\n * 业务组件惯例：Ark Root 恒走受控，非受控语义由内部 ref 实现。\n * `controlled()` 返回 undefined 时用内部值，否则永远跟随外部 prop。\n */\nexport function useControlledBoolean(options: ControlledBooleanOptions): ControlledBoolean {\n  const internal = ref(options.defaultValue?.() ?? false);\n  const isOpen = computed(() => options.controlled() ?? internal.value);\n\n  function setOpen(next: boolean) {\n    internal.value = next;\n    options.onChange?.(next);\n  }\n\n  return { isOpen, setOpen };\n}\n"
+    }
+  ]
+}

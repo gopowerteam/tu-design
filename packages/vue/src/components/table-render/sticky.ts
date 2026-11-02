@@ -1,0 +1,29 @@
+export interface StickyInfo {
+  side: "left" | "right";
+  offset: number;
+  edge: boolean;
+}
+
+export type StickyMap = Map<string, StickyInfo>;
+
+/** sticky 定位样式；head 为 true 时 z-index 高于表体（表头压住表体 sticky） */
+export function stickyStyle(sticky: StickyMap, key: string, head = false) {
+  const info = sticky.get(key);
+  if (!info) return undefined;
+  return {
+    position: "sticky" as const,
+    [info.side]: `${info.offset}px`,
+    zIndex: head ? "var(--z-sticky-head)" : "var(--z-sticky)",
+  };
+}
+
+/** sticky 底色（防滚动透出）与交界分隔边框 */
+export function stickyClass(sticky: StickyMap, key: string) {
+  const info = sticky.get(key);
+  if (!info) return undefined;
+  return [
+    "bg-background",
+    info.side === "left" && info.edge ? "border-r border-border" : "",
+    info.side === "right" && info.edge ? "border-l border-border" : "",
+  ];
+}

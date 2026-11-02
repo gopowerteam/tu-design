@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 import { createListCollection } from "@ark-ui/vue/collection";
 import { Select as ArkSelect } from "@ark-ui/vue/select";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { normalizeSelectItem, type SelectItemOption } from "./types";
 
 // modelValue 为 String 类型无 Boolean casting 问题；「未传」经 default: undefined 保持 undefined
@@ -54,13 +55,11 @@ function handleModelUpdate(next: string | string[]) {
   emit("update:modelValue", value);
 }
 
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleOpenUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 </script>
 
 <template>
@@ -69,7 +68,7 @@ function handleOpenUpdate(open: boolean) {
     :model-value="toArray(modelValue)"
     :open="isOpen"
     @update:model-value="handleModelUpdate"
-    @update:open="handleOpenUpdate"
+    @update:open="setOpen"
   >
     <!-- 触发器（收编自 SelectTrigger：内置选中回显与 chevron） -->
     <ArkSelect.Control class="w-fit">
@@ -97,11 +96,11 @@ function handleOpenUpdate(open: boolean) {
       </ArkSelect.Trigger>
     </ArkSelect.Control>
 
-    <ArkSelect.Positioner class="z-50">
+    <ArkSelect.Positioner class="z-[var(--z-overlay)]">
       <ArkSelect.Content
         :class="
           cn(
-            'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md',
+            'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-[var(--z-overlay)] max-h-96 min-w-[8rem] overflow-hidden rounded-md border shadow-md',
             props.contentClass,
           )
         "

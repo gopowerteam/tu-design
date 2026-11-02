@@ -13,7 +13,7 @@
     },
     {
       "path": "skeleton/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/skeleton/index.ts",
       "content": "export { default as Skeleton } from \"./Skeleton.vue\";\n"
     }

@@ -14,7 +14,7 @@
     },
     {
       "path": "pin-input/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/pin-input/index.ts",
       "content": "export { default as PinInput } from \"./PinInput.vue\";\n"
     }

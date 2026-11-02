@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
+import { computed } from "vue";
 import { cn } from "@/lib/utils";
 import ChevronIcon from "../tree-shared/ChevronIcon.vue";
 import type { Key, TreeNode, TreeOption } from "../tree-shared";
@@ -34,6 +35,11 @@ function labelOf(node: TreeNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 
+// 每个可见节点都会查选中/勾选态：先 Set 化，避免对数组逐项 includes 的 O(n·k)
+const selectedSet = computed(() => new Set(props.selectedKeys));
+const checkedSet = computed(() => new Set(props.checkedKeys));
+const indeterminateSet = computed(() => new Set(props.indeterminateKeys));
+
 function rowClick(node: TreeNode) {
   if (node.disabled) return;
   emit("select", node);
@@ -51,7 +57,7 @@ function toggleCheck(node: TreeNode) {
 </script>
 
 <template>
-  <div data-part="cascader-panel" class="flex overflow-x-auto">
+  <div data-part="cascader-panel" :class="cn('flex overflow-x-auto', $attrs.class)">
     <div
       v-for="(column, ci) in props.columns"
       :key="ci"
@@ -66,13 +72,13 @@ function toggleCheck(node: TreeNode) {
         data-part="tree-node"
         :data-key="node.key"
         role="option"
-        :aria-selected="props.selectedKeys.includes(node.key)"
-        :aria-checked="props.checkable ? props.checkedKeys.includes(node.key) : undefined"
+        :aria-selected="selectedSet.has(node.key)"
+        :aria-checked="props.checkable ? checkedSet.has(node.key) : undefined"
         :aria-expanded="node.children?.length ? props.isExpanded(node) : undefined"
         :aria-disabled="node.disabled || undefined"
-        :data-selected="props.selectedKeys.includes(node.key) || undefined"
-        :data-checked="props.checkedKeys.includes(node.key) || undefined"
-        :data-indeterminate="props.indeterminateKeys.includes(node.key) || undefined"
+        :data-selected="selectedSet.has(node.key) || undefined"
+        :data-checked="checkedSet.has(node.key) || undefined"
+        :data-indeterminate="indeterminateSet.has(node.key) || undefined"
         :data-active="props.activeKey === node.key || undefined"
         class="flex cursor-pointer items-center gap-1 px-3 py-1.5 text-sm outline-none hover:bg-accent data-[active]:bg-accent data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50"
         @click="rowClick(node)"
@@ -83,14 +89,14 @@ function toggleCheck(node: TreeNode) {
           data-part="checkbox"
           class="flex size-4 shrink-0 items-center justify-center rounded-sm border"
           :class="
-            props.checkedKeys.includes(node.key)
+            checkedSet.has(node.key)
               ? 'border-primary bg-primary text-primary-foreground'
               : 'border-input'
           "
           @click.stop="toggleCheck(node)"
         >
           <svg
-            v-if="props.checkedKeys.includes(node.key)"
+            v-if="checkedSet.has(node.key)"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -100,7 +106,7 @@ function toggleCheck(node: TreeNode) {
             <path d="M20 6 9 17l-5-5" />
           </svg>
           <svg
-            v-else-if="props.indeterminateKeys.includes(node.key)"
+            v-else-if="indeterminateSet.has(node.key)"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"

@@ -3,6 +3,7 @@ import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
 import { computed, inject, ref } from "vue";
+import { cn } from "@/lib/utils";
 import { CALENDAR_IN_PICKER, formatIsoDate, parseIsoDate } from "../date-shared/shared";
 import CalendarBody from "./CalendarBody.vue";
 
@@ -66,7 +67,7 @@ function handleValueUpdate(next: DateValue[]) {
     （无 Positioner：卡片非浮层，就地渲染）。
     外层 div 承接 attrs（Ark Root 不透传 attrs，实测 class/id 会丢）；w-fit 收缩包裹卡片宽度。
   -->
-  <div v-if="standalone" class="w-fit">
+  <div v-if="standalone" :class="cn('w-fit', $attrs.class)">
     <ArkDatePicker.Root
       :model-value="rootValue"
       :open="true"

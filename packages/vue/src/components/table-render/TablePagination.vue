@@ -7,6 +7,7 @@ import {
   PaginationRoot as ArkPaginationRoot,
 } from "@ark-ui/vue/pagination";
 import { computed } from "vue";
+import { cn } from "@/lib/utils";
 
 const props = defineProps<{
   /** 1-based 当前页码 */
@@ -42,7 +43,9 @@ const pages = computed<(number | string)[]>(() => {
 </script>
 
 <template>
-  <div class="flex w-full items-center justify-between gap-4 border-t p-2 text-sm">
+  <div
+    :class="cn('flex w-full items-center justify-between gap-4 border-t p-2 text-sm', $attrs.class)"
+  >
     <div class="flex items-center gap-2 text-muted-foreground">
       <span>共 {{ total }} 条</span>
       <select
@@ -70,7 +73,10 @@ const pages = computed<(number | string)[]>(() => {
         上一页
       </ArkPaginationPrevTrigger>
 
-      <template v-for="(item, index) in pages" :key="item">
+      <template
+        v-for="(item, index) in pages"
+        :key="typeof item === 'number' ? item : `gap-${index}`"
+      >
         <ArkPaginationEllipsis v-if="typeof item === 'string'" :index="index" />
         <ArkPaginationItem
           v-else

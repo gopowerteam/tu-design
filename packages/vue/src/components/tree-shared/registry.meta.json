@@ -1,4 +1,5 @@
 {
   "description": "树形数据层与共享类型（移植自 treemate v0.3.11，MIT）。",
+  "registryDependencies": ["utils"],
   "dependencies": {}
 }

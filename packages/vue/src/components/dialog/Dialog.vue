@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import { Dialog as ArkDialog } from "@ark-ui/vue/dialog";
 import { cn } from "@/lib/utils";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 // 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，
 // 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。
@@ -29,18 +30,16 @@ const emit = defineEmits<{ "update:open": [open: boolean] }>();
 
 // 对 Root 恒走受控模式（open 恒为布尔）：非受控语义由内部 ref 实现，
 // 避开 zag uncontrolled 内部状态在部分环境下不同步的问题，两种模式行为一致。
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleUpdate(open: boolean) {
-  internalOpen.value = open;
-  emit("update:open", open);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 
 /** 关闭对话框（#footer 作用域插槽注入）：走受控桥把 open 置 false，
  * 与原 TDialogClose（Ark CloseTrigger）的关闭语义等价，退出动画/焦点还原由 zag 处理 */
 function close() {
-  handleUpdate(false);
+  setOpen(false);
 }
 
 // 标题/描述有任一来源（props 或插槽）时才渲染头部区块（原 TDialogHeader 布局类）
@@ -49,7 +48,7 @@ const hasHeader = computed(() => Boolean(props.title || props.description));
 // 面板样式：内置类 + contentClass 合并（twMerge 自动去冲突，后者优先）
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-50 grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg",
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-overlay)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg",
     props.contentClass,
   ),
 );
@@ -60,7 +59,7 @@ const contentClass = computed(() =>
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
-    @update:open="handleUpdate"
+    @update:open="setOpen"
   >
     <!-- #trigger：触发元素本体（asChild 语义合并到子元素，原 TDialogTrigger 同款实现）；未提供则不渲染触发器 -->
     <ArkDialog.Trigger v-if="$slots.trigger" as-child>
@@ -68,9 +67,11 @@ const contentClass = computed(() =>
     </ArkDialog.Trigger>
 
     <ArkDialog.Backdrop
-      class="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
-    <ArkDialog.Positioner class="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <ArkDialog.Positioner
+      class="fixed inset-0 z-[var(--z-overlay)] flex items-center justify-center p-4"
+    >
       <ArkDialog.Content :class="contentClass">
         <!-- 标题/描述：#title / #description 插槽优先，回退 title/description props；皆无则不渲染对应 DOM -->
         <div

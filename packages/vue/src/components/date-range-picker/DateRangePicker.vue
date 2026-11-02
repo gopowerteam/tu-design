@@ -2,7 +2,7 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, provide, ref, shallowRef, watch } from "vue";
+import { computed, provide, shallowRef, watch } from "vue";
 import { cn } from "@/lib/utils";
 import { Calendar as TCalendar } from "../calendar";
 import CalendarIcon from "../date-shared/CalendarIcon.vue";
@@ -15,6 +15,7 @@ import {
   parseIsoDate,
   parseIsoRange,
 } from "../date-shared/shared";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 const props = defineProps({
   /** 受控值 [start, end]（"yyyy-MM-dd"，start ≤ end）；undefined 走内部非受控，null 表示空 */
@@ -103,19 +104,17 @@ if (props.modelValue === undefined && props.defaultValue) {
 const minDate = computed(() => parseIsoDate(props.min ?? ""));
 const maxDate = computed(() => parseIsoDate(props.max ?? ""));
 
-const internalOpen = ref(props.defaultOpen);
-const isOpen = computed(() => props.open ?? internalOpen.value);
-
-function handleOpenUpdate(next: boolean) {
-  internalOpen.value = next;
-  emit("update:open", next);
-}
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  defaultValue: () => props.defaultOpen,
+  onChange: (open) => emit("update:open", open),
+});
 
 // 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；
 // 显式驱动保证各环境行为一致并显式走受控 emit）
 function openFromInput() {
   if (props.disabled || props.readOnly || isOpen.value) return;
-  handleOpenUpdate(true);
+  setOpen(true);
 }
 </script>
 
@@ -138,7 +137,7 @@ function openFromInput() {
     :format="formatIsoDate"
     :parse="parseIsoDate"
     @update:model-value="handleValueUpdate"
-    @update:open="handleOpenUpdate"
+    @update:open="setOpen"
   >
     <ArkDatePicker.Control
       :class="cn(controlCls, props.class)"
@@ -185,11 +184,11 @@ function openFromInput() {
     <!-- 弹层 Teleport 到 body：脱离表单 DOM——隔离外层 FormControl 的 group class
        （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患。 -->
     <Teleport to="body">
-      <ArkDatePicker.Positioner class="z-50">
+      <ArkDatePicker.Positioner class="z-[var(--z-overlay)]">
         <ArkDatePicker.Content
           :class="
             cn(
-              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-50 rounded-md border shadow-md',
+              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-[var(--z-overlay)] rounded-md border shadow-md',
             )
           "
         >

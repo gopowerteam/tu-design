@@ -21,7 +21,8 @@
     "url": "git+https://github.com/gopowerteam/tu-design.git"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "type": "module",
   "exports": {

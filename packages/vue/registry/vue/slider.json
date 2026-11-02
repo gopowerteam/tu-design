@@ -14,7 +14,7 @@
     },
     {
       "path": "slider/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/slider/index.ts",
       "content": "export { default as Slider } from \"./Slider.vue\";\n"
     }

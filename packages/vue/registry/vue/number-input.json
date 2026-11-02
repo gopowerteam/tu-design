@@ -14,13 +14,13 @@
     },
     {
       "path": "number-input/index.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/number-input/index.ts",
       "content": "export { default as NumberInput } from \"./NumberInput.vue\";\nexport { numberOrNull } from \"./utils\";\n"
     },
     {
       "path": "number-input/utils.ts",
-      "type": "registry:component",
+      "type": "registry:lib",
       "target": "components/ui/number-input/utils.ts",
       "content": "/** Ark ValueChangeDetails → number|null（空串/NaN 归一 null，numberOrNull 为可单测的纯函数） */\nexport function numberOrNull(details: { value: string; valueAsNumber: number }): number | null {\n  return details.value === \"\" || Number.isNaN(details.valueAsNumber) ? null : details.valueAsNumber;\n}\n"
     }

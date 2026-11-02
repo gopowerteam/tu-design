@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, getCurrentInstance, ref, useAttrs } from "vue";
+import { getCurrentInstance, useAttrs } from "vue";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { Popover } from "@/components/popover";
 import { Button } from "@/components/button";
+import { useConfirmPending } from "../overlay-shared/useConfirmPending";
+import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 /**
  * 气泡确认：Popover 的一体式薄壳变体，面板内容内置 title/description + 确认/取消按钮。
@@ -44,18 +46,16 @@ const attrs = useAttrs();
 // setup 期间捕获实例：getCurrentInstance 仅在 setup/生命周期内有效，事件回调里返回 null
 const instance = getCurrentInstance();
 
-// 确认 Promise pending 标记：锁定关闭通道与操作按钮
-const loading = ref(false);
-
 // —— 受控桥接（Popover/Dialog 同款）：Root 恒走受控，非受控语义由内部 ref 实现 ——
-const internalOpen = ref(false);
-const isOpen = computed(() => props.open ?? internalOpen.value);
+const { isOpen, setOpen } = useControlledBoolean({
+  controlled: () => props.open,
+  onChange: (open) => emit("update:open", open),
+});
 
 function handleUpdate(open: boolean) {
   // pending 期间忽略一切关闭请求（走受控桥拒绝同步，气泡保持展开）
   if (!open && loading.value) return;
-  internalOpen.value = open;
-  emit("update:open", open);
+  setOpen(open);
 }
 
 /** 关闭气泡：走受控桥把 open 置 false，定位回退/动画由 zag 处理 */
@@ -63,37 +63,13 @@ function close() {
   handleUpdate(false);
 }
 
-/**
- * 确认：emit 不回传监听器返回值，因此从 vnode 取原始 onConfirm 处理器直接调用
- * （该调用本身就是父级监听器，不会重复派发）。返回 Promise 时进入 loading 并锁定关闭，
- * resolve 后自动关闭，reject 保持打开并退出 loading；同步处理器直接关闭。
- */
-function handleConfirm() {
-  if (loading.value) return;
-  const handler = instance?.vnode.props?.onConfirm as ((...args: unknown[]) => unknown) | undefined;
-  const result = handler?.();
-  if (!handler) emit("confirm");
-  if (result instanceof Promise) {
-    loading.value = true;
-    result
-      .then(() => {
-        loading.value = false;
-        close();
-      })
-      .catch(() => {
-        loading.value = false;
-      });
-  } else {
-    close();
-  }
-}
-
-/** 取消：pending 期间锁定；派发 cancel 并关闭 */
-function handleCancel() {
-  if (loading.value) return;
-  emit("cancel");
-  close();
-}
+// 确认 Promise pending 标记：锁定关闭通道与操作按钮
+const { loading, handleConfirm, handleCancel } = useConfirmPending({
+  instance,
+  emitConfirm: () => emit("confirm"),
+  emitCancel: () => emit("cancel"),
+  close,
+});
 </script>
 
 <template>

@@ -29,7 +29,7 @@ function handleSelect(details: { value: string }) {
 
 // 面板样式对齐 DropdownMenu 面板（token 化，暗色随主题变量自动切换）
 const contentCls =
-  "bg-popover text-popover-foreground z-50 min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95";
+  "bg-popover text-popover-foreground z-[var(--z-overlay)] min-w-[8rem] overflow-hidden rounded-md border p-1 shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95";
 </script>
 
 <template>
@@ -39,7 +39,7 @@ const contentCls =
       <slot />
     </ArkMenu.ContextTrigger>
 
-    <ArkMenu.Positioner class="z-50">
+    <ArkMenu.Positioner class="z-[var(--z-overlay)]">
       <ArkMenu.Content v-bind="attrs" :class="cn(contentCls)">
         <MenuItems :items="props.items" />
       </ArkMenu.Content>

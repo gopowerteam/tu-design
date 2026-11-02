@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
+import { cn } from "@/lib/utils";
 
 /**
  * 视图导航条（内部件）。必须渲染在 <ArkDatePicker.View> 子树内：
@@ -28,7 +29,7 @@ function decadeRange(year: number | undefined): string {
 </script>
 
 <template>
-  <ArkDatePicker.ViewControl :class="viewControlCls">
+  <ArkDatePicker.ViewControl :class="cn(viewControlCls, $attrs.class)">
     <ArkDatePicker.PrevTrigger :class="navBtnCls">
       <svg
         viewBox="0 0 24 24"

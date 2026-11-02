@@ -19,16 +19,27 @@ const DEFAULTS = {
 // 模块级单例：useToast() 在任何地方返回同一个外观对象（引用稳定），
 // 内部转发到 current 指向的 zag store；Provider 挂载时按 props 重建 store。
 let current = createToaster(DEFAULTS);
+let currentConfig = { ...DEFAULTS };
 let providerMounted = false;
 
 /**
  * 按 props 重建单例内部 store（ToastProvider 挂载时调用）。
- * 返回新 store 供 Provider 的 <Toaster> 渲染使用。
+ * 配置未变化时复用现有 store，避免 Provider 重挂载丢弃排队中的 toast。
+ * 返回 store 供 Provider 的 <Toaster> 渲染使用。
  */
 export function __configureToaster(
   props: Partial<{ placement: ArkToastPlacement; duration: number; max: number }> = {},
 ) {
-  current = createToaster({ ...DEFAULTS, ...props });
+  const next = { ...DEFAULTS, ...props };
+  if (
+    next.placement === currentConfig.placement &&
+    next.duration === currentConfig.duration &&
+    next.max === currentConfig.max
+  ) {
+    return current;
+  }
+  currentConfig = next;
+  current = createToaster(next);
   return current;
 }
 

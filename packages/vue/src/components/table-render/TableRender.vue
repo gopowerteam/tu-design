@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { cloneVNode, computed, h, isVNode, onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
@@ -10,11 +10,16 @@ import { Popover } from "@/components/popover";
 import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
 import { Tooltip } from "@/components/tooltip";
+import { cn } from "@/lib/utils";
+import { SELECTION_CELL } from "./constants";
+import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
+import TableBodyRow from "./TableBodyRow.vue";
 import TablePagination from "./TablePagination.vue";
 import type {
   ColumnVisibilityOptions,
   DataRecord,
   SortableOptions,
+  TableBodyLine,
   TableColumnOptions,
   TableLoadParams,
   TableRenderDefinition,
@@ -274,9 +279,6 @@ const columnCount = computed(() => visibleColumns.value.length + (hasSelection.v
 
 // ---- 固定列（sticky） --------------------------------------------------------
 
-/** 选择列在 sticky 映射中的哨兵键（选择列不在 columns 内，模板单独渲染） */
-const SELECTION_CELL = "__selection__";
-
 // DEV 校验：sticky 偏移只能从数字 width（px）推算，否则降级普通列（columns setup 期定版，只查一次）
 for (const column of columns.value) {
   if (column.fixed !== undefined && typeof column.width !== "number") {
@@ -291,8 +293,8 @@ for (const column of columns.value) {
  * fixed-right 从最右列反向累计。edge = 该 sticky 组朝滚动方向的交界列（加分隔边框）。
  * 全部基于**可见集**（R23）：sticky 组因隐藏变空则无该组输出（不输出边框）。
  */
-const stickyOf = computed(() => {
-  const map = new Map<string, { side: "left" | "right"; offset: number; edge: boolean }>();
+const stickyOf = computed<StickyMap>(() => {
+  const map: StickyMap = new Map();
   // instance.columns 是联合数组（聚合式 any / 拆分式 DataRecord），联合上的 filter
   // 类型谓词重载解析不可靠，故 map 提取时以断言收窄 width（条件已含 typeof 守卫）
   const lefts = visibleColumns.value
@@ -320,28 +322,6 @@ const stickyOf = computed(() => {
   }
   return map;
 });
-
-/** sticky 定位样式；head 为 true 时 z-index 高于表体（表头 sticky 压住表体 sticky） */
-function stickyStyle(key: string, head: boolean) {
-  const sticky = stickyOf.value.get(key);
-  if (!sticky) return undefined;
-  return {
-    position: "sticky" as const,
-    [sticky.side]: `${sticky.offset}px`,
-    zIndex: head ? 20 : 10,
-  };
-}
-
-/** sticky 底色（防滚动透出）与交界分隔边框 */
-function stickyClass(key: string) {
-  const sticky = stickyOf.value.get(key);
-  if (!sticky) return undefined;
-  return [
-    "bg-background",
-    sticky.side === "left" && sticky.edge ? "border-r border-border" : "",
-    sticky.side === "right" && sticky.edge ? "border-l border-border" : "",
-  ];
-}
 
 /** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
 const selectableKeys = computed(() =>
@@ -377,7 +357,7 @@ watch(instance.selectedKeys, (keys) => {
 });
 
 /** 行 → 单元格值矩阵：render > formatter > record[key]（R17） */
-const body = computed(() => {
+const body = computed<TableBodyLine[]>(() => {
   // 渲染器工厂按列求值一次（而非每单元格），避免用户工厂内的重分配被放大
   const renderFns = new Map(
     columns.value.filter((c) => c.render).map((c) => [c, c.render!(RENDERS)]),
@@ -467,9 +447,11 @@ const padBottom = computed(() => {
   return items.length === 0 ? 0 : Math.max(0, virtualTotal.value - items[items.length - 1]!.end);
 });
 
-/** 行高动态测量：measureElement 读 data-index 把实测高度写回（行内容高度可变，不假设固定行高） */
+/** 行高动态测量：measureElement 读 data-index 把实测高度写回（行内容高度可变，不假设固定行高）。
+ * 行组件为函数 ref，拿到的是组件实例，需经 $el 取真实 tr。 */
 function measureRow(node: Element | ComponentPublicInstance | null) {
-  if (node instanceof Element) virtualizerRef?.value.measureElement(node);
+  const el = node instanceof Element ? node : (node?.$el as Element | undefined);
+  if (el instanceof Element) virtualizerRef?.value.measureElement(el);
 }
 
 /** aria-sort 仅在该列当前被排序时标注（R16） */
@@ -481,11 +463,6 @@ function ariaSort(column: TableColumnOptions): "ascending" | "descending" | unde
 function sortMark(column: TableColumnOptions): string {
   const direction = instance.sort.value?.key === column.key ? instance.sort.value.direction : "";
   return direction === "asc" ? "↑" : direction === "desc" ? "↓" : "";
-}
-
-function cellText(line: { cells: VNodeChild[] }, index: number): string {
-  const value = line.cells[index];
-  return isVNode(value) ? "" : String(value ?? "");
 }
 
 function onSort(key: string) {
@@ -546,13 +523,6 @@ function onCellClick(record: DataRecord, columnKey: string, index: number, event
   emit("cell-click", record, columnKey, index, event);
 }
 
-/** ellipsis: "tooltip" 的单元格内容：默认插槽承载截断内容（触发元素本体，不额外包裹），content 显示完整文本。
- * VNode（render 工厂）单元格经 cloneVNode 复制进触发位（VNode 不可二次挂载）。 */
-function tooltipCell(value: VNodeChild, text: string): VNodeChild {
-  const trigger = isVNode(value) ? cloneVNode(value) : h("span", { class: "block truncate" }, text);
-  return h(Tooltip, { delayDuration: 0, content: text }, { default: () => [trigger] });
-}
-
 defineExpose({
   table: instance.table,
   page: instance.page,
@@ -573,7 +543,7 @@ defineExpose({
 </script>
 
 <template>
-  <div class="w-full">
+  <div :class="cn('w-full', $attrs.class)">
     <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方 -->
     <div v-if="search || showColumnSettings" class="mb-2 flex items-end justify-between gap-2">
       <FormRender
@@ -646,6 +616,7 @@ defineExpose({
                 <Checkbox
                   :checked="isColumnVisible(column.key)"
                   :disabled="!canHideColumn(column.key)"
+                  @update:checked="toggleColumnVisible(column.key)"
                   @click.stop
                 />
                 <span class="min-w-0 flex-1 truncate">{{ column.title }}</span>
@@ -690,8 +661,11 @@ defineExpose({
               v-if="hasSelection"
               scope="col"
               class="h-10 w-12 px-2 align-middle font-medium text-muted-foreground"
-              :class="stickyClass(SELECTION_CELL)"
-              :style="[{ width: `${selection.width}px` }, stickyStyle(SELECTION_CELL, true)]"
+              :class="stickyClass(stickyOf, SELECTION_CELL)"
+              :style="[
+                { width: `${selection.width}px` },
+                stickyStyle(stickyOf, SELECTION_CELL, true),
+              ]"
             >
               <Checkbox
                 v-if="selection.type === 'checkbox'"
@@ -705,10 +679,10 @@ defineExpose({
               :key="column.key"
               scope="col"
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
-              :class="stickyClass(column.key)"
+              :class="stickyClass(stickyOf, column.key)"
               :style="[
                 { width: column.width, textAlign: column.align },
-                stickyStyle(column.key, true),
+                stickyStyle(stickyOf, column.key, true),
               ]"
               :aria-sort="ariaSort(column)"
             >
@@ -733,8 +707,8 @@ defineExpose({
               <td
                 v-if="hasSelection"
                 class="p-2 align-middle"
-                :class="stickyClass(SELECTION_CELL)"
-                :style="stickyStyle(SELECTION_CELL, false)"
+                :class="stickyClass(stickyOf, SELECTION_CELL)"
+                :style="stickyStyle(stickyOf, SELECTION_CELL, false)"
               >
                 <Skeleton class="size-4" />
               </td>
@@ -742,8 +716,8 @@ defineExpose({
                 v-for="column in visibleColumns"
                 :key="column.key"
                 class="p-2 align-middle"
-                :class="stickyClass(column.key)"
-                :style="[{ textAlign: column.align }, stickyStyle(column.key, false)]"
+                :class="stickyClass(stickyOf, column.key)"
+                :style="[{ textAlign: column.align }, stickyStyle(stickyOf, column.key, false)]"
               >
                 <Skeleton class="h-4 w-full" />
               </td>
@@ -769,204 +743,50 @@ defineExpose({
             <tr aria-hidden="true" data-virtual-pad :style="{ height: `${padTop}px` }">
               <td :colspan="columnCount" class="border-0 p-0"></td>
             </tr>
-            <tr
+            <TableBodyRow
               v-for="item in virtualLines"
               :key="item.line.key"
               :ref="measureRow"
               :data-index="item.row.index"
-              class="border-b transition-colors hover:bg-muted/50"
-              @click="onRowClick(item.line.record, item.line.index, $event)"
-              @dblclick="onRowDblclick(item.line.record, item.line.index, $event)"
-              @contextmenu="onRowContextmenu(item.line.record, item.line.index, $event)"
-            >
-              <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
-              <td
-                v-if="hasSelection"
-                class="w-12 p-2 align-middle"
-                :class="stickyClass(SELECTION_CELL)"
-                :style="stickyStyle(SELECTION_CELL, false)"
-                @click.stop
-              >
-                <input
-                  v-if="selection.type === 'radio'"
-                  type="radio"
-                  class="accent-primary size-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                  :checked="selectedKeys.has(item.line.key)"
-                  :disabled="!item.line.canSelect"
-                  :aria-label="`选择第 ${item.line.index + 1} 行`"
-                  @click="onRowSelect(item.line, !selectedKeys.has(item.line.key))"
-                />
-                <Checkbox
-                  v-else
-                  :checked="selectedKeys.has(item.line.key)"
-                  :disabled="!item.line.canSelect"
-                  :aria-label="`选择第 ${item.line.index + 1} 行`"
-                  @update:checked="(checked: boolean) => onRowSelect(item.line, checked)"
-                />
-              </td>
-              <td
-                v-for="(value, index) in item.line.cells"
-                :key="visibleColumns[index].key"
-                class="p-2 align-middle"
-                :class="[
-                  stickyClass(visibleColumns[index].key),
-                  { truncate: visibleColumns[index].ellipsis === true },
-                ]"
-                :title="
-                  visibleColumns[index].ellipsis === true ? cellText(item.line, index) : undefined
-                "
-                :style="[
-                  { textAlign: visibleColumns[index].align },
-                  stickyStyle(visibleColumns[index].key, false),
-                ]"
-                @click="
-                  onCellClick(item.line.record, visibleColumns[index].key, item.line.index, $event)
-                "
-              >
-                <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
-                <span
-                  v-if="tree && index === 0"
-                  class="inline-flex max-w-full items-center gap-1"
-                  :style="{ marginLeft: `${item.line.row.depth * treeIndent}px` }"
-                >
-                  <button
-                    v-if="item.line.row.getCanExpand()"
-                    type="button"
-                    class="hover:bg-muted text-muted-foreground inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm"
-                    :aria-expanded="item.line.row.getIsExpanded()"
-                    :aria-label="item.line.row.getIsExpanded() ? '收起' : '展开'"
-                    @click.stop="item.line.row.toggleExpanded()"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="size-3.5 transition-transform"
-                      :class="{ 'rotate-90': item.line.row.getIsExpanded() }"
-                      aria-hidden="true"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                  </button>
-                  <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
-                  <component :is="value" v-if="isVNode(value)" />
-                  <span v-else class="min-w-0 truncate">{{ value }}</span>
-                </span>
-                <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
-                <component
-                  :is="tooltipCell(value, cellText(item.line, index))"
-                  v-else-if="visibleColumns[index].ellipsis === 'tooltip'"
-                />
-                <template v-else>
-                  <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
-                  <component :is="value" v-if="isVNode(value)" />
-                  <template v-else>{{ value }}</template>
-                </template>
-              </td>
-            </tr>
+              :line="item.line"
+              :columns="visibleColumns"
+              :selection="hasSelection ? selection.type : undefined"
+              :selected="selectedKeys.has(item.line.key)"
+              :sticky="stickyOf"
+              :tree-indent="tree ? treeIndent : undefined"
+              @select="(checked: boolean) => onRowSelect(item.line, checked)"
+              @row-click="onRowClick(item.line.record, item.line.index, $event)"
+              @row-dblclick="onRowDblclick(item.line.record, item.line.index, $event)"
+              @row-contextmenu="onRowContextmenu(item.line.record, item.line.index, $event)"
+              @cell-click="
+                (columnKey: string, event: MouseEvent) =>
+                  onCellClick(item.line.record, columnKey, item.line.index, event)
+              "
+            />
             <tr aria-hidden="true" data-virtual-pad :style="{ height: `${padBottom}px` }">
               <td :colspan="columnCount" class="border-0 p-0"></td>
             </tr>
           </template>
 
           <template v-else>
-            <tr
+            <TableBodyRow
               v-for="line in body"
               :key="line.key"
-              class="border-b transition-colors hover:bg-muted/50"
-              @click="onRowClick(line.record, line.index, $event)"
-              @dblclick="onRowDblclick(line.record, line.index, $event)"
-              @contextmenu="onRowContextmenu(line.record, line.index, $event)"
-            >
-              <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
-              <td
-                v-if="hasSelection"
-                class="w-12 p-2 align-middle"
-                :class="stickyClass(SELECTION_CELL)"
-                :style="stickyStyle(SELECTION_CELL, false)"
-                @click.stop
-              >
-                <input
-                  v-if="selection.type === 'radio'"
-                  type="radio"
-                  class="accent-primary size-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
-                  :checked="selectedKeys.has(line.key)"
-                  :disabled="!line.canSelect"
-                  :aria-label="`选择第 ${line.index + 1} 行`"
-                  @click="onRowSelect(line, !selectedKeys.has(line.key))"
-                />
-                <Checkbox
-                  v-else
-                  :checked="selectedKeys.has(line.key)"
-                  :disabled="!line.canSelect"
-                  :aria-label="`选择第 ${line.index + 1} 行`"
-                  @update:checked="(checked: boolean) => onRowSelect(line, checked)"
-                />
-              </td>
-              <td
-                v-for="(value, index) in line.cells"
-                :key="visibleColumns[index].key"
-                class="p-2 align-middle"
-                :class="[
-                  stickyClass(visibleColumns[index].key),
-                  { truncate: visibleColumns[index].ellipsis === true },
-                ]"
-                :title="visibleColumns[index].ellipsis === true ? cellText(line, index) : undefined"
-                :style="[
-                  { textAlign: visibleColumns[index].align },
-                  stickyStyle(visibleColumns[index].key, false),
-                ]"
-                @click="onCellClick(line.record, visibleColumns[index].key, line.index, $event)"
-              >
-                <!-- 首列（tree 启用时）：depth 缩进 + 展开 caret（点击 stop 避免误触发行点击） -->
-                <span
-                  v-if="tree && index === 0"
-                  class="inline-flex max-w-full items-center gap-1"
-                  :style="{ marginLeft: `${line.row.depth * treeIndent}px` }"
-                >
-                  <button
-                    v-if="line.row.getCanExpand()"
-                    type="button"
-                    class="hover:bg-muted text-muted-foreground inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm"
-                    :aria-expanded="line.row.getIsExpanded()"
-                    :aria-label="line.row.getIsExpanded() ? '收起' : '展开'"
-                    @click.stop="line.row.toggleExpanded()"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      class="size-3.5 transition-transform"
-                      :class="{ 'rotate-90': line.row.getIsExpanded() }"
-                      aria-hidden="true"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-                  </button>
-                  <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
-                  <component :is="value" v-if="isVNode(value)" />
-                  <span v-else class="min-w-0 truncate">{{ value }}</span>
-                </span>
-                <!-- ellipsis: "tooltip"：Tooltip 包装（VNode 经 cloneVNode 复制，避免二次挂载） -->
-                <component
-                  :is="tooltipCell(value, cellText(line, index))"
-                  v-else-if="visibleColumns[index].ellipsis === 'tooltip'"
-                />
-                <template v-else>
-                  <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
-                  <component :is="value" v-if="isVNode(value)" />
-                  <template v-else>{{ value }}</template>
-                </template>
-              </td>
-            </tr>
+              :line="line"
+              :columns="visibleColumns"
+              :selection="hasSelection ? selection.type : undefined"
+              :selected="selectedKeys.has(line.key)"
+              :sticky="stickyOf"
+              :tree-indent="tree ? treeIndent : undefined"
+              @select="(checked: boolean) => onRowSelect(line, checked)"
+              @row-click="onRowClick(line.record, line.index, $event)"
+              @row-dblclick="onRowDblclick(line.record, line.index, $event)"
+              @row-contextmenu="onRowContextmenu(line.record, line.index, $event)"
+              @cell-click="
+                (columnKey: string, event: MouseEvent) =>
+                  onCellClick(line.record, columnKey, line.index, event)
+              "
+            />
           </template>
 
           <!-- 空态：横跨全列的单单元格，不虚拟化；错误态优先 -->

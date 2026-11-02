@@ -45,7 +45,8 @@ describe("Calendar（standalone）", () => {
 
   it("v-model：点格子发出 ISO 串", async () => {
     const onUpdate = vi.fn();
-    const w = await openCalendar({ "onUpdate:modelValue": onUpdate });
+    // defaultValue 钉住视图月为 2026-10：无值时视图月取自「今天」，写死 2026-10 会变成时间炸弹
+    const w = await openCalendar({ defaultValue: "2026-10-09", "onUpdate:modelValue": onUpdate });
     const cell = document.body.querySelector<HTMLElement>(
       '[data-part="table-cell-trigger"][data-view="day"][data-value^="2026-10-"]',
     );
