@@ -24,7 +24,7 @@ const INTERNAL_ITEMS = new Set(["date-shared", "overlay-shared", "slot", "tree-s
 const GUIDE_PAGES = [
   { page: "introduction", title: "介绍", description: "tu-design 是什么、核心特性与设计理念" },
   { page: "installation", title: "安装", description: "安装 @tu-design/vue 与样式接入步骤" },
-  { page: "cli", title: "CLI", description: "@tu-design/cli 命令行（init/add/mcp）用法" },
+  { page: "cli", title: "CLI", description: "@tu-design/cli 命令行（init/add/diff/mcp）用法" },
   { page: "theming", title: "主题", description: "Tailwind v4 + oklch CSS 变量主题定制" },
   {
     page: "auto-import",
