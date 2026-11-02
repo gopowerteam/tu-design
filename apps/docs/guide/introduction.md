@@ -4,7 +4,7 @@ tu-design 是一个 [shadcn/ui](https://ui.shadcn.com) 思路的 **Vue 3 组件�
 
 ## 特性
 
-- **源码交付**：`npx tu-design add <name>` 将组件源码写入 `components/ui/<name>/`，无运行时依赖绑定
+- **源码交付**：`npx @tu-design/cli add <name>` 将组件源码写入 `components/ui/<name>/`，无运行时依赖绑定
 - **Tailwind CSS 4**：组件样式由 utility class 与 CSS 变量（shadcn 风格 tokens，oklch 色彩空间）驱动
 - **明暗模式**：`<html>` 上切换 `.dark` class 即可翻转全部主题变量
 - **无头交互**：交互类组件（如 Avatar）基于 [Ark UI Vue](https://ark-ui.com) 的无头实现，可访问性开箱即用

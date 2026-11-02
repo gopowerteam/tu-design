@@ -10,7 +10,7 @@ description: 文本输入框，支持 v-model 与 attrs 透传。
 安装：
 
 ```bash
-npx tu-design add input
+npx @tu-design/cli add input
 ```
 
 ## 基础用法

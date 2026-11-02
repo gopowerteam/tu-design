@@ -10,7 +10,7 @@ description: 语义化警示条，支持五种变体、内置图标与可关闭�
 安装：
 
 ```bash
-npx tu-design add alert
+npx @tu-design/cli add alert
 ```
 
 ## 基础用法

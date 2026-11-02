@@ -10,7 +10,7 @@ description: 密码输入框：内置明文/掩码切换按钮（Eye/EyeOff 图�
 安装：
 
 ```bash
-npx tu-design add password-input
+npx @tu-design/cli add password-input
 ```
 
 ## 基础用法

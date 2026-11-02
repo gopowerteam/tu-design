@@ -10,7 +10,7 @@ description: 年份选择器：输入框 + 锁定年视图的日历弹层（deca
 安装：
 
 ```bash
-npx tu-design add year-picker
+npx @tu-design/cli add year-picker
 ```
 
 ## 基础用法

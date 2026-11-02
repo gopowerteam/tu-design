@@ -10,7 +10,7 @@ description: 进度条：基于 Ark UI Progress 原语，支持语义色、标�
 安装：
 
 ```bash
-npx tu-design add progress
+npx @tu-design/cli add progress
 ```
 
 ## 基础用法

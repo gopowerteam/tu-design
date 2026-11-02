@@ -69,7 +69,7 @@ export function cn(...inputs: ClassValue[]) {
 ## 4. 添加组件
 
 ```bash
-npx tu-design add button
+npx @tu-design/cli add button
 ```
 
 组件将写入 `src/components/ui/button/`。接下来可以在[组件](/components/button)页查看每个组件的用法。

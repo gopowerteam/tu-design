@@ -13,7 +13,7 @@ description: 紧凑日历卡，standalone 独立与 embedded 内嵌双形态。
 安装：
 
 ```bash
-npx tu-design add calendar
+npx @tu-design/cli add calendar
 ```
 
 ## 基础用法

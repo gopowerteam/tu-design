@@ -10,7 +10,7 @@ description: 多行文本输入：纯样式封装（无需原语），支持 inv
 安装：
 
 ```bash
-npx tu-design add textarea
+npx @tu-design/cli add textarea
 ```
 
 ## 基础用法

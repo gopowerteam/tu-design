@@ -10,7 +10,7 @@ description: 日期选择器：输入框 + 日历弹层（月/年视图切换）
 安装：
 
 ```bash
-npx tu-design add date-picker
+npx @tu-design/cli add date-picker
 ```
 
 ## 基础用法

@@ -10,7 +10,7 @@ description: 开关：基于 Ark UI Switch 原语，滑块动效由 data-[state]
 安装：
 
 ```bash
-npx tu-design add switch
+npx @tu-design/cli add switch
 ```
 
 ## 基础用法

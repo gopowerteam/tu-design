@@ -14,7 +14,7 @@ AlertDialog 是 Dialog 的确认场景薄壳变体：收起触发器插槽与右
 安装：
 
 ```bash
-npx tu-design add alert-dialog
+npx @tu-design/cli add alert-dialog
 ```
 
 依赖说明：registry 项 `alert-dialog` 自动携带 `@ark-ui/vue` 运行时依赖、`button` 组件与 `cn` 工具。

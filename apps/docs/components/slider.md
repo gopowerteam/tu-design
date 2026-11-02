@@ -10,7 +10,7 @@ description: 滑块：基于 Ark UI Slider 原语，支持单值与区间、键�
 安装：
 
 ```bash
-npx tu-design add slider
+npx @tu-design/cli add slider
 ```
 
 ## 基础用法

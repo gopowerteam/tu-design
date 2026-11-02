@@ -10,7 +10,7 @@ description: 周选择器：输入框 + 日历弹层，点任意可选日归一�
 安装：
 
 ```bash
-npx tu-design add week-picker
+npx @tu-design/cli add week-picker
 ```
 
 ## 基础用法

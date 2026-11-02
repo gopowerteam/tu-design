@@ -10,7 +10,7 @@ description: 下拉选择框：单组件 API，传入 items 数据驱动渲染�
 安装：
 
 ```bash
-npx tu-design add select
+npx @tu-design/cli add select
 ```
 
 ## 基础用法

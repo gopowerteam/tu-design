@@ -1,4 +1,4 @@
-import { cpSync, existsSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitepress";
@@ -6,14 +6,22 @@ import tailwindcss from "@tailwindcss/vite";
 import Components from "unplugin-vue-components/vite";
 import { TuDesignResolver } from "../../../packages/vue/src/resolver";
 import type { Plugin } from "vite";
+import { buildLlmsFullTxt, buildLlmsTxt, listComponents } from "./llms";
 
 const registryDir = fileURLToPath(new URL("../../../packages/vue/registry/vue", import.meta.url));
+// vitepress 打包 config 时会把 import.meta.url 重写为原始 config 路径，"../" 即 apps/docs
+const docsDir = fileURLToPath(new URL("../", import.meta.url)).replace(/\/$/, "");
 
 /** GitHub Pages 项目页部署在仓库子路径下，本地 dev 同样挂在该前缀。 */
 const BASE = "/tu-design/";
 
+/** configureServer 先于 Vite 内部 base 剥离执行，各中间件需手动去掉子路径前缀。 */
+function stripBasePrefix(url: string): string {
+  return url.startsWith(BASE) ? url.slice(BASE.length - 1) : url;
+}
+
 /**
- * dev 期以中间件伺服 /r/vue/*.json（CLI `npx tu-design add` 的数据源）。
+ * dev 期以中间件伺服 /r/vue/*.json（CLI `npx @tu-design/cli add` 的数据源）。
  * build 期由下方 buildEnd 钩子复制进 outDir/r/vue。
  */
 function registryPlugin(): Plugin {
@@ -21,11 +29,7 @@ function registryPlugin(): Plugin {
     name: "tu-design-registry",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        let url = (req.url ?? "").split("?")[0]!;
-        // configureServer 先于 Vite 内部 base 剥离执行，需手动去掉子路径前缀
-        if (url.startsWith(BASE)) {
-          url = url.slice(BASE.length - 1);
-        }
+        const url = stripBasePrefix((req.url ?? "").split("?")[0]!);
         if (!url.startsWith("/r/vue/")) {
           next();
           return;
@@ -49,6 +53,44 @@ function registryPlugin(): Plugin {
   };
 }
 
+/** 原始 Markdown 文档端点：/guide/<name>.md、/components/<name>.md。 */
+const DOC_PAGE_RE = /^\/(guide|components)\/([A-Za-z0-9._-]+)\.md$/;
+
+/**
+ * dev 期伺服 LLM 文档入口：/llms.txt、/llms-full.txt 动态生成，
+ * /guide/*.md、/components/*.md 返回仓库源 Markdown。
+ * build 期由 buildEnd 写入静态产物。
+ */
+function llmsPlugin(): Plugin {
+  return {
+    name: "tu-design-llms",
+    configureServer(server) {
+      server.middlewares.use((req, res, next) => {
+        const url = stripBasePrefix((req.url ?? "").split("?")[0]!);
+        if (url === "/llms.txt" || url === "/llms-full.txt") {
+          res.setHeader("content-type", "text/plain; charset=utf-8");
+          res.end(url === "/llms.txt" ? buildLlmsTxt() : buildLlmsFullTxt());
+          return;
+        }
+        const match = DOC_PAGE_RE.exec(url);
+        if (!match) {
+          next();
+          return;
+        }
+        const [, dir, name] = match;
+        const file = join(docsDir, dir!, `${name}.md`);
+        if (!file.startsWith(`${docsDir}/${dir}/`) || !existsSync(file)) {
+          res.statusCode = 404;
+          res.end("not found");
+          return;
+        }
+        res.setHeader("content-type", "text/markdown; charset=utf-8");
+        res.end(readFileSync(file));
+      });
+    },
+  };
+}
+
 export default defineConfig({
   lang: "zh-CN",
   title: "tu-design",
@@ -59,12 +101,32 @@ export default defineConfig({
   lastUpdated: true,
   buildEnd(siteConfig) {
     cpSync(registryDir, resolve(siteConfig.outDir, "r/vue"), { recursive: true });
+
+    const warnings: string[] = [];
+    const onWarn = (msg: string) => warnings.push(msg);
+    const llmsTxt = buildLlmsTxt();
+    const llmsFullTxt = buildLlmsFullTxt(onWarn);
+    writeFileSync(resolve(siteConfig.outDir, "llms.txt"), llmsTxt, "utf-8");
+    writeFileSync(resolve(siteConfig.outDir, "llms-full.txt"), llmsFullTxt, "utf-8");
+    // 原始 Markdown 端点：供 LLM / CLI 直接抓取源文档
+    cpSync(join(docsDir, "guide"), resolve(siteConfig.outDir, "guide"), { recursive: true });
+    cpSync(join(docsDir, "components"), resolve(siteConfig.outDir, "components"), {
+      recursive: true,
+    });
+
+    for (const message of warnings) {
+      console.error(message);
+    }
+    console.log(
+      `[llms] llms.txt：${listComponents().length} 个组件；llms-full.txt：${(llmsFullTxt.length / 1024).toFixed(1)} KiB；告警 ${warnings.length} 条`,
+    );
   },
   vite: {
     plugins: [
       tailwindcss(),
       Components({ resolvers: [TuDesignResolver()], dts: false }),
       registryPlugin(),
+      llmsPlugin(),
     ],
     resolve: {
       alias: {

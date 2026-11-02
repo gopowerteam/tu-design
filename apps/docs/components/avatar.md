@@ -10,7 +10,7 @@ description: 头像，支持尺寸/形状、加载占位与失败回退（Ark UI
 安装：
 
 ```bash
-npx tu-design add avatar
+npx @tu-design/cli add avatar
 ```
 
 ## 基础用法

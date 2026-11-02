@@ -10,7 +10,7 @@ description: 日期范围选择器：双月日历弹层（月/年视图切换）
 安装：
 
 ```bash
-npx tu-design add date-range-picker
+npx @tu-design/cli add date-range-picker
 ```
 
 ## 基础用法

@@ -14,7 +14,7 @@ description: 模态对话框单组件，内置焦点圈定、Escape / 遮罩点�
 安装：
 
 ```bash
-npx tu-design add dialog
+npx @tu-design/cli add dialog
 ```
 
 依赖说明：registry 项 `dialog` 自动携带 `@ark-ui/vue` 运行时依赖与 `cn` 工具。

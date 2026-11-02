@@ -10,8 +10,8 @@ shadcn 风格的 Vue 3 组件库 —— Tailwind CSS v4 + oklch CSS 变量主题
 和 shadcn/ui 一样，**推荐用法不是安装本包**，而是把组件源码复制进你的项目：
 
 ```bash
-npx tu-design init          # 初始化 components.json / tokens / cn 工具
-npx tu-design add button    # 添加组件源码到 src/components/ui/button/
+npx @tu-design/cli init          # 初始化 components.json / tokens / cn 工具
+npx @tu-design/cli add button    # 添加组件源码到 src/components/ui/button/
 ```
 
 源码进入你的项目后归你所有，可以直接修改；组件依赖的运行时只有 `clsx`、`tailwind-merge`、`class-variance-authority`（及组件自身声明的 Ark UI / TanStack 等 npm 依赖）。

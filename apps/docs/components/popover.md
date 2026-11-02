@@ -10,7 +10,7 @@ description: 点击触发的气泡弹层单组件，受控/非受控开关，默
 安装：
 
 ```bash
-npx tu-design add popover
+npx @tu-design/cli add popover
 ```
 
 ## 基础用法

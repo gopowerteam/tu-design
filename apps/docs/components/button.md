@@ -10,7 +10,7 @@ description: 带变体与尺寸的按钮，支持 as 标签切换与 asChild 组
 安装：
 
 ```bash
-npx tu-design add button
+npx @tu-design/cli add button
 ```
 
 ## 基础用法

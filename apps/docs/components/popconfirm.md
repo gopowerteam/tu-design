@@ -10,7 +10,7 @@ description: 轻量气泡确认框，点击触发元素弹出，支持异步确�
 安装：
 
 ```bash
-npx tu-design add popconfirm
+npx @tu-design/cli add popconfirm
 ```
 
 安装会自动携带依赖：`popover`、`button`、`utils`。

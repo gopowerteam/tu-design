@@ -10,7 +10,7 @@ description: 月份选择器：输入框 + 锁定月视图的日历弹层，值�
 安装：
 
 ```bash
-npx tu-design add month-picker
+npx @tu-design/cli add month-picker
 ```
 
 ## 基础用法

@@ -10,7 +10,7 @@ description: 轻量状态徽标，支持四种变体。
 安装：
 
 ```bash
-npx tu-design add badge
+npx @tu-design/cli add badge
 ```
 
 ## 基础用法

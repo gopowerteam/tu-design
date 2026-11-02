@@ -10,7 +10,7 @@ description: 从四方向滑出的侧边/顶底面板单组件，进出场动画
 安装：
 
 ```bash
-npx tu-design add drawer
+npx @tu-design/cli add drawer
 ```
 
 依赖说明：registry 项 `drawer` 自动携带 `@ark-ui/vue` 运行时依赖与 `cn` 工具。

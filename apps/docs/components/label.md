@@ -10,7 +10,7 @@ description: 表单标签，用于标注表单控件。
 安装：
 
 ```bash
-npx tu-design add label
+npx @tu-design/cli add label
 ```
 
 ## 基础用法

@@ -10,7 +10,7 @@ description: 加载占位骨架屏。
 安装：
 
 ```bash
-npx tu-design add skeleton
+npx @tu-design/cli add skeleton
 ```
 
 ## 基础用法

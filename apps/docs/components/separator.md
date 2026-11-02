@@ -10,7 +10,7 @@ description: 分隔线，支持水平与垂直方向。
 安装：
 
 ```bash
-npx tu-design add separator
+npx @tu-design/cli add separator
 ```
 
 ## 基础用法

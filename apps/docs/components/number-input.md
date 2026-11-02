@@ -10,7 +10,7 @@ description: 数字输入框：内置加减步进按钮与数值边界，值以 
 安装：
 
 ```bash
-npx tu-design add number-input
+npx @tu-design/cli add number-input
 ```
 
 ## 基础用法

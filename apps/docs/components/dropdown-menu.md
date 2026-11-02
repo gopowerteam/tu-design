@@ -10,7 +10,7 @@ description: 单组件模式的下拉菜单，items 描述菜单结构，内置�
 安装：
 
 ```bash
-npx tu-design add dropdown-menu
+npx @tu-design/cli add dropdown-menu
 ```
 
 ## 基础用法

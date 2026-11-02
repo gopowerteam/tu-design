@@ -10,7 +10,7 @@ description: 复选框：基于 Ark UI Checkbox 原语，内置隐藏 input 与�
 安装：
 
 ```bash
-npx tu-design add checkbox
+npx @tu-design/cli add checkbox
 ```
 
 ## 基础用法

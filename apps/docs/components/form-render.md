@@ -12,7 +12,7 @@ description: 配置驱动的表单渲染器，defineForm 一步聚合字段定�
 安装：
 
 ```bash
-npx tu-design add form-render
+npx @tu-design/cli add form-render
 ```
 
 会自动安装 `@tanstack/vue-form` 与 `valibot`。校验器不限于 valibot——任何 Standard Schema 兼容实现（zod / arktype）均可传入 `schema`。

@@ -10,7 +10,7 @@ description: 加载中旋转指示器，支持独立 spinner 与包裹内容（�
 安装：
 
 ```bash
-npx tu-design add spin
+npx @tu-design/cli add spin
 ```
 
 ## 基础用法

@@ -10,7 +10,7 @@ description: 头像组，数量折叠、悬停展开与垂直排列。
 安装（会一并添加 `avatar` 依赖组件）：
 
 ```bash
-npx tu-design add avatar-group
+npx @tu-design/cli add avatar-group
 ```
 
 ## 基础用法

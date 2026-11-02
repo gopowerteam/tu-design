@@ -10,7 +10,7 @@ description: 单选组：基于 Ark UI Radio Group 原语的单组件 API，item
 安装：
 
 ```bash
-npx tu-design add radio-group
+npx @tu-design/cli add radio-group
 ```
 
 ## 基础用法

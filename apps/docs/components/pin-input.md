@@ -10,7 +10,7 @@ description: 多格验证码输入：length 指定格数，自动跳格、粘贴
 安装：
 
 ```bash
-npx tu-design add pin-input
+npx @tu-design/cli add pin-input
 ```
 
 ## 基础用法

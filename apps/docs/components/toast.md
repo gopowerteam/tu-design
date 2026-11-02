@@ -14,7 +14,7 @@ description: 全局命令式轻提示：Provider 一次挂载，useToast() 随�
 安装：
 
 ```bash
-npx tu-design add toast
+npx @tu-design/cli add toast
 ```
 
 依赖说明：registry 项 `toast` 自动携带 `@ark-ui/vue` 运行时依赖与 `cn` 工具。

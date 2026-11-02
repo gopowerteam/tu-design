@@ -10,7 +10,7 @@ description: 基于 TanStack Form 的表单状态与校验家族，provide/injec
 安装：
 
 ```bash
-npx tu-design add form
+npx @tu-design/cli add form
 ```
 
 会自动安装 `@tanstack/vue-form` 与 `valibot`。组件本体不依赖 valibot，任何 Standard Schema 兼容校验器（zod / arktype 等）均可直接传入 `validators`。

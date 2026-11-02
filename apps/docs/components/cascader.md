@@ -10,7 +10,7 @@ description: 级联选择：多列联动面板，一站式 props 驱动，支持
 安装：
 
 ```bash
-npx tu-design add cascader
+npx @tu-design/cli add cascader
 ```
 
 ## 基础用法

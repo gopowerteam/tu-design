@@ -10,7 +10,7 @@ description: 金额输入框：内置单位后缀，界面输入单位与存储�
 安装：
 
 ```bash
-npx tu-design add currency-input
+npx @tu-design/cli add currency-input
 ```
 
 ## 基础用法

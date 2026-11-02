@@ -10,7 +10,7 @@ description: 空状态占位，含默认插画与描述文案。
 安装：
 
 ```bash
-npx tu-design add empty
+npx @tu-design/cli add empty
 ```
 
 ## 基础用法

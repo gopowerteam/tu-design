@@ -10,7 +10,7 @@ description: 卡片容器：单组件 API，title/description 头部 + 命名插
 安装：
 
 ```bash
-npx tu-design add card
+npx @tu-design/cli add card
 ```
 
 ## 基础用法

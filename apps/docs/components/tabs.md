@@ -10,7 +10,7 @@ description: 基于 Ark UI Tabs 的单组件选项卡，items 驱动，支持键
 安装：
 
 ```bash
-npx tu-design add tabs
+npx @tu-design/cli add tabs
 ```
 
 ## 基础用法

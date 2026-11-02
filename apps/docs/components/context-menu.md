@@ -10,7 +10,7 @@ description: 单组件模式的右键菜单，items 描述菜单结构（与 Dro
 安装：
 
 ```bash
-npx tu-design add context-menu
+npx @tu-design/cli add context-menu
 ```
 
 ::: tip

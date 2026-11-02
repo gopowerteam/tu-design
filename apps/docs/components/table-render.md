@@ -16,7 +16,7 @@ description: 配置驱动的表格渲染器，defineTable 一步聚合列定义�
 安装：
 
 ```bash
-npx tu-design add table-render
+npx @tu-design/cli add table-render
 ```
 
 会自动安装 `@tanstack/vue-table` 与 `@ark-ui/vue`。

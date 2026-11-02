@@ -10,7 +10,7 @@ description: 悬停或键盘聚焦触发的文字提示气泡，默认插槽即�
 安装：
 
 ```bash
-npx tu-design add tooltip
+npx @tu-design/cli add tooltip
 ```
 
 ## 基础用法

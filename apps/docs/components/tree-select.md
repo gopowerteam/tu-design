@@ -10,7 +10,7 @@ description: 树形下拉选择：一站式 props 驱动，支持单/多选、�
 安装：
 
 ```bash
-npx tu-design add tree-select
+npx @tu-design/cli add tree-select
 ```
 
 ## 基础用法
