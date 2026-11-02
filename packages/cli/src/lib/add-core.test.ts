@@ -173,7 +173,7 @@ describe("runAdd", () => {
     expect(lock.packages.solo?.version).toBe("2.3.4");
   });
 
-  it("已存在且内容相同 → upToDate，不写入、lockfile 不新建条目", async () => {
+  it("已存在且内容相同 → upToDate，不写入但 lockfile 建条目（provenance 明确）", async () => {
     const io = memIo({ ...project(), [SOLO_TARGET]: "<template><!-- solo --></template>" });
     const summary = await runAdd(io, "/proj", ["solo"], {});
     expect(summary.files).toEqual([]);
@@ -181,7 +181,19 @@ describe("runAdd", () => {
     expect(summary.overwrites).toEqual([]);
     expect(summary.conflicts).toEqual([]);
     const lock = readLockfile(io, "/proj");
-    expect(lock.packages.solo).toBeUndefined();
+    expect(lock.packages.solo?.version).toBeNull();
+    expect(lock.packages.solo?.files[SOLO_TARGET]).toBe(
+      hashContent("<template><!-- solo --></template>"),
+    );
+  });
+
+  it("多文件组件部分幂等跳过（upToDate）+ 部分新写入 → lockfile 记录全部落点", async () => {
+    const io = memIo({ ...project(), [MULTI_A]: "A:multi" }); // A 与远端一致 → upToDate；B 新文件
+    const summary = await runAdd(io, "/proj", ["multi"], {});
+    expect(summary.upToDate).toEqual([MULTI_A]);
+    expect(summary.files).toEqual([MULTI_B]);
+    const lock = readLockfile(io, "/proj");
+    expect(Object.keys(lock.packages.multi?.files ?? {}).sort()).toEqual([MULTI_A, MULTI_B].sort());
   });
 
   it("冲突且未覆盖 → conflicts，lockfile 不新建条目", async () => {

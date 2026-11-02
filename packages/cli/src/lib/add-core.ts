@@ -137,22 +137,24 @@ export async function runAdd(
     confirm: opts.confirm,
   });
 
-  // lockfile 更新：仅当某 item 的全部文件都写入时记录；任一文件未写入（跳过/拒绝/冲突）
-  // → provenance 不明，条目保持原样（不新建不修改）。
+  // lockfile 更新：provenance 判定按文件状态——
+  // written / upToDate（内容 === 远端）→ 已知来源；declined / conflicts（本地与远端不一致且未写）→ 不明。
+  // 仅当某 item 的全部文件 provenance 明确时记录（含 upToDate：幂等跳过的文件内容就是远端内容，
+  // 只认「已写入」会让部分幂等的覆盖升级丢掉版本号——playground T6/T7 回归抓到的缺陷）。
   const lockfile = readLockfile(io, root);
-  const writtenSet = new Set(result.written);
+  const knownRemote = new Set([...result.written, ...result.upToDate]);
   for (const item of items) {
     const files: Record<string, string> = {};
-    let allWritten = true;
+    let allKnown = true;
     for (const file of item.files) {
       const target = resolveTarget(file.target, config, aliasRoot);
-      if (!writtenSet.has(target)) {
-        allWritten = false;
+      if (!knownRemote.has(target)) {
+        allKnown = false;
         break;
       }
       files[target] = hashContent(file.content);
     }
-    if (allWritten) {
+    if (allKnown) {
       lockfile.packages[item.name] = { version: item.version ?? null, files };
     }
   }
