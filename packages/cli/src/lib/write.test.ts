@@ -110,47 +110,82 @@ describe("findProjectRoot", () => {
 });
 
 describe("planWrites / writeFiles", () => {
+  const VUE = "/p/src/components/ui/button/Button.vue";
+  const TS = "/p/src/components/ui/button/index.ts";
+
   it("plan 标记已存在文件", () => {
-    const io = memIo({ "/p/src/components/ui/button/Button.vue": "old" });
+    const io = memIo({ [VUE]: "old" });
     const plans = planWrites([ITEM], io, "/p/src", CONFIG);
     expect(plans).toHaveLength(2);
-    const vue = plans.find((p) => p.path.endsWith("Button.vue"))!;
-    const ts = plans.find((p) => p.path.endsWith("index.ts"))!;
+    const vue = plans.find((p) => p.path === VUE)!;
+    const ts = plans.find((p) => p.path === TS)!;
     expect(vue.exists).toBe(true);
     expect(ts.exists).toBe(false);
   });
 
-  it("冲突 + confirm=false → 跳过且不写", async () => {
-    const io = memIo({ "/p/src/components/ui/button/Button.vue": "old" });
-    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
-    const confirm = vi.fn().mockResolvedValue(false);
-    const written = await writeFiles(plans, io, { confirm });
-    expect(written).toEqual(["/p/src/components/ui/button/index.ts"]);
-    expect(io.readFile("/p/src/components/ui/button/Button.vue")).toBe("old");
-  });
-
-  it("冲突 + confirm=true → 覆盖", async () => {
-    const io = memIo({ "/p/src/components/ui/button/Button.vue": "old" });
-    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
-    const confirm = vi.fn().mockResolvedValue(true);
-    const written = await writeFiles(plans, io, { confirm });
-    expect(written).toHaveLength(2);
-    expect(io.readFile("/p/src/components/ui/button/Button.vue")).toBe("<template />");
-  });
-
-  it("overwrite=true → 不询问直接覆盖", async () => {
-    const io = memIo({ "/p/src/components/ui/button/Button.vue": "old" });
-    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
+  it("已存在且内容相同 → upToDate，不询问不写入（TTY/非TTY 一致）", async () => {
+    const io = memIo({ [VUE]: "<template />", [TS]: "export {}" });
     const confirm = vi.fn();
-    const written = await writeFiles(plans, io, { overwrite: true, confirm });
-    expect(written).toHaveLength(2);
+    const r = await writeFiles(planWrites([ITEM], io, "/p/src", CONFIG), io, { confirm });
+    expect(r).toEqual({
+      written: [],
+      overwrites: [],
+      upToDate: [VUE, TS],
+      declined: [],
+      conflicts: [],
+    });
     expect(confirm).not.toHaveBeenCalled();
   });
 
-  it("无 confirm 注入且冲突时默认跳过", async () => {
-    const io = memIo({ "/p/src/components/ui/button/Button.vue": "old" });
+  it("冲突 + confirm=false → declined，未写入", async () => {
+    const io = memIo({ [VUE]: "old" });
     const plans = planWrites([ITEM], io, "/p/src", CONFIG);
-    const written = await writeFiles(plans, io, {});
-    expect(written).toHaveLength(1);
+    const confirm = vi.fn().mockResolvedValue(false);
+    const r = await writeFiles(plans, io, { confirm });
+    expect(r.written).toEqual([TS]);
+    expect(r.overwrites).toEqual([]);
+    expect(r.declined).toEqual([VUE]);
+    expect(r.conflicts).toEqual([]);
+    expect(io.readFile(VUE)).toBe("old");
+  });
+
+  it("冲突 + confirm=true → 覆盖并计入 overwrites", async () => {
+    const io = memIo({ [VUE]: "old" });
+    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
+    const confirm = vi.fn().mockResolvedValue(true);
+    const r = await writeFiles(plans, io, { confirm });
+    expect(r.written).toHaveLength(2);
+    expect(r.overwrites).toEqual([VUE]);
+    expect(r.declined).toEqual([]);
+    expect(io.readFile(VUE)).toBe("<template />");
+  });
+
+  it("overwrite=true → 不询问直接覆盖", async () => {
+    const io = memIo({ [VUE]: "old" });
+    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
+    const confirm = vi.fn();
+    const r = await writeFiles(plans, io, { overwrite: true, confirm });
+    expect(r.written).toHaveLength(2);
+    expect(r.overwrites).toEqual([VUE]);
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it("无 confirm 注入且内容不同 → conflicts（跳过）", async () => {
+    const io = memIo({ [VUE]: "old" });
+    const plans = planWrites([ITEM], io, "/p/src", CONFIG);
+    const r = await writeFiles(plans, io, {});
+    expect(r.written).toEqual([TS]);
+    expect(r.conflicts).toEqual([VUE]);
+    expect(io.readFile(VUE)).toBe("old");
+  });
+
+  it("新文件 → written 且不计入 overwrites", async () => {
+    const io = memIo();
+    const r = await writeFiles(planWrites([ITEM], io, "/p/src", CONFIG), io, {});
+    expect(r.written).toEqual([VUE, TS]);
+    expect(r.overwrites).toEqual([]);
+    expect(r.upToDate).toEqual([]);
+    expect(r.declined).toEqual([]);
+    expect(r.conflicts).toEqual([]);
   });
 });

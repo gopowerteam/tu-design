@@ -47,6 +47,11 @@ export function validateRegistryItem(raw: unknown): RegistryItem {
       `registry item ${String(obj.name)} 的 files[${badFile}] 缺少 path/target/content 字符串字段`,
     );
   }
+  if (obj.version !== undefined && typeof obj.version !== "string") {
+    throw new Error(
+      `registry item ${String(obj.name)} 的 version 字段必须是字符串，得到 ${obj.version === null ? "null" : typeof obj.version}`,
+    );
+  }
   return raw as RegistryItem;
 }
 

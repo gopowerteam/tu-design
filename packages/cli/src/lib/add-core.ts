@@ -3,7 +3,8 @@ import { fetchItem, resolveRegistryUrl } from "./registry";
 import type { RegistryFetcher, NpmChannel } from "./registry";
 import type { RegistryItem } from "./registry-types";
 import { detectPackageManagerForProject, installDependencies } from "./pm";
-import { findProjectRoot, planWrites, writeFiles } from "./write";
+import { findProjectRoot, planWrites, resolveTarget, writeFiles } from "./write";
+import { hashContent, readLockfile, writeLockfile } from "./lockfile";
 import type { Io } from "./io";
 
 export async function resolveTopo(
@@ -63,11 +64,21 @@ export function collectDeps(items: RegistryItem[]): {
 
 export interface AddSummary {
   files: string[];
+  overwrites: string[];
+  conflicts: string[];
+  upToDate: string[];
+  declined: string[];
   dependencies: string[];
   devDependencies: string[];
+  dryRun?: boolean;
 }
 
-const DEFAULT_ALIAS_ROOT = "src";
+export const DEFAULT_ALIAS_ROOT = "src";
+
+/** add / diff 共用：由项目根推出组件源码落点根（aliasRoot）。 */
+export function aliasRootOf(root: string): string {
+  return `${root}/${DEFAULT_ALIAS_ROOT}`;
+}
 
 export async function runAdd(
   io: Io & RegistryFetcher & { exec(cmd: string[]): void },
@@ -78,23 +89,75 @@ export async function runAdd(
     registry?: string;
     confirm?: (msg: string) => Promise<boolean>;
     npm?: NpmChannel;
+    dryRun?: boolean;
   },
 ): Promise<AddSummary> {
   const root = findProjectRoot(io, cwd);
   const config = loadConfig(io, root);
   const registryUrl = resolveRegistryUrl(config, opts.registry);
-  const aliasRoot = `${root}/${DEFAULT_ALIAS_ROOT}`;
+  const aliasRoot = aliasRootOf(root);
 
   const npm: NpmChannel = opts.npm ?? { hasItem: () => false, readItem: () => undefined };
   const items = await resolveTopo(names, (name) => fetchItem(io, registryUrl, npm, name));
 
   const plans = planWrites(items, io, aliasRoot, config);
-  const files = await writeFiles(plans, io, {
+  const { dependencies, devDependencies } = collectDeps(items);
+
+  if (opts.dryRun) {
+    // 纯展示：不写盘、不装依赖、不写 lockfile，也不产生 conflict（不触发退出码）
+    const files: string[] = [];
+    const overwrites: string[] = [];
+    const upToDate: string[] = [];
+    for (const plan of plans) {
+      if (!io.exists(plan.path)) {
+        files.push(plan.path);
+        continue;
+      }
+      if (hashContent(io.readFile(plan.path)) === hashContent(plan.content)) {
+        upToDate.push(plan.path);
+      } else {
+        files.push(plan.path);
+        overwrites.push(plan.path);
+      }
+    }
+    return {
+      files,
+      overwrites,
+      conflicts: [],
+      upToDate,
+      declined: [],
+      dependencies,
+      devDependencies,
+      dryRun: true,
+    };
+  }
+
+  const result = await writeFiles(plans, io, {
     overwrite: opts.overwrite,
     confirm: opts.confirm,
   });
 
-  const { dependencies, devDependencies } = collectDeps(items);
+  // lockfile 更新：仅当某 item 的全部文件都写入时记录；任一文件未写入（跳过/拒绝/冲突）
+  // → provenance 不明，条目保持原样（不新建不修改）。
+  const lockfile = readLockfile(io, root);
+  const writtenSet = new Set(result.written);
+  for (const item of items) {
+    const files: Record<string, string> = {};
+    let allWritten = true;
+    for (const file of item.files) {
+      const target = resolveTarget(file.target, config, aliasRoot);
+      if (!writtenSet.has(target)) {
+        allWritten = false;
+        break;
+      }
+      files[target] = hashContent(file.content);
+    }
+    if (allWritten) {
+      lockfile.packages[item.name] = { version: item.version ?? null, files };
+    }
+  }
+  writeLockfile(io, root, lockfile);
+
   const pm = detectPackageManagerForProject(io, root);
   if (dependencies.length > 0) {
     installDependencies(io, root, dependencies, false, pm);
@@ -103,5 +166,13 @@ export async function runAdd(
     installDependencies(io, root, devDependencies, true, pm);
   }
 
-  return { files, dependencies, devDependencies };
+  return {
+    files: result.written,
+    overwrites: result.overwrites,
+    conflicts: result.conflicts,
+    upToDate: result.upToDate,
+    declined: result.declined,
+    dependencies,
+    devDependencies,
+  };
 }

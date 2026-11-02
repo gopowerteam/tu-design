@@ -12,6 +12,8 @@ export interface RegistryItem {
   $schema: string;
   name: string;
   type: RegistryType;
+  /** 组件版本（registry 生成时标注）；缺省视为 null，兼容旧 registry。 */
+  version?: string;
   description?: string;
   registryDependencies?: string[];
   dependencies?: string[];

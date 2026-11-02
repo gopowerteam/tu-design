@@ -1,6 +1,7 @@
 import type { Io } from "./io";
 import type { ComponentsConfig } from "./config";
 import type { RegistryItem } from "./registry-types";
+import { hashContent } from "./lockfile";
 
 function parentDir(dir: string): string | null {
   if (dir === "/") {
@@ -94,24 +95,63 @@ export function planWrites(
   return plans;
 }
 
+export interface WriteResult {
+  /** 实际写入的路径（含覆盖）。 */
+  written: string[];
+  /** written 中覆盖了已存在文件的路径。 */
+  overwrites: string[];
+  /** 已存在且内容相同 → 静默跳过（TTY / 非 TTY 一致，不询问）。 */
+  upToDate: string[];
+  /** TTY confirm 被用户拒绝。 */
+  declined: string[];
+  /** 已存在、内容不同、且无 confirm 函数（非 TTY）→ 跳过。 */
+  conflicts: string[];
+}
+
+/**
+ * 覆盖安全语义：内容比对（sha256）优先于存在性判断——
+ * 内容相同的重复安装不算冲突，静默跳过；只有「存在且内容不同」才进入覆盖询问 / conflict 分支。
+ */
 export async function writeFiles(
   plans: WritePlan[],
   io: Io,
   opts: { overwrite?: boolean; confirm?: (msg: string) => Promise<boolean> },
-): Promise<string[]> {
-  const written: string[] = [];
+): Promise<WriteResult> {
+  const result: WriteResult = {
+    written: [],
+    overwrites: [],
+    upToDate: [],
+    declined: [],
+    conflicts: [],
+  };
   for (const plan of plans) {
-    if (plan.exists && !opts.overwrite) {
-      if (!opts.confirm) {
+    if (io.exists(plan.path)) {
+      if (hashContent(io.readFile(plan.path)) === hashContent(plan.content)) {
+        result.upToDate.push(plan.path);
         continue;
       }
-      const ok = await opts.confirm(`文件已存在，覆盖？${plan.path}`);
-      if (!ok) {
+      if (opts.overwrite) {
+        io.writeFile(plan.path, plan.content);
+        result.written.push(plan.path);
+        result.overwrites.push(plan.path);
         continue;
       }
+      if (opts.confirm) {
+        const ok = await opts.confirm(`文件已有本地改动，覆盖？${plan.path}`);
+        if (ok) {
+          io.writeFile(plan.path, plan.content);
+          result.written.push(plan.path);
+          result.overwrites.push(plan.path);
+        } else {
+          result.declined.push(plan.path);
+        }
+        continue;
+      }
+      result.conflicts.push(plan.path);
+      continue;
     }
     io.writeFile(plan.path, plan.content);
-    written.push(plan.path);
+    result.written.push(plan.path);
   }
-  return written;
+  return result;
 }

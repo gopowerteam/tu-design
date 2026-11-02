@@ -88,6 +88,23 @@ describe("validateRegistryItem", () => {
   ])("files 形态非法（%s）抛错并给下标", (_label, file) => {
     expect(() => validateRegistryItem({ ...ITEM, files: [file] })).toThrow(/files\[0\]/);
   });
+
+  it("version 缺省放行（兼容旧 registry）", () => {
+    expect("version" in ITEM).toBe(false);
+    expect(validateRegistryItem(ITEM)).toEqual(ITEM);
+  });
+
+  it("version 为字符串 → 原样保留", () => {
+    expect(validateRegistryItem({ ...ITEM, version: "1.2.0" })).toEqual({
+      ...ITEM,
+      version: "1.2.0",
+    });
+  });
+
+  it("version 非字符串（含 null）→ 抛错并点名组件", () => {
+    expect(() => validateRegistryItem({ ...ITEM, version: 3 })).toThrow(/button.*version/);
+    expect(() => validateRegistryItem({ ...ITEM, version: null })).toThrow(/button.*version/);
+  });
 });
 
 describe("fetchItem", () => {
