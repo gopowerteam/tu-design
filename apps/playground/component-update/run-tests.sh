@@ -5,7 +5,7 @@
 #       registry 版本升级、获取失败隔离、lockfile 损坏报错、多组件拓扑安装。
 set -u
 HERE="$(cd "$(dirname "$0")" && pwd)"
-REPO="$(cd "$HERE/../.." && pwd)"
+REPO="$(cd "$HERE/../../.." && pwd)"
 CLI="$REPO/packages/cli/dist/index.mjs"
 REG_DIR="$HERE/mock-registry"
 PROJ="$HERE/fake-project"

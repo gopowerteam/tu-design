@@ -7,7 +7,7 @@
 
 ```bash
 # 前置：CLI 需要先构建（仓库根执行过 pnpm build 或 vp run ready 即可）
-bash playground/component-update/run-tests.sh
+bash apps/playground/component-update/run-tests.sh
 ```
 
 脚本自包含：每次运行重建 `mock-registry/`（拷贝 `packages/vue/registry/vue`）与两个模拟用户项目
