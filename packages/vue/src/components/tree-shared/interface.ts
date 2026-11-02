@@ -1,7 +1,8 @@
 /*!
  * 移植自 treemate v0.3.11 —— https://github.com/07akioni/treemate
  * MIT License · Copyright (c) 07akioni
- * 本地改动：无实质改动（仅类型导入顺序与注释格式）。
+ * 本地改动：GetChildren 返回类型由 `Array<R | G | I> | unknown` 塌缩为 `unknown`
+ * （TS 中 `X | unknown` 恒等于 `unknown`，语义不变，消除 no-redundant-type-constituents 告警）。
  */
 export type Key = string | number;
 
@@ -60,7 +61,7 @@ export interface MergedKeys {
   indeterminateKeys: Key[];
 }
 
-export type GetChildren<R, G, I> = (node: R | G | I) => Array<R | G | I> | unknown;
+export type GetChildren<R, G, I> = (node: R | G | I) => unknown;
 
 export interface TreeMateOptions<R, G, I> {
   ignoreEmptyChildren?: boolean;

@@ -301,7 +301,7 @@ describe("TreeSelect checkable", () => {
       clearable: true,
       "onUpdate:modelValue": onUpdate,
     });
-    w.find('[data-part="clear"]').trigger("click");
+    await w.find('[data-part="clear"]').trigger("click");
     await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith([]));
     w.unmount();
   });

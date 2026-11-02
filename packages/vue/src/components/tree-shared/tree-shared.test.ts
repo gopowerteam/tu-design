@@ -27,6 +27,10 @@ const TREE: TreeOption[] = [
 
 const LEAVES = ["b", "d", "e"];
 
+/** checkedKeys 是 Key[]（string|number 联合），显式比较器避免默认字符串序（require-array-sort-compare）。 */
+const sortedKeys = (keys: Array<string | number>) =>
+  [...keys].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+
 describe("tree-shared（treemate 移植）", () => {
   it("flatten 按展开态输出可见节点序列", () => {
     const mate = createTreeMate(TREE);
@@ -44,7 +48,7 @@ describe("tree-shared（treemate 移植）", () => {
   it("getCheckedKeys cascade=true checkStrategy=all 返回全选与半选", () => {
     const mate = createTreeMate(TREE);
     const full = mate.getCheckedKeys(LEAVES, { cascade: true, checkStrategy: "all" });
-    expect([...full.checkedKeys].sort()).toEqual(["a", "b", "c", "d", "e"]);
+    expect(sortedKeys(full.checkedKeys)).toEqual(["a", "b", "c", "d", "e"]);
     expect(full.indeterminateKeys).toEqual([]);
 
     const partial = mate.getCheckedKeys(["d"], { cascade: true, checkStrategy: "all" });
@@ -55,7 +59,7 @@ describe("tree-shared（treemate 移植）", () => {
   it("checkStrategy=child 时值仅含叶子", () => {
     const mate = createTreeMate(TREE);
     const r = mate.getCheckedKeys(LEAVES, { cascade: true, checkStrategy: "child" });
-    expect([...r.checkedKeys].sort()).toEqual(["b", "d", "e"]);
+    expect(sortedKeys(r.checkedKeys)).toEqual(["b", "d", "e"]);
     expect(r.indeterminateKeys).toEqual(["a"]);
   });
 
@@ -69,11 +73,11 @@ describe("tree-shared（treemate 移植）", () => {
   it("check/uncheck 增量勾选返回新 MergedKeys", () => {
     const mate = createTreeMate(TREE);
     const checked = mate.check("d", ["b"], { cascade: true });
-    expect([...checked.checkedKeys].sort()).toEqual(["b", "d"]);
+    expect(sortedKeys(checked.checkedKeys)).toEqual(["b", "d"]);
     expect(checked.indeterminateKeys).toEqual(["c", "a"]);
 
     const unchecked = mate.uncheck("b", ["b", "c", "d", "e"], { cascade: true });
-    expect([...unchecked.checkedKeys].sort()).toEqual(["c", "d", "e"]);
+    expect(sortedKeys(unchecked.checkedKeys)).toEqual(["c", "d", "e"]);
     expect(unchecked.indeterminateKeys).toEqual(["a"]);
   });
 

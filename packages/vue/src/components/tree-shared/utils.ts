@@ -1,7 +1,7 @@
 /*!
  * 移植自 treemate v0.3.11 —— https://github.com/07akioni/treemate
  * MIT License · Copyright (c) 07akioni
- * 本地改动：无实质改动。
+ * 本地改动：defaultGetChildren 返回类型同步 GetChildren 塌缩为 `unknown`（语义不变）。
  */
 import type {
   GetChildren,
@@ -68,7 +68,7 @@ export function isLeaf<R = RawNode, G = R, I = R>(
   return false;
 }
 
-export function defaultGetChildren<R, G, I>(node: R | G | I): Array<R | G | I> | unknown {
+export function defaultGetChildren<R, G, I>(node: R | G | I): unknown {
   return (node as any).children;
 }
 
