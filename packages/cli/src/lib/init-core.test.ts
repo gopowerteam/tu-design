@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
+import { AGENTS_MD_SOURCE } from "./ai-rules";
 import {
   CN_UTIL_SOURCE,
   RUNTIME_DEPS,
@@ -96,6 +97,7 @@ function barePackageRefs(source: string): string[] {
 describe.each([
   ["TOKENS_CSS_SOURCE", TOKENS_CSS_SOURCE],
   ["CN_UTIL_SOURCE", CN_UTIL_SOURCE],
+  ["AGENTS_MD_SOURCE", AGENTS_MD_SOURCE],
 ])("RUNTIME_DEPS 覆盖 %s", (_name, source) => {
   it("注入内容的每个裸包引用都会被 init 装上", () => {
     expect(barePackageRefs(source).filter((n) => !RUNTIME_DEPS.includes(n))).toEqual([]);
@@ -126,6 +128,7 @@ describe("runInit", () => {
     const s2 = runInit(io, "/proj", opts);
     expect(io.snapshot()).toEqual(snap);
     expect(s2.skippedCss).toBe(true);
+    expect(s2.skippedAgents).toBe(true);
   });
 
   it("已有 components.json 时校验复用", () => {
@@ -176,5 +179,28 @@ describe("runInit", () => {
     });
     const s = runInit(io, "/proj", { ...opts, css: "custom/app.css" });
     expect(s.cssPath).toBe("/proj/custom/app.css");
+  });
+
+  it("默认写入 AGENTS.md 且内容含 CLI 安装命令", () => {
+    const io = fixture();
+    const s = runInit(io, "/proj", opts);
+    expect(s.agentsPath).toBe("/proj/AGENTS.md");
+    expect(s.skippedAgents).toBe(false);
+    expect(io.readFile("/proj/AGENTS.md")).toContain("npx @tu-design/cli add");
+  });
+
+  it("AGENTS.md 已存在时不覆盖", () => {
+    const io = fixture();
+    io.writeFile("/proj/AGENTS.md", "# 自定义规则");
+    const s = runInit(io, "/proj", opts);
+    expect(s.skippedAgents).toBe(true);
+    expect(io.readFile("/proj/AGENTS.md")).toBe("# 自定义规则");
+  });
+
+  it("agents: false 时跳过不写", () => {
+    const io = fixture();
+    const s = runInit(io, "/proj", { ...opts, agents: false });
+    expect(s.skippedAgents).toBe(true);
+    expect(io.exists("/proj/AGENTS.md")).toBe(false);
   });
 });

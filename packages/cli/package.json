@@ -40,10 +40,12 @@
     "test": "vp test --run"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "catalog:",
     "@tu-design/vue": "workspace:*",
     "commander": "catalog:",
     "picocolors": "catalog:",
-    "prompts": "catalog:"
+    "prompts": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@types/prompts": "catalog:",

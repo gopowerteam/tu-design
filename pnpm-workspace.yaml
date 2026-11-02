@@ -37,6 +37,8 @@ catalog:
   commander: ^15
   prompts: ^2
   picocolors: ^1
+  "@modelcontextprotocol/sdk": ^1.32.2
+  zod: ^4
   bumpp: ^12.3.0
   vue-tsc: ^3.3.11
   "@vitejs/plugin-vue": ^6

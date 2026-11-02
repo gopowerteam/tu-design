@@ -16,12 +16,14 @@ npx @tu-design/cli add button
 - 写入 `components.json`（registry URL、别名等配置）
 - 注入 `cn` 工具到 `src/lib/utils.ts`
 - 将主题 tokens 合并进全局 CSS（自动探测常见位置，可用 `--css` 指定；已包含则跳过）
+- 写入 `AGENTS.md` AI 协作规则（组件安装 / 自动导入 / 语义 token 主题约定，供 AI 编码代理遵循；文件已存在时不覆盖，`--no-agents` 可显式跳过）
 - 探测包管理器并安装运行时依赖（`clsx` / `tailwind-merge` / `class-variance-authority`）
 
 | 选项               | 说明                                |
 | ------------------ | ----------------------------------- |
 | `--registry <url>` | registry URL，默认线上 Pages 数据源 |
 | `--css <path>`     | 全局 CSS 路径                       |
+| `--no-agents`      | 不写入 AGENTS.md AI 协作规则        |
 
 ### `add <components...>`
 
@@ -31,6 +33,20 @@ npx @tu-design/cli add button
 | ------------------ | ---------------------------------------- |
 | `--registry <url>` | 覆盖 `components.json` 中的 registry URL |
 | `--overwrite`      | 覆盖已存在的文件而不询问                 |
+
+### `mcp`
+
+启动 MCP Server（stdio 传输，只查询、不安装）：供 Claude / Cursor 等 AI 客户端在线查询组件 registry——列出组件、按关键字搜索、获取单个组件的 registry 详情（内联源码、依赖与安装提示），引导 AI 用 CLI 安装而不是手写源码。
+
+| 选项               | 说明              |
+| ------------------ | ----------------- |
+| `--registry <url>` | registry URL 通道 |
+
+客户端配置示例（与文档站一致）：
+
+```json
+{ "mcpServers": { "tu-design": { "command": "npx", "args": ["-y", "@tu-design/cli", "mcp"] } } }
+```
 
 ## 工作机制
 

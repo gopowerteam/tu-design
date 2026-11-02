@@ -1,3 +1,4 @@
+import { AGENTS_MD_SOURCE } from "./ai-rules";
 import { defaultConfig, saveConfig, validateConfig } from "./config";
 import { applyAliases } from "./alias";
 import { parseJson } from "./json";
@@ -134,6 +135,10 @@ export interface InitSummary {
   cnPath: string;
   cssPath: string;
   skippedCss: boolean;
+  /** AGENTS.md 绝对/拼接路径（无论是否实际写入都返回）。 */
+  agentsPath: string;
+  /** true 表示未写入：显式 agents=false 或文件已存在（不覆盖）。 */
+  skippedAgents: boolean;
 }
 
 export function detectTailwindV4(
@@ -191,7 +196,7 @@ function probeCssPath(io: Io, cwd: string, configured: string): string {
 export function runInit(
   io: Io,
   cwd: string,
-  opts: { registry: string; aliasRoot?: string; css?: string },
+  opts: { registry: string; aliasRoot?: string; css?: string; agents?: boolean },
 ): InitSummary {
   const aliasRoot = opts.aliasRoot ?? "src";
   const config = defaultConfig(opts.registry);
@@ -230,7 +235,14 @@ export function runInit(
     io.writeFile(cssPath, merged);
   }
 
+  // AGENTS.md（AI 协作规则）：显式关闭或已存在时跳过，已存在不覆盖用户自定义内容。
+  const agentsPath = joinPosix(cwd, "AGENTS.md");
+  const skippedAgents = opts.agents === false || io.exists(agentsPath);
+  if (!skippedAgents) {
+    io.writeFile(agentsPath, AGENTS_MD_SOURCE);
+  }
+
   applyAliases(io, cwd, aliasRoot);
 
-  return { configPath, cnPath, cssPath, skippedCss };
+  return { configPath, cnPath, cssPath, skippedCss, agentsPath, skippedAgents };
 }
