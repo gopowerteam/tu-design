@@ -1,0 +1,6 @@
+mock-registry/
+fake-project/
+fake-project-legacy/
+bin/*.log
+.out.log
+.server.log
