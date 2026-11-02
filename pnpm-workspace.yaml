@@ -37,7 +37,6 @@ catalog:
   commander: ^15
   prompts: ^2
   picocolors: ^1
-  package-manager-detector: ^1
   bumpp: ^12.3.0
   vue-tsc: ^3.3.11
   "@vitejs/plugin-vue": ^6

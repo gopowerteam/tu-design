@@ -1,6 +1,18 @@
 import { defaultConfig, saveConfig, validateConfig } from "./config";
 import { applyAliases } from "./alias";
+import { parseJson } from "./json";
 import type { Io } from "./io";
+
+/**
+ * init 注入的源码（TOKENS_CSS_SOURCE / CN_UTIL_SOURCE）里出现的裸包说明符，
+ * 必须全部在此声明，否则 init 出来的项目首屏构建即失败（init-core.test.ts 强制校验）。
+ */
+export const RUNTIME_DEPS = [
+  "clsx",
+  "tailwind-merge",
+  "class-variance-authority",
+  "tw-animate-css",
+];
 
 /**
  * 与 @tu-design/vue/src/styles/tokens.css 保持一致（init-core.test.ts 有防漂移守卫）。
@@ -36,6 +48,10 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --radius: 0.625rem;
+  /* 层叠序：表体 sticky < 表头 sticky < 浮层/弹窗（同级浮层按 DOM 挂载次序叠放） */
+  --z-sticky: 10;
+  --z-sticky-head: 20;
+  --z-overlay: 50;
 }
 
 .dark {
@@ -183,7 +199,11 @@ export function runInit(
   const cssPath = joinPosix(cwd, cssRel);
   const globalCss = io.exists(cssPath) ? io.readFile(cssPath) : "";
 
-  const pkg = JSON.parse(io.readFile(joinPosix(cwd, "package.json"))) as {
+  const pkgPath = joinPosix(cwd, "package.json");
+  if (!io.exists(pkgPath)) {
+    throw new Error(`未找到 ${pkgPath}，请在 npm 项目根目录运行 \`tu-design init\``);
+  }
+  const pkg = parseJson(io.readFile(pkgPath), "package.json") as {
     dependencies?: Record<string, string>;
     devDependencies?: Record<string, string>;
   };
@@ -195,7 +215,7 @@ export function runInit(
 
   const configPath = joinPosix(cwd, "components.json");
   if (io.exists(configPath)) {
-    validateConfig(JSON.parse(io.readFile(configPath)));
+    validateConfig(parseJson(io.readFile(configPath), "components.json"));
   } else {
     saveConfig(io, cwd, { ...config, tailwind: { css: cssRel } });
   }

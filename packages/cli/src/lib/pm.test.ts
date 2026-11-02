@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vite-plus/test";
-import { buildInstallCommand, detectPackageManager, installDependencies, type ExecIo } from "./pm";
+import {
+  buildInstallCommand,
+  detectPackageManager,
+  detectPackageManagerForProject,
+  installDependencies,
+  type ExecIo,
+} from "./pm";
 import type { Io } from "./io";
 
 describe("detectPackageManager", () => {
@@ -13,6 +19,49 @@ describe("detectPackageManager", () => {
     ["npmpackage@1.0.0", "npm"],
   ] as const)("%s → %s", (agent, expected) => {
     expect(detectPackageManager(agent)).toBe(expected);
+  });
+});
+
+describe("detectPackageManagerForProject", () => {
+  function memIo(files: Record<string, string>): Io {
+    return {
+      exists: (p) => p in files,
+      readFile: (p) => {
+        const c = files[p];
+        if (c === undefined) throw new Error(`ENOENT: ${p}`);
+        return c;
+      },
+      writeFile: () => {},
+      readDir: () => [],
+    };
+  }
+  const pkg = (packageManager?: string) => JSON.stringify({ packageManager });
+
+  it("packageManager 字段优先于锁文件", () => {
+    const io = memIo({
+      "/p/package.json": pkg("yarn@4.5.3"),
+      "/p/pnpm-lock.yaml": "",
+    });
+    expect(detectPackageManagerForProject(io, "/p")).toBe("yarn");
+  });
+
+  it("无 packageManager 字段时按锁文件", () => {
+    expect(
+      detectPackageManagerForProject(
+        memIo({ "/p/package.json": pkg(), "/p/pnpm-lock.yaml": "" }),
+        "/p",
+      ),
+    ).toBe("pnpm");
+  });
+
+  it("字段是未知管理器时落回锁文件", () => {
+    const io = memIo({ "/p/package.json": pkg("deno@2"), "/p/yarn.lock": "" });
+    expect(detectPackageManagerForProject(io, "/p")).toBe("yarn");
+  });
+
+  it("package.json 不可解析 / 缺失时不抛错，按锁文件", () => {
+    expect(detectPackageManagerForProject(memIo({ "/p/package.json": "{" }), "/p")).toBe("npm");
+    expect(detectPackageManagerForProject(memIo({ "/p/bun.lock": "" }), "/p")).toBe("bun");
   });
 });
 

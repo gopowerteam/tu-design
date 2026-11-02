@@ -57,6 +57,42 @@ describe("resolveTarget", () => {
   });
 });
 
+// registry 可由第三方托管，target 是外部输入：必须钳在 aliasRoot 内，
+// 否则一个坏 JSON 就能把源码写到项目外（~/.bashrc、/etc/…）。
+describe("resolveTarget 路径穿越", () => {
+  it.each([
+    ["绝对路径", "/etc/passwd"],
+    ["Windows 盘符", "C:/Users/x/.bashrc"],
+    ["上溯逸出 aliasRoot", "../../evil.ts"],
+    ["反斜杠上溯逸出", "..\\..\\evil.ts"],
+    ["归一后为空", "./"],
+    ["空 target", ""],
+  ])("%s（%s）抛错", (_label, target) => {
+    expect(() => resolveTarget(target, CONFIG, "/p/src")).toThrow(/target/);
+  });
+
+  it("归一后仍在 aliasRoot 内的 .. 允许", () => {
+    expect(resolveTarget("components/ui/../../x.ts", CONFIG, "/p/src")).toBe("/p/src/x.ts");
+  });
+
+  it("冗余 . 与 // 被归一", () => {
+    expect(resolveTarget("components/./ui//x.ts", CONFIG, "/p/src")).toBe(
+      "/p/src/components/ui/x.ts",
+    );
+  });
+
+  it("planWrites 的报错点名 registry 项与文件", () => {
+    const bad: RegistryItem = {
+      ...ITEM,
+      name: "evil",
+      files: [
+        { path: "evil/Evil.vue", type: "registry:component", target: "../evil.ts", content: "" },
+      ],
+    };
+    expect(() => planWrites([bad], memIo(), "/p/src", CONFIG)).toThrow(/evil.*Evil\.vue.*target/);
+  });
+});
+
 describe("findProjectRoot", () => {
   it("嵌套 cwd 向上找到 components.json", () => {
     const io = memIo({ "/p/components.json": "{}" });

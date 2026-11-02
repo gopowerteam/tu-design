@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vite-plus/test";
 import {
   CN_UTIL_SOURCE,
+  RUNTIME_DEPS,
   TOKENS_CSS_SOURCE,
   detectTailwindV4,
   mergeTokensCss,
@@ -81,6 +82,26 @@ describe("TOKENS_CSS_SOURCE / CN_UTIL_SOURCE", () => {
   });
 });
 
+/** 源码（TS import / CSS @import）里引用的裸包名，去重排序。 */
+function barePackageRefs(source: string): string[] {
+  const specs = [
+    ...[...source.matchAll(/\b(?:from|import)\s*["']([^"']+)["']/g)].map((m) => m[1]!),
+    ...[...source.matchAll(/@import\s+["']([^"']+)["']/g)].map((m) => m[1]!),
+  ];
+  return [...new Set(specs.filter((s) => !s.startsWith(".")))].sort();
+}
+
+// 真实事故：init 注入的 tokens.css 有 `@import "tw-animate-css"`，但安装清单没有它，
+// 每个新项目首屏构建即 Can't resolve。清单由注入内容反推，而不是靠人记住。
+describe.each([
+  ["TOKENS_CSS_SOURCE", TOKENS_CSS_SOURCE],
+  ["CN_UTIL_SOURCE", CN_UTIL_SOURCE],
+])("RUNTIME_DEPS 覆盖 %s", (_name, source) => {
+  it("注入内容的每个裸包引用都会被 init 装上", () => {
+    expect(barePackageRefs(source).filter((n) => !RUNTIME_DEPS.includes(n))).toEqual([]);
+  });
+});
+
 describe("runInit", () => {
   const opts = { registry: "http://x/r/vue" };
 
@@ -113,6 +134,23 @@ describe("runInit", () => {
     const first = io.readFile("/proj/components.json");
     runInit(io, "/proj", { registry: "http://y/r/vue" });
     expect(io.readFile("/proj/components.json")).toBe(first);
+  });
+
+  it("缺 package.json 时报错提示在项目根运行", () => {
+    const io = memIo({ "/proj/src/assets/main.css": CSS_OK });
+    expect(() => runInit(io, "/proj", opts)).toThrow(/未找到 \/proj\/package\.json/);
+  });
+
+  it("package.json 语法损坏时报错点名文件", () => {
+    const io = memIo({ "/proj/package.json": "{", "/proj/src/assets/main.css": CSS_OK });
+    expect(() => runInit(io, "/proj", opts)).toThrow(/package\.json 不是合法 JSON/);
+  });
+
+  it("已存在的 components.json 语法损坏时报错点名文件", () => {
+    const io = fixture();
+    runInit(io, "/proj", opts);
+    io.writeFile("/proj/components.json", "{ oops");
+    expect(() => runInit(io, "/proj", opts)).toThrow(/components\.json 不是合法 JSON/);
   });
 
   it("tailwind 检测失败抛错且不写文件", () => {

@@ -130,4 +130,24 @@ describe("runAdd", () => {
     await runAdd(io, "/proj", ["solo"], {});
     expect(io.exists("__exec__")).toBe(false);
   });
+
+  // registry 是外部输入：恶意 target 必须在落盘前被拦住，且不写任何文件
+  it("target 越出 aliasRoot → 抛错且不写盘、不装依赖", async () => {
+    const evil: RegistryItem = {
+      ...item("evil"),
+      files: [
+        {
+          path: "evil/Evil.vue",
+          type: "registry:component",
+          target: "../../../etc/evil.ts",
+          content: "x",
+        },
+      ],
+    };
+    const io = memIo(project());
+    io.fetchJson = async () => evil;
+    await expect(runAdd(io, "/proj", ["evil"], {})).rejects.toThrow(/evil.*target/);
+    expect(io.exists("/etc/evil.ts")).toBe(false);
+    expect(io.exists("__exec__")).toBe(false);
+  });
 });

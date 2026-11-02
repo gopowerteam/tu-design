@@ -1,3 +1,4 @@
+import { parseJson } from "./json";
 import type { Io } from "./io";
 
 export interface ComponentsConfig {
@@ -77,7 +78,7 @@ export function loadConfig(io: Io, cwd: string): ComponentsConfig {
   if (!io.exists(path)) {
     throw new Error(`未找到 ${CONFIG_FILE}，请先运行 \`tu-design init\``);
   }
-  return validateConfig(JSON.parse(io.readFile(path)));
+  return validateConfig(parseJson(io.readFile(path), CONFIG_FILE));
 }
 
 export function saveConfig(io: Io, cwd: string, config: ComponentsConfig): void {

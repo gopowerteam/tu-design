@@ -22,7 +22,8 @@
     "tu-design": "./dist/index.mjs"
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md"
   ],
   "type": "module",
   "exports": {
@@ -41,7 +42,6 @@
   "dependencies": {
     "@tu-design/vue": "workspace:*",
     "commander": "catalog:",
-    "package-manager-detector": "catalog:",
     "picocolors": "catalog:",
     "prompts": "catalog:"
   },

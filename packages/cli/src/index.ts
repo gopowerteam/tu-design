@@ -3,26 +3,25 @@ import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { Command } from "commander";
 import picocolors from "picocolors";
-import { detect } from "package-manager-detector";
 import { nodeIo, nodeNpmChannel } from "./io/node";
 import { DEFAULT_REGISTRY } from "./lib/config";
-import { runInit } from "./lib/init-core";
+import { runInit, RUNTIME_DEPS } from "./lib/init-core";
 import { runAdd } from "./lib/add-core";
-import { detectPackageManager, installDependencies, type ExecIo } from "./lib/pm";
+import { detectPackageManagerForProject, installDependencies, type ExecIo } from "./lib/pm";
 import { parsePkgVersion } from "./lib/version";
 
-const RUNTIME_DEPS = ["clsx", "tailwind-merge", "class-variance-authority"];
+/** 唯一的子进程执行实现：init / add 都走它，失败原因由 stdio 直接透传给用户。 */
+function execIn(cwd: string): (cmd: string[]) => void {
+  return (cmd) => {
+    const result = spawnSync(cmd[0]!, cmd.slice(1), { cwd, stdio: "inherit" });
+    if (result.status !== 0) {
+      throw new Error(`命令执行失败：${cmd.join(" ")}`);
+    }
+  };
+}
 
 function makeExecIo(cwd: string): ExecIo {
-  return {
-    ...nodeIo,
-    exec(cmd) {
-      const result = spawnSync(cmd[0]!, cmd.slice(1), { cwd, stdio: "inherit" });
-      if (result.status !== 0) {
-        throw new Error(`命令执行失败：${cmd.join(" ")}`);
-      }
-    },
-  };
+  return { ...nodeIo, exec: execIn(cwd) };
 }
 
 const program = new Command();
@@ -54,8 +53,7 @@ program
           ? `ℹ ${summary.cssPath} 已包含 tokens，跳过`
           : `✔ 已合并 tokens 至 ${summary.cssPath}`,
       );
-      const detected = await detect({ cwd });
-      const pm = detectPackageManager(detected?.agent);
+      const pm = detectPackageManagerForProject(nodeIo, cwd);
       console.log(`ℹ 使用 ${pm} 安装 ${RUNTIME_DEPS.join(" ")}`);
       installDependencies(makeExecIo(cwd), cwd, RUNTIME_DEPS, false, pm);
       console.log("✔ 依赖安装完成");
@@ -85,15 +83,7 @@ program
           }
           return res.json();
         },
-        exec(cmd) {
-          const result = spawnSync(cmd[0]!, cmd.slice(1), {
-            cwd,
-            stdio: "inherit",
-          });
-          if (result.status !== 0) {
-            throw new Error(`命令执行失败：${cmd.join(" ")}`);
-          }
-        },
+        exec: execIn(cwd),
       };
       const summary = await runAdd(addIo, cwd, components, {
         registry: opts.registry,

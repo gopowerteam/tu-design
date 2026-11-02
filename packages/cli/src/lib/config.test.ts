@@ -46,4 +46,14 @@ describe("loadConfig / saveConfig", () => {
 
   it("components.json 不存在时抛错文案含 init", () =>
     expect(() => loadConfig(memIo(), "/proj")).toThrow(/init/));
+
+  it("components.json 语法损坏时报错点名文件（而非裸 SyntaxError）", () =>
+    expect(() => loadConfig(memIo({ "/proj/components.json": "{" }), "/proj")).toThrow(
+      /components\.json 不是合法 JSON/,
+    ));
+
+  it("components.json 合法但字段缺失时仍走结构校验", () =>
+    expect(() => loadConfig(memIo({ "/proj/components.json": "{}" }), "/proj")).toThrow(
+      /缺少或非法字段/,
+    ));
 });

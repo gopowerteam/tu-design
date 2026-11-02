@@ -28,12 +28,40 @@ export function findProjectRoot(io: Io, cwd: string): string {
   }
 }
 
-/** registry target 恒为 POSIX /；纯逻辑层统一 POSIX 路径，真实 fs 由 node IO 兜底（Windows 同样接受 /）。 */
+/**
+ * registry target 恒为 POSIX /；纯逻辑层统一 POSIX 路径，真实 fs 由 node IO 兜底（Windows 同样接受 /）。
+ *
+ * target 来自远端 JSON（registry 可被任意第三方托管），必须钳在 aliasRoot 内：
+ * 绝对路径、盘符路径、或逸出 aliasRoot 的 `..` 一律拒绝，否则一个恶意/损坏的
+ * registry 项能把源码写到项目外（`~/.bashrc`、`/etc/…`）。
+ * 逐段归一后仍留在 aliasRoot 内的 `..`（如 `components/ui/../../x.ts`）允许。
+ */
 export function resolveTarget(target: string, config: ComponentsConfig, aliasRoot: string): string {
   // config 当前用于保留 alias 语义的扩展位（target 已按 components/ui 布局生成）
   void config;
   const root = aliasRoot.replace(/\\/g, "/").replace(/\/+$/, "");
-  return `${root}/${target}`;
+  const unix = target.replace(/\\/g, "/");
+  if (unix.startsWith("/") || /^[A-Za-z]:\//.test(unix)) {
+    throw new Error(`registry target 必须是相对路径，得到 ${target}`);
+  }
+  const segs: string[] = [];
+  for (const part of unix.split("/")) {
+    if (part === "" || part === ".") {
+      continue;
+    }
+    if (part === "..") {
+      if (segs.length === 0) {
+        throw new Error(`registry target 越出项目目录：${target}`);
+      }
+      segs.pop();
+      continue;
+    }
+    segs.push(part);
+  }
+  if (segs.length === 0) {
+    throw new Error(`registry target 解析后为空：${target}`);
+  }
+  return `${root}/${segs.join("/")}`;
 }
 
 export interface WritePlan {
@@ -51,7 +79,15 @@ export function planWrites(
   const plans: WritePlan[] = [];
   for (const item of items) {
     for (const file of item.files) {
-      const path = resolveTarget(file.target, config, aliasRoot);
+      let path: string;
+      try {
+        path = resolveTarget(file.target, config, aliasRoot);
+      } catch (error) {
+        // 报错要点名是哪个 registry 项的哪个文件，否则用户只看到一个无上下文的 target 字符串
+        throw new Error(
+          `项 ${item.name} 的文件 ${file.path}：${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
       plans.push({ path, content: file.content, exists: io.exists(path) });
     }
   }

@@ -2,7 +2,7 @@ import { loadConfig } from "./config";
 import { fetchItem, resolveRegistryUrl } from "./registry";
 import type { RegistryFetcher, NpmChannel } from "./registry";
 import type { RegistryItem } from "./registry-types";
-import { detectPackageManagerFromLockfiles, installDependencies } from "./pm";
+import { detectPackageManagerForProject, installDependencies } from "./pm";
 import { findProjectRoot, planWrites, writeFiles } from "./write";
 import type { Io } from "./io";
 
@@ -95,7 +95,7 @@ export async function runAdd(
   });
 
   const { dependencies, devDependencies } = collectDeps(items);
-  const pm = detectPackageManagerFromLockfiles(io, root);
+  const pm = detectPackageManagerForProject(io, root);
   if (dependencies.length > 0) {
     installDependencies(io, root, dependencies, false, pm);
   }

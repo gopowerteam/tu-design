@@ -57,6 +57,17 @@ describe("resolveRegistryUrl", () => {
   it("override 优先", () => expect(resolveRegistryUrl(CONFIG, "http://o/r")).toBe("http://o/r"));
   it("无 override 用 config.registry", () =>
     expect(resolveRegistryUrl(CONFIG)).toBe("http://default.example/r/vue"));
+
+  // 从浏览器地址栏复制的 URL 常带尾斜杠，拼接后会得到 //button.json（多数静态托管 404）
+  it.each([
+    ["http://o/r/vue/", "http://o/r/vue"],
+    ["http://o/r/vue///", "http://o/r/vue"],
+  ])("去掉尾部斜杠：%s → %s", (input, expected) => {
+    expect(resolveRegistryUrl(CONFIG, input)).toBe(expected);
+  });
+
+  it("config.registry 的尾斜杠同样被去掉", () =>
+    expect(resolveRegistryUrl({ ...CONFIG, registry: "http://d/r/vue/" })).toBe("http://d/r/vue"));
 });
 
 describe("validateRegistryItem", () => {
@@ -68,6 +79,14 @@ describe("validateRegistryItem", () => {
     [{ name: "x", type: "registry:ui" }, /files/],
   ])("非法结构抛错 %j", (raw, re) => {
     expect(() => validateRegistryItem(raw)).toThrow(re);
+  });
+
+  it.each([
+    ["缺 target", { path: "a/A.vue", type: "registry:component", content: "" }],
+    ["缺 content", { path: "a/A.vue", type: "registry:component", target: "a/A.vue" }],
+    ["files 项不是对象", "not-a-file"],
+  ])("files 形态非法（%s）抛错并给下标", (_label, file) => {
+    expect(() => validateRegistryItem({ ...ITEM, files: [file] })).toThrow(/files\[0\]/);
   });
 });
 
@@ -93,9 +112,10 @@ describe("fetchItem", () => {
     expect(item.name).toBe("button");
   });
 
-  it("双失败抛错含组件名", async () => {
+  // 吞掉 URL 通道原因会让人去查 npm，而问题其实出在 registry 网络 / JSON 损坏
+  it("双失败抛错含组件名、URL 与真实原因", async () => {
     await expect(fetchItem(fetcherFailing(), "http://r/vue", npmEmpty(), name)).rejects.toThrow(
-      /button/,
+      /button.*http:\/\/r\/vue\/button\.json.*ENOTFOUND.*npm/,
     );
   });
 });

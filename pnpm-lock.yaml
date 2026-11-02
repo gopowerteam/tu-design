@@ -203,9 +203,6 @@ catalogs:
     happy-dom:
       specifier: ^20
       version: 20.14.5
-    package-manager-detector:
-      specifier: ^1
-      version: 1.8.0
     picocolors:
       specifier: ^1
       version: 1.1.1
@@ -317,9 +314,6 @@ importers:
       commander:
         specifier: 'catalog:'
         version: 15.0.0
-      package-manager-detector:
-        specifier: 'catalog:'
-        version: 1.8.0
       picocolors:
         specifier: 'catalog:'
         version: 1.1.1
