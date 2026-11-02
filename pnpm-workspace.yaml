@@ -5,6 +5,10 @@ packages:
 
 catalogMode: prefer
 
+# 显式关闭供应链时效策略（与本地环境一致）：pnpm 12 默认 24h 内新发布的包拒装，
+# 会导致 CI --frozen-lockfile 与本地 install 策略错位（jose@6.2.15 事故）。
+minimumReleaseAge: 0
+
 catalog:
   "@types/node": ^24
   dev: ^0.1.5
