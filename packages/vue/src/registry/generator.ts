@@ -207,6 +207,7 @@ export function generateRegistry(
     utilsPath: string;
     tokensPath: string;
     workspaceYaml: string;
+    version: string;
   },
 ): { items: RegistryItem[]; index: RegistryIndex } {
   const catalog = parseCatalog(input.workspaceYaml);
@@ -253,6 +254,7 @@ export function generateRegistry(
     items.push({
       $schema: SCHEMA_ITEM,
       name: dir,
+      version: input.version,
       type: "registry:ui",
       description: meta.description,
       ...(meta.registryDependencies?.length
@@ -269,6 +271,7 @@ export function generateRegistry(
   items.push({
     $schema: SCHEMA_ITEM,
     name: "utils",
+    version: input.version,
     type: "registry:lib",
     description: "cn 类名合并工具（clsx + tailwind-merge）。",
     dependencies: toNameAtVersion(
@@ -295,6 +298,7 @@ export function generateRegistry(
   items.push({
     $schema: SCHEMA_ITEM,
     name: "tokens",
+    version: input.version,
     type: "registry:style",
     description: "Tailwind CSS v4 语义 tokens（shadcn 官方 v4 集合）。",
     ...(tokensDeps.length ? { dependencies: tokensDeps } : {}),
@@ -334,6 +338,7 @@ export function generateRegistry(
     name: "tu-design",
     items: sorted.map((i) => ({
       name: i.name,
+      version: i.version,
       title: toPascal(i.name),
       type: i.type,
       description: i.description,

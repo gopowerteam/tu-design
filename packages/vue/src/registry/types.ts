@@ -10,6 +10,7 @@ export interface RegistryFile {
 export interface RegistryItem {
   $schema: string;
   name: string;
+  version: string;
   type: RegistryType;
   description?: string;
   registryDependencies?: string[];
@@ -21,7 +22,13 @@ export interface RegistryItem {
 export interface RegistryIndex {
   $schema: string;
   name: string;
-  items: { name: string; title: string; type: RegistryType; description?: string }[];
+  items: {
+    name: string;
+    title: string;
+    version: string;
+    type: RegistryType;
+    description?: string;
+  }[];
 }
 
 export interface RegistryMeta {

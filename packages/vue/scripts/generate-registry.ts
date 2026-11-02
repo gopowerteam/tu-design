@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import { generateRegistry, type RegistryIo } from "../src/registry/generator.ts";
 
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as { version: string };
 
 const io: RegistryIo = {
   readDir: (path) => readdirSync(path),
@@ -15,6 +16,7 @@ const { items, index } = generateRegistry(io, {
   utilsPath: join(pkgDir, "src/lib/utils.ts"),
   tokensPath: join(pkgDir, "src/styles/tokens.css"),
   workspaceYaml: readFileSync(join(pkgDir, "../../pnpm-workspace.yaml"), "utf8"),
+  version: pkg.version,
 });
 
 const outDir = join(pkgDir, "registry/vue");

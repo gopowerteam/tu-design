@@ -70,6 +70,7 @@ function makeFixture() {
       utilsPath: "lib/utils.ts",
       tokensPath: "styles/tokens.css",
       workspaceYaml,
+      version: "1.2.3",
     },
   };
 }
@@ -97,6 +98,15 @@ describe("generateRegistry", () => {
     const indexNames = index.items.map((i) => i.name);
     expect(indexNames).toEqual([...itemNames].sort());
     expect(new Set(indexNames).size).toBe(itemNames.length);
+  });
+
+  it("每个 item 与 index 条目都写入 input.version", () => {
+    for (const item of items) {
+      expect(item.version).toBe(input.version);
+    }
+    for (const entry of index.items) {
+      expect(entry.version).toBe(input.version);
+    }
   });
 
   it("button item 的 files 含 Button.vue 且 content 非空、依赖 utils", () => {
@@ -197,6 +207,7 @@ const fixtureInput = {
   tokensPath: "styles/tokens.css",
   workspaceYaml:
     "catalog:\n  clsx: ^2.1.1\n  tailwind-merge: ^3.7.0\n  class-variance-authority: ^0.7.1\n",
+  version: "1.2.3",
 };
 
 describe("generateRegistry 分发完整性校验", () => {

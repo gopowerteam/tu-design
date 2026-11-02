@@ -1,6 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "number-input",
+  "version": "0.4.1",
   "type": "registry:ui",
   "description": "数字输入框：内置加减步进按钮与数值边界，值以 number|null 受控（空值归一 null），支持 Intl 数字格式化。",
   "registryDependencies": ["utils"],

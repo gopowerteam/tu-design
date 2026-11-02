@@ -11,6 +11,7 @@ import { generateRegistry, type RegistryIo } from "./generator";
  */
 const pkgDir = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const registryDir = join(pkgDir, "registry", "vue");
+const pkg = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8")) as { version: string };
 
 const io: RegistryIo = {
   readDir: (path) => readdirSync(path),
@@ -22,6 +23,7 @@ const { items, index } = generateRegistry(io, {
   utilsPath: join(pkgDir, "src/lib/utils.ts"),
   tokensPath: join(pkgDir, "src/styles/tokens.css"),
   workspaceYaml: readFileSync(join(pkgDir, "../../pnpm-workspace.yaml"), "utf8"),
+  version: pkg.version,
 });
 
 describe("registry 防漂移", () => {

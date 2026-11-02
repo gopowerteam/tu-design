@@ -1,6 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "pin-input",
+  "version": "0.4.1",
   "type": "registry:ui",
   "description": "多格验证码输入：length 指定格数，支持 otp/mask/字符类型、焦点自动跳格与填满回调，可选分隔符插槽。",
   "registryDependencies": ["utils"],

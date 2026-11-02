@@ -1,6 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "badge",
+  "version": "0.4.1",
   "type": "registry:ui",
   "description": "轻量状态徽标，支持四种变体。",
   "registryDependencies": ["utils"],

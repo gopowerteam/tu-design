@@ -1,6 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "empty",
+  "version": "0.4.1",
   "type": "registry:ui",
   "description": "空状态占位，含默认插画与描述文案。",
   "registryDependencies": ["utils"],
