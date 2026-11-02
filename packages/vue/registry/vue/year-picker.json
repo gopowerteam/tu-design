@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "year-picker",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "registry:ui",
   "description": "年份选择器：输入框 + 锁定年视图的日历弹层（decade 网格），值以 \"yyyy\" 字符串受控，min/max 为年粒度闭区间。",
   "registryDependencies": ["utils", "date-shared", "calendar"],

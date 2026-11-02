@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "currency-input",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "type": "registry:ui",
   "description": "金额输入框：内置万/元/角/分单位后缀，labelUnit 输入单位与 valueUnit 存储单位自动换算（整数分最小精度），值以 number|null 受控。",
   "registryDependencies": ["utils"],
