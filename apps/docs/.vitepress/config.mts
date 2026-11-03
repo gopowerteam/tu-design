@@ -179,6 +179,10 @@ export default defineConfig({
               text: "骨架屏 <span class='sidebar-en'>Skeleton</span>",
               link: "/components/skeleton",
             },
+            {
+              text: "时间轴 <span class='sidebar-en'>Timeline</span>",
+              link: "/components/timeline",
+            },
           ],
         },
         {
