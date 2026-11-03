@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "month-picker",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "registry:ui",
   "description": "月份选择器：输入框 + 锁定月视图的日历弹层，值以 \"yyyy-MM\" 字符串受控，min/max 为月粒度闭区间（内部换算到当月末日）。",
   "registryDependencies": ["utils", "date-shared", "calendar"],

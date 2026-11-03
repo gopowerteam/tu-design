@@ -8,13 +8,14 @@ export const alertVariants = cva(
     variants: {
       variant: {
         default: "border-border bg-card text-card-foreground",
-        info: "border-[color-mix(in_oklab,var(--color-info)_35%,transparent)] bg-[color-mix(in_oklab,var(--color-info)_10%,transparent)] text-foreground",
+        // border 35% color-mix 为强度派生：引用实色 token 自动跟随主题，不与 10% 浅底(-soft)共用令牌
+        info: "border-[color-mix(in_oklab,var(--color-info)_35%,transparent)] bg-info-soft text-foreground",
         success:
-          "border-[color-mix(in_oklab,var(--color-success)_35%,transparent)] bg-[color-mix(in_oklab,var(--color-success)_10%,transparent)] text-foreground",
+          "border-[color-mix(in_oklab,var(--color-success)_35%,transparent)] bg-success-soft text-foreground",
         warning:
-          "border-[color-mix(in_oklab,var(--color-warning)_35%,transparent)] bg-[color-mix(in_oklab,var(--color-warning)_10%,transparent)] text-foreground",
+          "border-[color-mix(in_oklab,var(--color-warning)_35%,transparent)] bg-warning-soft text-foreground",
         error:
-          "border-[color-mix(in_oklab,var(--color-destructive)_35%,transparent)] bg-[color-mix(in_oklab,var(--color-destructive)_10%,transparent)] text-foreground",
+          "border-[color-mix(in_oklab,var(--color-destructive)_35%,transparent)] bg-destructive-soft text-foreground",
       },
     },
     defaultVariants: {

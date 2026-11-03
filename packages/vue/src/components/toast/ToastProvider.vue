@@ -29,7 +29,7 @@ onBeforeUnmount(() => __setToastMounted(false));
 /** 语义 type → token 样式（tokens.css 的 success/warning/info/destructive） */
 const typeClass: Record<string, string> = {
   success: "bg-success text-success-foreground",
-  error: "bg-destructive text-white",
+  error: "bg-destructive text-destructive-foreground",
   warning: "bg-warning text-warning-foreground",
   info: "bg-info text-info-foreground",
   loading: "bg-primary text-primary-foreground",

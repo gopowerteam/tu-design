@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "button",
-  "version": "0.4.2",
+  "version": "0.4.3",
   "type": "registry:ui",
   "description": "带变体与尺寸的按钮，支持 as 标签切换与 asChild 组合。",
   "registryDependencies": ["utils", "slot"],
@@ -17,7 +17,7 @@
       "path": "button/index.ts",
       "type": "registry:lib",
       "target": "components/ui/button/index.ts",
-      "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Button } from \"./Button.vue\";\n\nexport const buttonVariants = cva(\n  \"inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:shadow-sm\",\n        destructive: \"bg-destructive text-white shadow-xs hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:border-muted-foreground/25 hover:bg-muted\",\n        secondary: \"bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80\",\n        ghost: \"hover:bg-muted\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 px-3\",\n        lg: \"h-10 px-6\",\n        icon: \"size-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport type ButtonVariants = VariantProps<typeof buttonVariants>;\n"
+      "content": "import { cva, type VariantProps } from \"class-variance-authority\";\n\nexport { default as Button } from \"./Button.vue\";\n\nexport const buttonVariants = cva(\n  \"inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-medium transition-[color,background-color,border-color,box-shadow,transform] [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-[0.98]\",\n  {\n    variants: {\n      variant: {\n        default: \"bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 hover:shadow-sm\",\n        destructive: \"bg-destructive text-destructive-foreground shadow-xs hover:bg-destructive/90\",\n        outline:\n          \"border border-input bg-background hover:border-muted-foreground/25 hover:bg-muted\",\n        secondary: \"bg-secondary text-secondary-foreground shadow-xs hover:bg-secondary/80\",\n        ghost: \"hover:bg-muted\",\n        link: \"text-primary underline-offset-4 hover:underline\",\n      },\n      size: {\n        default: \"h-9 px-4 py-2\",\n        sm: \"h-8 px-3\",\n        lg: \"h-10 px-6\",\n        icon: \"size-9\",\n      },\n    },\n    defaultVariants: {\n      variant: \"default\",\n      size: \"default\",\n    },\n  },\n);\n\nexport type ButtonVariants = VariantProps<typeof buttonVariants>;\n"
     }
   ]
 }

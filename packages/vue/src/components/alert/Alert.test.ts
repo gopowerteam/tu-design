@@ -16,10 +16,13 @@ describe("Alert", () => {
   });
 
   it.each(["info", "success", "warning", "error"] as const)(
-    "variant=%s 应用对应语义色",
+    "variant=%s 背景消费语义浅底 token",
     (variant) => {
       const w = mount(Alert, { props: { variant } });
-      expect(w.classes().some((c) => c.includes("color-mix"))).toBe(true);
+      const token = { info: "info", success: "success", warning: "warning", error: "destructive" }[
+        variant
+      ];
+      expect(w.classes().some((c) => c.includes(`bg-${token}-soft`))).toBe(true);
     },
   );
 

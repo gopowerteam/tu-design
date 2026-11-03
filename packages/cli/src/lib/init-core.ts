@@ -19,35 +19,60 @@ export const RUNTIME_DEPS = [
  * 与 @tu-design/vue/src/styles/tokens.css 保持一致（init-core.test.ts 有防漂移守卫）。
  * 来源：packages/vue/src/styles/tokens.css
  */
-export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
+export const TOKENS_CSS_SOURCE = `/* tu-design 官方 tokens —— Tailwind CSS v4 主题（shadcn v4 集合扩展）。
+ *
+ * 主题桥接：语义色优先消费应用级 --app-* CSS 变量（应用主题系统写入），
+ * 未定义时回落官方 oklch 值 —— 无主题系统的项目观感与上游一致，零破坏。
+ * 契约（--app-* 全集见各项目主题包，如 @repo/themes）：
+ * - --app-bg-page/surface/raised/hover      → --background/--card/--popover/--muted/--accent
+ * - --app-text-1/2/3                        → --foreground 及各 *-foreground/--muted-foreground
+ *   （text-3 上游零消费，供应用侧直接使用）
+ * - --app-accent/-contrast                  → --primary(+foreground)/--ring
+ * - --app-border                            → --border/--input（dark 模式建议低不透明度值，如 #FFFFFF1A，对齐上游风格）
+ * - --secondary/-foreground 有意不桥接（上游定位即中性灰）
+ * - --app-destructive/success/warning/info  → 状态色三件套：实色、-soft 浅底（未定义回落
+ *   color-mix 派生）、-foreground 前景（深色实色场景如 dark destructive 白字对比 borderline，
+ *   建议应用侧显式定义覆盖）
+ * - .dark 块同样桥接，兜底为官方暗色 oklch；--*-soft 在 .dark 内重复声明：
+ *   自定义属性按声明处求值后继承，不在 .dark 重声明将无法响应暗色的实色变化。
+ */
+@import "tw-animate-css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --background: var(--app-bg-page, oklch(1 0 0));
+  --foreground: var(--app-text-1, oklch(0.145 0 0));
+  --card: var(--app-bg-raised, oklch(1 0 0));
+  --card-foreground: var(--app-text-1, oklch(0.145 0 0));
+  --popover: var(--app-bg-raised, oklch(1 0 0));
+  --popover-foreground: var(--app-text-1, oklch(0.145 0 0));
+  --primary: var(--app-accent, oklch(0.205 0 0));
+  --primary-foreground: var(--app-accent-contrast, oklch(0.985 0 0));
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --success: oklch(0.596 0.145 163.225);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.666 0.179 58.318);
-  --warning-foreground: oklch(0.985 0 0);
-  --info: oklch(0.546 0.245 262.881);
-  --info-foreground: oklch(0.985 0 0);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --muted: var(--app-bg-surface, oklch(0.97 0 0));
+  --muted-foreground: var(--app-text-2, oklch(0.556 0 0));
+  --accent: var(--app-bg-hover, oklch(0.97 0 0));
+  --accent-foreground: var(--app-text-1, oklch(0.205 0 0));
+  --destructive: var(--app-destructive, oklch(0.577 0.245 27.325));
+  --destructive-soft: var(
+    --app-destructive-soft,
+    color-mix(in oklab, var(--destructive) 10%, transparent)
+  );
+  --destructive-foreground: var(--app-destructive-foreground, oklch(0.985 0 0));
+  --success: var(--app-success, oklch(0.596 0.145 163.225));
+  --success-soft: var(--app-success-soft, color-mix(in oklab, var(--success) 10%, transparent));
+  --success-foreground: var(--app-success-foreground, oklch(0.985 0 0));
+  --warning: var(--app-warning, oklch(0.666 0.179 58.318));
+  --warning-soft: var(--app-warning-soft, color-mix(in oklab, var(--warning) 12%, transparent));
+  --warning-foreground: var(--app-warning-foreground, oklch(0.985 0 0));
+  --info: var(--app-info, oklch(0.546 0.245 262.881));
+  --info-soft: var(--app-info-soft, color-mix(in oklab, var(--info) 12%, transparent));
+  --info-foreground: var(--app-info-foreground, oklch(0.985 0 0));
+  --border: var(--app-border, oklch(0.922 0 0));
+  --input: var(--app-border, oklch(0.922 0 0));
+  --ring: var(--app-accent, oklch(0.708 0 0));
   --radius: 0.625rem;
   /* 层叠序：表体 sticky < 表头 sticky < 浮层/弹窗（同级浮层按 DOM 挂载次序叠放） */
   --z-sticky: 10;
@@ -56,30 +81,38 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.269 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --background: var(--app-bg-page, oklch(0.145 0 0));
+  --foreground: var(--app-text-1, oklch(0.985 0 0));
+  --card: var(--app-bg-raised, oklch(0.205 0 0));
+  --card-foreground: var(--app-text-1, oklch(0.985 0 0));
+  --popover: var(--app-bg-raised, oklch(0.269 0 0));
+  --popover-foreground: var(--app-text-1, oklch(0.985 0 0));
+  --primary: var(--app-accent, oklch(0.922 0 0));
+  --primary-foreground: var(--app-accent-contrast, oklch(0.205 0 0));
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.371 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --success: oklch(0.696 0.17 162.48);
-  --success-foreground: oklch(0.985 0 0);
-  --warning: oklch(0.769 0.188 70.08);
-  --warning-foreground: oklch(0.205 0 0);
-  --info: oklch(0.623 0.214 259.815);
-  --info-foreground: oklch(0.985 0 0);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --muted: var(--app-bg-surface, oklch(0.269 0 0));
+  --muted-foreground: var(--app-text-2, oklch(0.708 0 0));
+  --accent: var(--app-bg-hover, oklch(0.371 0 0));
+  --accent-foreground: var(--app-text-1, oklch(0.985 0 0));
+  --destructive: var(--app-destructive, oklch(0.704 0.191 22.216));
+  --destructive-soft: var(
+    --app-destructive-soft,
+    color-mix(in oklab, var(--destructive) 10%, transparent)
+  );
+  --destructive-foreground: var(--app-destructive-foreground, oklch(0.985 0 0));
+  --success: var(--app-success, oklch(0.696 0.17 162.48));
+  --success-soft: var(--app-success-soft, color-mix(in oklab, var(--success) 10%, transparent));
+  --success-foreground: var(--app-success-foreground, oklch(0.985 0 0));
+  --warning: var(--app-warning, oklch(0.769 0.188 70.08));
+  --warning-soft: var(--app-warning-soft, color-mix(in oklab, var(--warning) 12%, transparent));
+  --warning-foreground: var(--app-warning-foreground, oklch(0.205 0 0));
+  --info: var(--app-info, oklch(0.623 0.214 259.815));
+  --info-soft: var(--app-info-soft, color-mix(in oklab, var(--info) 12%, transparent));
+  --info-foreground: var(--app-info-foreground, oklch(0.985 0 0));
+  --border: var(--app-border, oklch(1 0 0 / 10%));
+  --input: var(--app-border, oklch(1 0 0 / 15%));
+  --ring: var(--app-accent, oklch(0.556 0 0));
 }
 
 @theme inline {
@@ -87,6 +120,7 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 6px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -102,12 +136,17 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
   --color-destructive: var(--destructive);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-destructive-foreground: var(--destructive-foreground);
   --color-success: var(--success);
   --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
   --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
@@ -119,7 +158,8 @@ export const TOKENS_CSS_SOURCE = `@import "tw-animate-css";
   * {
     border-color: var(--color-border);
   }
-}`;
+}
+`;
 
 /** cn 工具模板，等价 @tu-design/vue/src/lib/utils.ts。 */
 export const CN_UTIL_SOURCE = `import { clsx, type ClassValue } from "clsx";
