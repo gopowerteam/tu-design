@@ -1,0 +1,24 @@
+<script setup lang="ts">
+const items = [
+  { value: "overview", label: "概览" },
+  { value: "analytics", label: "分析" },
+  { value: "reports", label: "报告" },
+];
+
+const contents: Record<string, string> = {
+  overview: "最近 30 天的访问量与转化率总览。",
+  analytics: "访问来源、留存与漏斗分析。",
+  reports: "导出周期性报告与订阅设置。",
+};
+</script>
+
+<template>
+  <div class="flex justify-center">
+    <!-- line 款式：下划线指示条自动跟随选中项动画移动 -->
+    <TTabs default-value="overview" :items="items" class="w-96" type="line">
+      <template #panel="{ item }">
+        <p class="text-muted-foreground pt-3 text-sm">{{ contents[item.value] }}</p>
+      </template>
+    </TTabs>
+  </div>
+</template>
