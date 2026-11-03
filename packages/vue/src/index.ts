@@ -45,3 +45,4 @@ export * from "./components/alert-dialog";
 export * from "./components/context-menu";
 export * from "./components/drawer";
 export * from "./components/popconfirm";
+export * from "./components/timeline";

@@ -1,0 +1,5 @@
+{
+  "description": "时间轴：数据驱动 items 渲染竖向事件流，支持单列/左右交替、五种语义节点色与空心节点、#item 作用域插槽自定义内容。",
+  "registryDependencies": ["utils"],
+  "dependencies": { "class-variance-authority": "catalog:" }
+}

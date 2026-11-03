@@ -297,6 +297,13 @@
       "description": "多行文本输入：纯样式封装，支持 invalid 校验态。"
     },
     {
+      "name": "timeline",
+      "version": "0.4.2",
+      "title": "Timeline",
+      "type": "registry:ui",
+      "description": "时间轴：数据驱动 items 渲染竖向事件流，支持单列/左右交替、五种语义节点色与空心节点、#item 作用域插槽自定义内容。"
+    },
+    {
       "name": "toast",
       "version": "0.4.2",
       "title": "Toast",

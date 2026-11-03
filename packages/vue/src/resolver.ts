@@ -54,6 +54,7 @@ export const COMPONENT_NAMES = [
   "TableRender",
   "Tabs",
   "Textarea",
+  "Timeline",
   "ToastProvider",
   "TreeSelect",
   "Tooltip",
