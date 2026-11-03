@@ -86,7 +86,10 @@ function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolea
     <template v-if="mode === 'day'">
       <ArkDatePicker.View :view="'day'">
         <!-- day 视图导航条在 View 内：viewProps=day → GOTO.NEXT=focusNextPage（翻月） -->
-        <CalendarNav view="day" />
+        <CalendarNav view="day">
+          <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+          <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+        </CalendarNav>
         <ArkDatePicker.Context v-slot="context">
           <div class="flex gap-6">
             <ArkDatePicker.Table v-for="i in numOfMonths" :key="i" :class="tableCls">
@@ -138,7 +141,10 @@ function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolea
 
       <ArkDatePicker.View :view="'month'">
         <!-- 切换视图导航条也在 View 内：DatePicker 切月视图后 GOTO.NEXT=focusNextYear（修复 backlog） -->
-        <CalendarNav view="month" />
+        <CalendarNav view="month">
+          <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+          <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+        </CalendarNav>
         <ArkDatePicker.Context v-slot="context">
           <ArkDatePicker.Table :class="tableCls">
             <ArkDatePicker.TableBody>
@@ -164,7 +170,10 @@ function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolea
       </ArkDatePicker.View>
 
       <ArkDatePicker.View :view="'year'">
-        <CalendarNav view="year" />
+        <CalendarNav view="year">
+          <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+          <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+        </CalendarNav>
         <ArkDatePicker.Context v-slot="context">
           <ArkDatePicker.Table :class="tableCls">
             <ArkDatePicker.TableBody>
@@ -192,7 +201,10 @@ function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolea
 
     <ArkDatePicker.View v-else-if="mode === 'month'" :view="'month'">
       <!-- 导航条必须在 View 子树内：Prev/NextTrigger 才能拿到 view="month"（GOTO.NEXT=focusNextYear） -->
-      <CalendarNav view="month" />
+      <CalendarNav view="month">
+        <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+        <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+      </CalendarNav>
       <ArkDatePicker.Context v-slot="context">
         <ArkDatePicker.Table :class="tableCls">
           <ArkDatePicker.TableBody>
@@ -219,7 +231,10 @@ function weekSelected(day: DateValue, selected: DateValue[] | undefined): boolea
 
     <ArkDatePicker.View v-else :view="'year'">
       <!-- 导航条必须在 View 子树内：Prev/NextTrigger 才能拿到 view="year"（GOTO.NEXT=focusNextDecade） -->
-      <CalendarNav view="year" />
+      <CalendarNav view="year">
+        <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+        <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+      </CalendarNav>
       <ArkDatePicker.Context v-slot="context">
         <ArkDatePicker.Table :class="tableCls">
           <ArkDatePicker.TableBody>

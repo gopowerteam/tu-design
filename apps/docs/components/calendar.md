@@ -58,6 +58,14 @@ Calendar 为复合组件，基于 `@ark-ui/vue` 的 `DatePicker`（zag）原语�
 
 后两者为内部件，不对外导出；卡片视觉常量收敛在 `CalendarBody.vue` 单文件内。
 
+## 图标定制
+
+`#prev-icon` / `#next-icon` 插槽替换视图导航条的翻页箭头（对所有视图生效——日/月/年共用同一组导航图标）：
+
+<DemoPreview file="calendar/CalendarNavSlots.vue" />
+
+使用 Iconify 时可放 `<Icon icon="lucide:chevron-left" />`（@iconify/vue）或 `<span class="icon-[lucide--chevron-left] size-4" />`（@iconify/tailwind4）。
+
 ## API
 
 ### Props
@@ -82,7 +90,12 @@ Calendar 为复合组件，基于 `@ark-ui/vue` 的 `DatePicker`（zag）原语�
 
 ### Slots
 
-Calendar 不声明自定义插槽（源码无 `<slot>` 出口）；模板内的 `Context v-slot` 为 zag 内部上下文消费，非对外插槽。
+| 插槽         | 说明                                                                                     |
+| ------------ | ---------------------------------------------------------------------------------------- |
+| `#prev-icon` | 替换全部视图导航条的上一页箭头（穿透 CalendarBody → CalendarNav，默认内置 Chevron 图标） |
+| `#next-icon` | 替换全部视图导航条的下一页箭头（同上）                                                   |
+
+`prev`/`next` 未提供时渲染内置 Chevron 图标；月/年视图标题的上钻指示（ChevronsUpDown）为内部图形，不对外定制。
 
 ## 形态判定
 

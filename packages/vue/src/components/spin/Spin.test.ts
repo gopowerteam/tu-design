@@ -73,4 +73,11 @@ describe("Spin", () => {
     const w = mount(Spin, { props: { class: "justify-center" } });
     expect(w.classes()).toContain("justify-center");
   });
+
+  it("#icon 插槽替换默认转圈图形", () => {
+    const w = mount(Spin, { slots: { icon: "<i data-test='custom'></i>" } });
+    const status = w.find('[role="status"]');
+    expect(status.find("i[data-test='custom']").exists()).toBe(true);
+    expect(status.find("svg").exists()).toBe(false);
+  });
 });

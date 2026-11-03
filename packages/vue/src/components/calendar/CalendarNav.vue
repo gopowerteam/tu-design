@@ -2,6 +2,7 @@
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
 import { cn } from "@/lib/utils";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 
 /**
  * 视图导航条（内部件）。必须渲染在 <ArkDatePicker.View> 子树内：
@@ -31,17 +32,7 @@ function decadeRange(year: number | undefined): string {
 <template>
   <ArkDatePicker.ViewControl :class="cn(viewControlCls, $attrs.class)">
     <ArkDatePicker.PrevTrigger :class="navBtnCls">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="size-4"
-      >
-        <path d="m15 18-6-6 6-6" />
-      </svg>
+      <slot name="prev-icon"><ChevronIcon class="size-4 rotate-180" /></slot>
     </ArkDatePicker.PrevTrigger>
 
     <ArkDatePicker.Context v-slot="context">
@@ -71,17 +62,7 @@ function decadeRange(year: number | undefined): string {
     </ArkDatePicker.Context>
 
     <ArkDatePicker.NextTrigger :class="navBtnCls">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="size-4"
-      >
-        <path d="m9 18 6-6-6-6" />
-      </svg>
+      <slot name="next-icon"><ChevronIcon class="size-4" /></slot>
     </ArkDatePicker.NextTrigger>
   </ArkDatePicker.ViewControl>
 </template>
