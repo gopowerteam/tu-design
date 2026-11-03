@@ -2,7 +2,7 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
-import ChevronIcon from "../tree-shared/ChevronIcon.vue";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import type { Key, TreeNode } from "../tree-shared";
 import type { TreeOption } from "../tree-shared";
 
@@ -86,7 +86,10 @@ function isIndeterminate(node: TreeNode): boolean {
         :aria-label="isExpanded(node) ? '折叠' : '展开'"
         @click.stop="emit('toggle', node)"
       >
-        <ChevronIcon :class="isExpanded(node) ? 'rotate-90' : ''" />
+        <ChevronIcon
+          class="size-4 shrink-0 transition-transform"
+          :class="isExpanded(node) ? 'rotate-90' : ''"
+        />
       </span>
       <span v-else class="size-4 shrink-0" aria-hidden="true" />
       <span

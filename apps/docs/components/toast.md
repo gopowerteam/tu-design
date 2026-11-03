@@ -63,6 +63,23 @@ const toast = useToast();
 
 <DemoPreview file="toast/ToastPromise.vue" />
 
+## 图标定制
+
+`#icon="{ type }"` 作用域插槽替换内置的语义图标（success/error/info/warning/loading 五种），外层随 `type` 着色与 loading 旋转的容器保持不变。Provider 在应用根部挂载时传入：
+
+```vue
+<!-- App.vue -->
+<template>
+  <TToastProvider>
+    <template #icon="{ type }">
+      <Icon :icon="`ph:seal-check-${type}`" />
+    </template>
+  </TToastProvider>
+</template>
+```
+
+使用 Iconify 时可传 `<Icon :icon="..." />`（@iconify/vue）或 `<span :class="\`icon-[lucide--circle-check] size-4\`" />`（@iconify/tailwind4）。未提供插槽时渲染内置 SVG 语义图标。
+
 ## 组件结构
 
 一体式设计：仅 `ToastProvider` 一个组件（内部样式化 Ark UI 的 `Toaster` 与 `Toast.Root / Title / Description / CloseTrigger / ActionTrigger`），命令式 API 全部由 `useToast()` 提供，无其余子组件。
@@ -95,7 +112,11 @@ const toast = useToast();
 
 ### Slots
 
-ToastProvider 无插槽；提示内容完全由 `useToast()` 的调用参数驱动。
+| 插槽               | 作用域     | 说明                                                    |
+| ------------------ | ---------- | ------------------------------------------------------- |
+| `#icon="{ type }"` | `{ type }` | 替换内置语义图标（按 type 区分），着色/旋转容器不受影响 |
+
+未提供插槽时渲染内置 SVG 语义图标。
 
 ## 主题定制
 

@@ -2,7 +2,7 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
-import ChevronIcon from "../tree-shared/ChevronIcon.vue";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import type { Key, TreeNode, TreeOption } from "../tree-shared";
 
 const props = defineProps({
@@ -120,7 +120,10 @@ function toggleCheck(node: TreeNode) {
         <ChevronIcon
           v-if="node.children?.length"
           :class="
-            cn('size-3.5 shrink-0 text-muted-foreground', props.isExpanded(node) && 'rotate-90')
+            cn(
+              'size-3.5 shrink-0 text-muted-foreground transition-transform',
+              props.isExpanded(node) && 'rotate-90',
+            )
           "
         />
       </div>

@@ -1,0 +1,5 @@
+{
+  "description": "内置功能性图标（CloseIcon/ChevronIcon/CalendarIcon），内部共享，非公共 API。图标组件零默认类：尺寸/旋转/过渡类由使用处显式传入，避免 fallthrough 拼接时同名工具类排序冲突。",
+  "registryDependencies": [],
+  "dependencies": {}
+}

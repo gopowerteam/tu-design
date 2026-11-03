@@ -2,6 +2,7 @@
 import type { PropType } from "vue";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import type { Key } from "./interface";
 
 const props = defineProps({
@@ -45,18 +46,7 @@ const overflow = computed(() =>
         :aria-label="`移除 ${v.label}`"
         @click.stop="emit('remove', v.key)"
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          class="size-3"
-          aria-hidden="true"
-        >
-          <path d="M18 6 6 18" />
-          <path d="m6 6 12 12" />
-        </svg>
+        <CloseIcon class="size-3" />
       </button>
     </span>
     <span v-if="overflow > 0" data-part="tag-overflow" class="text-xs text-muted-foreground"
@@ -70,18 +60,7 @@ const overflow = computed(() =>
       aria-label="清空"
       @click.stop="emit('clear')"
     >
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        class="size-4"
-        aria-hidden="true"
-      >
-        <path d="M18 6 6 18" />
-        <path d="m6 6 12 12" />
-      </svg>
+      <CloseIcon class="size-4" />
     </button>
   </span>
 </template>

@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, shallowRef } from "vue";
 import { Toaster, Toast } from "@ark-ui/vue/toast";
 import type { ToastPlacement } from "./useToast";
 import { cn } from "@/lib/utils";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { __configureToaster, __setToastMounted } from "./useToast";
 
 /**
@@ -49,73 +50,75 @@ const rootClass = computed(
     <Toast.Root :class="rootClass(String(t.type ?? 'default'))">
       <!-- 语义图标：随 type 着色（loading 旋转） -->
       <span v-if="t.type" class="mt-0.5 shrink-0" :class="{ 'animate-spin': t.type === 'loading' }">
-        <svg
-          v-if="t.type === 'success'"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="M21.801 10A10 10 0 1 1 17 3.335" />
-          <path d="m9 11 3 3L22 4" />
-        </svg>
-        <svg
-          v-else-if="t.type === 'error'"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="m15 9-6 6" />
-          <path d="m9 9 6 6" />
-        </svg>
-        <svg
-          v-else-if="t.type === 'warning'"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
-          <path d="M12 9v4" />
-          <path d="M12 17h.01" />
-        </svg>
-        <svg
-          v-else-if="t.type === 'info'"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 16v-4" />
-          <path d="M12 8h.01" />
-        </svg>
-        <svg
-          v-else
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4"
-        >
-          <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
+        <slot name="icon" :type="t.type">
+          <svg
+            v-if="t.type === 'success'"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="M21.801 10A10 10 0 1 1 17 3.335" />
+            <path d="m9 11 3 3L22 4" />
+          </svg>
+          <svg
+            v-else-if="t.type === 'error'"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="m15 9-6 6" />
+            <path d="m9 9 6 6" />
+          </svg>
+          <svg
+            v-else-if="t.type === 'warning'"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+            <path d="M12 9v4" />
+            <path d="M12 17h.01" />
+          </svg>
+          <svg
+            v-else-if="t.type === 'info'"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 16v-4" />
+            <path d="M12 8h.01" />
+          </svg>
+          <svg
+            v-else
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-4"
+          >
+            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+          </svg>
+        </slot>
       </span>
 
       <div class="flex-1">
@@ -134,18 +137,7 @@ const rootClass = computed(
           aria-label="关闭"
           class="inline-flex size-6 items-center justify-center rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/50"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-4"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
+          <CloseIcon class="size-4" />
           <span class="sr-only">关闭</span>
         </Toast.CloseTrigger>
       </div>

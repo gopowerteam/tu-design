@@ -5,8 +5,8 @@ import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
-import ChevronIcon from "../tree-shared/ChevronIcon.vue";
-import ClearIcon from "../tree-shared/ClearIcon.vue";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
 import { createTreeMate, type Key, type TreeNode, type TreeOption } from "../tree-shared";
 import { nextActiveKey, type MoveKey } from "../tree-shared/keyboard";
@@ -395,11 +395,14 @@ watch(isOpen, (open) => {
             aria-label="清空"
             @click.stop="handleClear"
           >
-            <ClearIcon />
+            <CloseIcon class="size-4 shrink-0" />
           </span>
           <ChevronIcon
             :class="
-              cn('text-muted-foreground transition-transform', isOpen ? '-rotate-90' : 'rotate-90')
+              cn(
+                'size-4 shrink-0 text-muted-foreground transition-transform',
+                isOpen ? '-rotate-90' : 'rotate-90',
+              )
             "
           />
         </span>

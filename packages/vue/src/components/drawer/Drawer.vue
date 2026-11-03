@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { Drawer as ArkDrawer } from "@ark-ui/vue/drawer";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 
 type Placement = "top" | "right" | "bottom" | "left";
 type Size = "sm" | "default" | "lg";
@@ -149,19 +150,10 @@ const contentClass = computed(() =>
           aria-label="关闭"
           class="absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-4"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-          <span class="sr-only">关闭</span>
+          <slot name="close">
+            <CloseIcon class="size-4" />
+            <span class="sr-only">关闭</span>
+          </slot>
         </ArkDrawer.CloseTrigger>
       </ArkDrawer.Content>
     </ArkDrawer.Positioner>

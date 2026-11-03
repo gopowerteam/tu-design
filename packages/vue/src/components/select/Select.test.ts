@@ -170,4 +170,15 @@ describe("Select", () => {
     await vi.waitFor(() => expect(trigger()!.textContent).toContain("React"));
     w.unmount();
   });
+
+  it("#trigger-icon 插槽覆盖内置下拉箭头", () => {
+    const w = mountSelect({}, { "trigger-icon": () => h("i", { "data-testid": "custom-icon" }) });
+    expect(trigger()!.querySelector('[data-testid="custom-icon"]')).not.toBeNull();
+    expect(trigger()!.querySelector("svg")).toBeNull();
+    w.unmount();
+
+    const w2 = mountSelect();
+    expect(trigger()!.querySelector("svg")).not.toBeNull();
+    w2.unmount();
+  });
 });

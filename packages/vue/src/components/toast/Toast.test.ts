@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { ToastProvider, useToast } from "./index";
 import { __configureToaster, __getInternalToaster, __setToastMounted } from "./useToast";
@@ -112,6 +113,23 @@ describe("ToastProvider", () => {
     });
     const close = w.find('[aria-label="关闭"]');
     expect(close.exists()).toBe(true);
+    w.unmount();
+  });
+
+  it("#icon 作用域插槽覆盖内置语义图标（注入 type）", async () => {
+    __setToastMounted(true);
+    const w = mount(ToastProvider, {
+      slots: {
+        icon: ({ type }: { type: unknown }) =>
+          h("span", { "data-testid": `icon-${String(type)}` }, "icon"),
+      },
+    });
+    useToast().success({ title: "已保存", duration: 60_000 });
+    await vi.waitFor(() => {
+      expect(w.find('[data-testid="icon-success"]').exists()).toBe(true);
+      // 内置语义 svg 被覆盖：仅剩关闭钮的 CloseIcon 一个 svg
+      expect(w.findAll("svg").length).toBe(1);
+    });
     w.unmount();
   });
 });

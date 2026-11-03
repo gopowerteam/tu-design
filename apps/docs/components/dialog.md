@@ -47,6 +47,16 @@ npx @tu-design/cli add dialog
 
 <DemoPreview file="dialog/DialogSizes.vue" />
 
+## 图标定制
+
+`#close` 插槽替换右上角关闭按钮的内容（默认内置 X 图标 + sr-only 文案），关闭行为仍由 Ark CloseTrigger 承担：
+
+<DemoPreview file="dialog/DialogCloseSlot.vue" />
+
+::: tip 搭配 Iconify
+使用方项目若采用 Iconify 图标方案，把 `<Icon icon="lucide:x" />`（@iconify/vue）或 `<span class="icon-[lucide--x] size-4" />`（@iconify/tailwind4）放进插槽即可。组件库本身不内置 Icon 组件、不绑定任何图标库。
+:::
+
 ## API
 
 ### Props
@@ -79,6 +89,7 @@ npx @tu-design/cli add dialog
 | `#title`              | 覆盖标题渲染（未提供时回退 `title` prop，皆无则不渲染）       |
 | `#description`        | 覆盖描述渲染（未提供时回退 `description` prop，皆无则不渲染） |
 | `#footer="{ close }"` | 底部操作区，作用域注入 `close` 函数（替代原 `TDialogClose`）  |
+| `#close`              | 替换右上角关闭按钮内容（默认内置 X 图标 + sr-only 文案）      |
 
 `title` / `description` / `#footer` 均未提供时对应区块不渲染任何 DOM。
 

@@ -4,6 +4,7 @@ import { cloneVNode, h, isVNode } from "vue";
 import { Checkbox } from "@/components/checkbox";
 import { Tooltip } from "@/components/tooltip";
 import { SELECTION_CELL } from "./constants";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
 import type { TableBodyLine, TableColumnOptions } from "./types";
 
@@ -105,20 +106,10 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
           :aria-label="props.line.row.getIsExpanded() ? '收起' : '展开'"
           @click.stop="props.line.row.toggleExpanded()"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
+          <ChevronIcon
             class="size-3.5 transition-transform"
             :class="{ 'rotate-90': props.line.row.getIsExpanded() }"
-            aria-hidden="true"
-          >
-            <path d="m9 18 6-6-6-6" />
-          </svg>
+          />
         </button>
         <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
         <component :is="value" v-if="isVNode(value)" />
