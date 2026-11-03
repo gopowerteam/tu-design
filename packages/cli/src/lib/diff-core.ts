@@ -4,7 +4,8 @@ import { fetchItem } from "./registry";
 import type { NpmChannel, RegistryFetcher } from "./registry";
 import type { RegistryItem } from "./registry-types";
 import { resolveTarget } from "./write";
-import { hashContent, readLockfile } from "./lockfile";
+import { readLockfile } from "./lockfile";
+import { hashNormalizedContent, rewriteContent } from "./rewrite";
 import { aliasRootOf } from "./add-core";
 
 export type DiffStatus =
@@ -35,6 +36,8 @@ export interface ComponentDiff {
 
 /**
  * 本地文件 vs 线上 registry vs lockfile 安装时快照的三方比对。
+ * 全部 hash 走空白归一化（hashNormalizedContent）；远端基准在
+ * relativeImports 标记下同样经过 alias→相对导入 改写，与安装口径对齐。
  * 每文件按有序决策树判定（first-match）：
  * 1. 本地 === 线上 → up-to-date
  * 2. 无安装记录（legacy）且与线上不同 → different（两方对比降级）
@@ -77,13 +80,19 @@ export async function diffComponents(
 
     for (const file of item.files) {
       const target = resolveTarget(file.target, config, aliasRoot);
-      const remoteHash = hashContent(file.content);
+      // 远端比对基准与安装口径对齐：relativeImports 记录 → 远端原文同样改写；
+      // 全部 hash 归一化（空白不敏感），与 add 写入 lock 的口径一致
+      const remoteContent =
+        record?.relativeImports === true
+          ? rewriteContent(file.content, target, aliasRoot)
+          : file.content;
+      const remoteHash = hashNormalizedContent(remoteContent);
       const installedHash = record?.files[target] ?? null;
       let status: DiffStatus;
       if (!io.exists(target)) {
         status = "missing";
       } else {
-        const localHash = hashContent(io.readFile(target));
+        const localHash = hashNormalizedContent(io.readFile(target));
         if (localHash === remoteHash) {
           status = "up-to-date";
         } else if (installedHash === null) {

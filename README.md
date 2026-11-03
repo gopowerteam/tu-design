@@ -14,7 +14,7 @@ shadcn 风格的 Vue 3 组件库 monorepo —— 基于 Tailwind v4 与 oklch CS
 
 - **主题系统**：`:root` / `.dark` 中性 `default` 主题，支持 `data-theme` 自定义品牌主题配方（见[主题指南](apps/docs/guide/theming.md)）
 - **组件自动导入**：`TuDesignResolver`（unplugin-vue-components），按需引入零样板
-- **Registry**：CLI 分发的组件清单 JSON，由 `generate:registry` 生成并做防漂移测试
+- **Registry**：CLI 分发的组件清单 JSON，由 `generate:registry` 生成并做防漂移测试；CLI init 的注入源码（tokens.css / cn 工具模板）同样由 cli 包 `generate:sources` 从组件库源码生成
 - **工程化**：Vite+（`vp`）统一 check / test / build，pnpm catalog 统一依赖版本
 
 ## 开发

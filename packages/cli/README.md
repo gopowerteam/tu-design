@@ -57,6 +57,11 @@ CLI 从 registry 服务拉取每个组件的 **registry JSON**（遵循 [shadcn 
 
 默认 registry 数据源是文档站 Pages 上发布的 `https://gopowerteam.github.io/tu-design/r/vue`，由 [`@tu-design/vue` 的 `generate:registry`](../vue) 生成并随 Pages 部署更新，可用 `--registry` 指向自建服务。
 
+## 开发
+
+- 构建：`vp run build`（`vp pack` + `fix-bin`）；测试：`vp test --run`；类型：`vp run typecheck`
+- `src/lib/generated-sources.ts`（init 注入的 tokens.css / cn 工具模板常量）由 `scripts/generate-sources.ts` 从 `@tu-design/vue` 源码生成，勿手改：改动 `packages/vue/src/styles/tokens.css` 或 `packages/vue/src/lib/utils.ts` 后运行 `pnpm --filter @tu-design/cli generate:sources` 再生成，`init-core.test.ts` 防漂移守卫会拦截漏跑。
+
 ## 相关
 
 - 组件库：[@tu-design/vue](../vue)

@@ -4,7 +4,8 @@ import type { RegistryFetcher, NpmChannel } from "./registry";
 import type { RegistryItem } from "./registry-types";
 import { detectPackageManagerForProject, installDependencies } from "./pm";
 import { findProjectRoot, planWrites, resolveTarget, writeFiles } from "./write";
-import { hashContent, readLockfile, writeLockfile } from "./lockfile";
+import { readLockfile, writeLockfile } from "./lockfile";
+import { hashNormalizedContent, rewriteContent } from "./rewrite";
 import type { Io } from "./io";
 
 export async function resolveTopo(
@@ -80,27 +81,80 @@ export function aliasRootOf(root: string): string {
   return `${root}/${DEFAULT_ALIAS_ROOT}`;
 }
 
+export interface AddOptions {
+  overwrite?: boolean;
+  registry?: string;
+  confirm?: (msg: string) => Promise<boolean>;
+  npm?: NpmChannel;
+  dryRun?: boolean;
+  /** 升级 components.lock.json 记录的全部组件；与显式组件名互斥。 */
+  all?: boolean;
+  /** 跳过依赖安装（workspace:/catalog: 协议场景由调用方自行安装）。 */
+  noInstall?: boolean;
+  /** 把产出源码中的 `@/` alias 导入改写为相对导入。 */
+  relativeImports?: boolean;
+}
+
+/**
+ * add / diff 共用：解析参与组件名列表。
+ * --all 从 lockfile 展开全部记录名；与显式组件名互斥，lockfile 为空时报错提示。
+ * @param io IO 通道（读 lockfile）
+ * @param root 项目根
+ * @param names 显式组件名（可为空数组）
+ * @param opts.all 是否全量展开
+ * @returns 参与组件名
+ */
+function resolveNames(io: Io, root: string, names: string[], all?: boolean): string[] {
+  if (!all) {
+    if (names.length === 0) {
+      throw new Error("未指定组件名（或使用 --all 全量升级 lockfile 记录的全部组件）");
+    }
+    return names;
+  }
+  if (names.length > 0) {
+    throw new Error("--all 与显式组件名互斥，二者只取其一");
+  }
+  const lock = readLockfile(io, root);
+  const allNames = Object.keys(lock.packages);
+  if (allNames.length === 0) {
+    throw new Error("components.lock.json 没有记录（先 add 具体组件后才能 --all 全量升级）");
+  }
+  return allNames;
+}
+
+/**
+ * 运行 add 命令：拉取 registry item（拓扑序）、写入组件源码、更新 lockfile，
+ * 并按需安装依赖。--all 全量升级 lock 记录；--no-install 跳过依赖安装；
+ * --relative-imports 在写入前把 `@/` alias 导入改写为相对导入（lockfile 记录改写后
+ * 内容的归一化 hash 与 relativeImports 标记，供 diff 按同款基准三方比对）。
+ * @param io IO 通道（含 registry fetch 与子进程 exec）
+ * @param cwd 运行目录（向上查找 components.json 定位项目根）
+ * @param names 显式组件名；配合 opts.all 留空
+ * @param opts 覆盖安装/registry 通道/dry-run/all/no-install/relative-imports 选项
+ * @returns 写入/覆盖/冲突/最新跳过/依赖清单摘要
+ */
 export async function runAdd(
   io: Io & RegistryFetcher & { exec(cmd: string[]): void },
   cwd: string,
   names: string[],
-  opts: {
-    overwrite?: boolean;
-    registry?: string;
-    confirm?: (msg: string) => Promise<boolean>;
-    npm?: NpmChannel;
-    dryRun?: boolean;
-  },
+  opts: AddOptions,
 ): Promise<AddSummary> {
   const root = findProjectRoot(io, cwd);
   const config = loadConfig(io, root);
   const registryUrl = resolveRegistryUrl(config, opts.registry);
   const aliasRoot = aliasRootOf(root);
 
-  const npm: NpmChannel = opts.npm ?? { hasItem: () => false, readItem: () => undefined };
-  const items = await resolveTopo(names, (name) => fetchItem(io, registryUrl, npm, name));
+  const finalNames = resolveNames(io, root, names, opts.all);
 
-  const plans = planWrites(items, io, aliasRoot, config);
+  const npm: NpmChannel = opts.npm ?? { hasItem: () => false, readItem: () => undefined };
+  const items = await resolveTopo(finalNames, (name) => fetchItem(io, registryUrl, npm, name));
+
+  const planned = planWrites(items, io, aliasRoot, config);
+  // --relative-imports：改写发生在 plan 阶段，后续 writeFiles/dry-run/lockfile
+  // 全部消费改写后内容，比对口径天然一致
+  const plans = opts.relativeImports
+    ? planned.map((p) => ({ ...p, content: rewriteContent(p.content, p.path, aliasRoot) }))
+    : planned;
   const { dependencies, devDependencies } = collectDeps(items);
 
   if (opts.dryRun) {
@@ -113,7 +167,7 @@ export async function runAdd(
         files.push(plan.path);
         continue;
       }
-      if (hashContent(io.readFile(plan.path)) === hashContent(plan.content)) {
+      if (hashNormalizedContent(io.readFile(plan.path)) === hashNormalizedContent(plan.content)) {
         upToDate.push(plan.path);
       } else {
         files.push(plan.path);
@@ -141,8 +195,10 @@ export async function runAdd(
   // written / upToDate（内容 === 远端）→ 已知来源；declined / conflicts（本地与远端不一致且未写）→ 不明。
   // 仅当某 item 的全部文件 provenance 明确时记录（含 upToDate：幂等跳过的文件内容就是远端内容，
   // 只认「已写入」会让部分幂等的覆盖升级丢掉版本号——playground T6/T7 回归抓到的缺陷）。
+  // hash 口径：归一化(写入内容)——写入内容含 --relative-imports 改写，与本地/diff 比对基准一致。
   const lockfile = readLockfile(io, root);
   const knownRemote = new Set([...result.written, ...result.upToDate]);
+  const contentByPath = new Map(plans.map((p) => [p.path, p.content]));
   for (const item of items) {
     const files: Record<string, string> = {};
     let allKnown = true;
@@ -152,20 +208,26 @@ export async function runAdd(
         allKnown = false;
         break;
       }
-      files[target] = hashContent(file.content);
+      files[target] = hashNormalizedContent(contentByPath.get(target) ?? file.content);
     }
     if (allKnown) {
-      lockfile.packages[item.name] = { version: item.version ?? null, files };
+      lockfile.packages[item.name] = {
+        version: item.version ?? null,
+        files,
+        ...(opts.relativeImports ? { relativeImports: true } : {}),
+      };
     }
   }
   writeLockfile(io, root, lockfile);
 
-  const pm = detectPackageManagerForProject(io, root);
-  if (dependencies.length > 0) {
-    installDependencies(io, root, dependencies, false, pm);
-  }
-  if (devDependencies.length > 0) {
-    installDependencies(io, root, devDependencies, true, pm);
+  if (opts.noInstall !== true) {
+    const pm = detectPackageManagerForProject(io, root);
+    if (dependencies.length > 0) {
+      installDependencies(io, root, dependencies, false, pm);
+    }
+    if (devDependencies.length > 0) {
+      installDependencies(io, root, devDependencies, true, pm);
+    }
   }
 
   return {

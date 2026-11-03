@@ -1,7 +1,7 @@
 import type { Io } from "./io";
 import type { ComponentsConfig } from "./config";
 import type { RegistryItem } from "./registry-types";
-import { hashContent } from "./lockfile";
+import { hashNormalizedContent } from "./rewrite";
 
 function parentDir(dir: string): string | null {
   if (dir === "/") {
@@ -109,8 +109,9 @@ export interface WriteResult {
 }
 
 /**
- * 覆盖安全语义：内容比对（sha256）优先于存在性判断——
- * 内容相同的重复安装不算冲突，静默跳过；只有「存在且内容不同」才进入覆盖询问 / conflict 分支。
+ * 覆盖安全语义：归一化内容比对（sha256，空白不敏感）优先于存在性判断——
+ * 内容相同的重复安装不算冲突，静默跳过；只有「存在且归一化内容不同」才进入
+ * 覆盖询问 / conflict 分支。空白不敏感：用户 fmt 重排不触发覆盖询问。
  */
 export async function writeFiles(
   plans: WritePlan[],
@@ -126,7 +127,7 @@ export async function writeFiles(
   };
   for (const plan of plans) {
     if (io.exists(plan.path)) {
-      if (hashContent(io.readFile(plan.path)) === hashContent(plan.content)) {
+      if (hashNormalizedContent(io.readFile(plan.path)) === hashNormalizedContent(plan.content)) {
         result.upToDate.push(plan.path);
         continue;
       }

@@ -8,8 +8,19 @@ export const LOCKFILE_NAME = "components.lock.json";
 export interface LockfilePackage {
   /** 安装时的组件版本；registry 未标注则为 null。 */
   version: string | null;
-  /** 文件落点（绝对路径）→ 写入内容的 sha256。 */
+  /**
+   * 文件落点（绝对路径）→ 归一化内容 sha256。
+   *
+   * 口径（v0.6.0 起）：hashNormalizedContent——0.5.0 及之前是逐字节精确 hash。
+   * 旧记录与本地内容未变时不受影响（up-to-date 判定不依赖 installedHash），
+   * 仅当远端发生真实变更时首次比对会落入 conflict，覆盖安装一次即重建为新口径。
+   */
   files: Record<string, string>;
+  /**
+   * 安装时是否启用了 --relative-imports 内容改写。
+   * diff 依赖它决定远端比对基准是否同样改写（undefined 视为 false，v1 记录兼容）。
+   */
+  relativeImports?: boolean;
 }
 
 export interface Lockfile {
@@ -50,6 +61,11 @@ function validateLockfile(raw: unknown): Lockfile {
     if (typeof entry.files !== "object" || entry.files === null || Array.isArray(entry.files)) {
       throw new Error(`${LOCKFILE_NAME} 的 packages.${name}.files 必须是对象`);
     }
+    if (entry.relativeImports !== undefined && typeof entry.relativeImports !== "boolean") {
+      throw new Error(
+        `${LOCKFILE_NAME} 的 packages.${name}.relativeImports 必须是 boolean 或缺省，得到 ${typeof entry.relativeImports}`,
+      );
+    }
     const files: Record<string, string> = {};
     for (const [path, hash] of Object.entries(entry.files as Record<string, unknown>)) {
       if (typeof hash !== "string") {
@@ -59,7 +75,11 @@ function validateLockfile(raw: unknown): Lockfile {
       }
       files[path] = hash;
     }
-    out[name] = { version: entry.version as string | null, files };
+    out[name] = {
+      version: entry.version as string | null,
+      files,
+      ...(entry.relativeImports === true ? { relativeImports: true } : {}),
+    };
   }
   return { lockfileVersion: 1, packages: out };
 }

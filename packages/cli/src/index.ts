@@ -77,18 +77,31 @@ program
   });
 
 program
-  .command("add <components...>")
-  .description("添加组件源码到项目")
+  .command("add [components...]")
+  .description("添加组件源码到项目（--all 时省略组件名，升级 components.lock.json 记录的全部组件）")
   .option("--registry <url>", "覆盖 components.json 中的 registry URL")
   .option("--overwrite", "覆盖已存在的文件而不询问")
   .option("--dry-run", "预览模式：报告将写入/覆盖/已最新的文件，不实际写入")
+  .option("--all", "全量升级 components.lock.json 记录的全部组件（与组件名互斥）")
+  .option("--no-install", "跳过依赖安装，仅输出依赖清单（workspace:/catalog: 协议场景）")
+  .option("--relative-imports", "把写入源码中的 @/ alias 导入改写为相对导入")
   .action(
     async (
       components: string[],
-      opts: { registry?: string; overwrite?: boolean; dryRun?: boolean },
+      opts: {
+        registry?: string;
+        overwrite?: boolean;
+        dryRun?: boolean;
+        all?: boolean;
+        install: boolean;
+        relativeImports?: boolean;
+      },
     ) => {
       const cwd = process.cwd();
       try {
+        if (components.length === 0 && opts.all !== true) {
+          throw new Error("请指定组件名，或使用 --all 全量升级 lockfile 记录的全部组件");
+        }
         const addIo: typeof nodeIo & {
           fetchJson(url: string): Promise<unknown>;
           exec(cmd: string[]): void;
@@ -107,6 +120,9 @@ program
           registry: opts.registry,
           overwrite: opts.overwrite,
           dryRun: opts.dryRun,
+          all: opts.all,
+          noInstall: opts.install === false,
+          relativeImports: opts.relativeImports,
           npm: nodeNpmChannel,
           // 仅 TTY 注入询问；非 TTY 不注入 → writeFiles 归入 conflicts（警告 + 退出码 1），
           // 而不是静默跳过且成功退出。
@@ -146,7 +162,11 @@ program
           }
           const willInstall = [...summary.dependencies, ...summary.devDependencies];
           if (willInstall.length > 0) {
-            console.log(`ℹ 将安装依赖（dry-run 未执行）：${willInstall.join(" ")}`);
+            console.log(
+              opts.install === false
+                ? `ℹ --no-install：请自行安装依赖：${willInstall.join(" ")}`
+                : `ℹ 将安装依赖（dry-run 未执行）：${willInstall.join(" ")}`,
+            );
           }
           return;
         }
@@ -186,6 +206,12 @@ program
         }
         for (const d of summary.devDependencies) {
           console.log(`✔ 开发依赖 ${picocolors.cyan(d)}`);
+        }
+        if (opts.install === false) {
+          const pending = [...summary.dependencies, ...summary.devDependencies];
+          if (pending.length > 0) {
+            console.log(`ℹ --no-install：请自行安装依赖：${pending.join(" ")}`);
+          }
         }
       } catch (error) {
         console.error(

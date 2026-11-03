@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vite-plus/test";
 import { diffComponents } from "./diff-core";
 import { defaultConfig } from "./config";
-import { LOCKFILE_NAME, hashContent } from "./lockfile";
+import { LOCKFILE_NAME } from "./lockfile";
+import { hashNormalizedContent } from "./rewrite";
 import type { Lockfile } from "./lockfile";
 import type { RegistryItem } from "./registry-types";
 import type { Io } from "./io";
@@ -81,7 +82,9 @@ describe("diffComponents 决策树", () => {
 
   it("本地不存在 → missing", async () => {
     const io = memIo(
-      lockFile({ w: { version: "1.0.0", files: { [TARGET("w")]: hashContent(REMOTE) } } }),
+      lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent(REMOTE) } },
+      }),
     );
     const [d] = await run(io, ITEMS, ["w"]);
     expect(d?.files).toEqual([{ target: TARGET("w"), status: "missing" }]);
@@ -95,7 +98,9 @@ describe("diffComponents 决策树", () => {
 
   it("本地 === 上次安装 → updatable", async () => {
     const io = memIo({
-      ...lockFile({ w: { version: "1.0.0", files: { [TARGET("w")]: hashContent("installed") } } }),
+      ...lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent("installed") } },
+      }),
       [TARGET("w")]: "installed",
     });
     const [d] = await run(io, ITEMS, ["w"]);
@@ -104,7 +109,9 @@ describe("diffComponents 决策树", () => {
 
   it("线上 === 上次安装（本地不同）→ modified", async () => {
     const io = memIo({
-      ...lockFile({ w: { version: "1.0.0", files: { [TARGET("w")]: hashContent(REMOTE) } } }),
+      ...lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent(REMOTE) } },
+      }),
       [TARGET("w")]: "user-edit",
     });
     const [d] = await run(io, ITEMS, ["w"]);
@@ -113,7 +120,9 @@ describe("diffComponents 决策树", () => {
 
   it("三方互不相同 → conflict", async () => {
     const io = memIo({
-      ...lockFile({ w: { version: "1.0.0", files: { [TARGET("w")]: hashContent("installed") } } }),
+      ...lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent("installed") } },
+      }),
       [TARGET("w")]: "user-edit",
     });
     const [d] = await run(io, ITEMS, ["w"]);
@@ -133,7 +142,9 @@ describe("diffComponents 其他行为", () => {
   it("remoteVersion / localVersion / legacy 字段取值", async () => {
     const items = { v: { ...item("v", REMOTE), version: "2.0.0" } };
     const io = memIo({
-      ...lockFile({ v: { version: "1.0.0", files: { [TARGET("v")]: hashContent(REMOTE) } } }),
+      ...lockFile({
+        v: { version: "1.0.0", files: { [TARGET("v")]: hashNormalizedContent(REMOTE) } },
+      }),
       [TARGET("v")]: REMOTE,
     });
     const [d] = await run(io, items, ["v"]);
@@ -159,7 +170,7 @@ describe("diffComponents 其他行为", () => {
     const io = memIo({
       ...lockFile({
         bad: { version: null, files: {} },
-        good: { version: "1.0.0", files: { [TARGET("good")]: hashContent(REMOTE) } },
+        good: { version: "1.0.0", files: { [TARGET("good")]: hashNormalizedContent(REMOTE) } },
       }),
       [TARGET("good")]: REMOTE,
     });
@@ -191,5 +202,85 @@ describe("diffComponents 其他行为", () => {
     const [d] = await run(io, { x: item("x", REMOTE) }, ["x"]);
     expect(d?.legacy).toBe(true);
     expect(d?.files).toEqual([{ target: TARGET("x"), status: "different" }]);
+  });
+});
+
+describe("diffComponents relativeImports 联动", () => {
+  const ALI_REMOTE = `import { cn } from "@/lib/utils";\nbody`;
+  // target /p/src/components/ui/w/w.vue 深度 3
+  const ALI_REWRITTEN = `import { cn } from "../../../lib/utils";\nbody`;
+
+  function aliItem(content: string): RegistryItem {
+    return item("w", content);
+  }
+
+  it("lock 带 relativeImports 标记 → 远端基准同样改写，本地改写内容判 up-to-date", async () => {
+    const io = memIo({
+      ...lockFile({
+        w: {
+          version: "1.0.0",
+          relativeImports: true,
+          files: { [TARGET("w")]: hashNormalizedContent(ALI_REWRITTEN) },
+        },
+      }),
+      [TARGET("w")]: ALI_REWRITTEN,
+    });
+    const [d] = await run(io, { w: aliItem(ALI_REMOTE) }, ["w"]);
+    expect(d?.files).toEqual([{ target: TARGET("w"), status: "up-to-date" }]);
+  });
+
+  it("远端真实变更 → updatable（本地干净）", async () => {
+    const io = memIo({
+      ...lockFile({
+        w: {
+          version: "1.0.0",
+          relativeImports: true,
+          files: { [TARGET("w")]: hashNormalizedContent(ALI_REWRITTEN) },
+        },
+      }),
+      [TARGET("w")]: ALI_REWRITTEN,
+    });
+    const [d] = await run(io, { w: aliItem(`${ALI_REMOTE} /* changed */`) }, ["w"]);
+    expect(d?.files).toEqual([{ target: TARGET("w"), status: "updatable" }]);
+  });
+
+  it("本地空白重排 → 归一化后仍 up-to-date（不误报）", async () => {
+    const io = memIo({
+      ...lockFile({
+        w: {
+          version: "1.0.0",
+          relativeImports: true,
+          files: { [TARGET("w")]: hashNormalizedContent(ALI_REWRITTEN) },
+        },
+      }),
+      [TARGET("w")]: `import  {  cn  }  from  "../../../lib/utils";\n\nbody`,
+    });
+    const [d] = await run(io, { w: aliItem(ALI_REMOTE) }, ["w"]);
+    expect(d?.files).toEqual([{ target: TARGET("w"), status: "up-to-date" }]);
+  });
+
+  it("无 relativeImports 标记（v1 旧口径）→ 远端不改写，原文内容判 up-to-date", async () => {
+    const io = memIo({
+      ...lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent(REMOTE) } },
+      }),
+      [TARGET("w")]: REMOTE,
+    });
+    const [d] = await run(io, { w: aliItem(REMOTE) }, ["w"]);
+    expect(d?.files).toEqual([{ target: TARGET("w"), status: "up-to-date" }]);
+  });
+});
+
+describe("diffComponents hash 口径迁移（v0.6.0 归一化）", () => {
+  it("旧 lock 记录（逐字节精确 hash）在远端变更后 → conflict（一次性，覆盖安装重建）", async () => {
+    // 模拟 0.5.0 写入的精确 hash：与归一化口径不同的空白形态
+    const io = memIo({
+      ...lockFile({
+        w: { version: "1.0.0", files: { [TARGET("w")]: hashNormalizedContent(REMOTE) + "stale" } },
+      }),
+      [TARGET("w")]: REMOTE,
+    });
+    const [d] = await run(io, { w: item("w", "remote-v2") }, ["w"]);
+    expect(d?.files).toEqual([{ target: TARGET("w"), status: "conflict" }]);
   });
 });

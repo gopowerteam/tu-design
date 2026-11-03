@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 import { collectDeps, resolveTopo, runAdd } from "./add-core";
 import { defaultConfig } from "./config";
 import { hashContent, readLockfile } from "./lockfile";
+import { hashNormalizedContent } from "./rewrite";
 import type { Lockfile } from "./lockfile";
 import type { RegistryItem } from "./registry-types";
 import type { Io } from "./io";
@@ -161,7 +162,7 @@ describe("runAdd", () => {
       "/proj/src/components/ui/button/button.vue",
     ]);
     expect(lock.packages.button?.files["/proj/src/components/ui/button/button.vue"]).toBe(
-      hashContent("<template><!-- button --></template>"),
+      hashNormalizedContent("<template><!-- button --></template>"),
     );
   });
 
@@ -183,7 +184,7 @@ describe("runAdd", () => {
     const lock = readLockfile(io, "/proj");
     expect(lock.packages.solo?.version).toBeNull();
     expect(lock.packages.solo?.files[SOLO_TARGET]).toBe(
-      hashContent("<template><!-- solo --></template>"),
+      hashNormalizedContent("<template><!-- solo --></template>"),
     );
   });
 
@@ -227,7 +228,7 @@ describe("runAdd", () => {
     expect(summary.overwrites).toEqual([SOLO_TARGET]);
     const lock = readLockfile(io, "/proj");
     expect(lock.packages.solo?.files[SOLO_TARGET]).toBe(
-      hashContent("<template><!-- solo --></template>"),
+      hashNormalizedContent("<template><!-- solo --></template>"),
     );
   });
 
@@ -303,5 +304,113 @@ describe("runAdd", () => {
     await expect(runAdd(io, "/proj", ["evil"], {})).rejects.toThrow(/evil.*target/);
     expect(io.exists("/etc/evil.ts")).toBe(false);
     expect(io.exists("__exec__")).toBe(false);
+  });
+});
+
+/** 含 @/ alias 导入的 fixture：--relative-imports 场景专用。 */
+function aliasItem(name: string): RegistryItem {
+  return {
+    ...item(name),
+    files: [
+      {
+        path: `${name}/${name}.vue`,
+        type: "registry:component",
+        target: `components/ui/${name}/${name}.vue`,
+        content: `import { cn } from "@/lib/utils";\n<template><!-- ${name} --></template>`,
+      },
+    ],
+  };
+}
+
+const ALI_TARGET = "/proj/src/components/ui/ali/ali.vue";
+const ALI_REWRITTEN = `import { cn } from "../../../lib/utils";\n<template><!-- ali --></template>`;
+
+describe("runAdd --all", () => {
+  it("从 lockfile 展开全部记录名并覆盖升级", async () => {
+    const existing: Lockfile = {
+      lockfileVersion: 1,
+      packages: {
+        solo: { version: null, files: {} },
+        multi: { version: null, files: {} },
+      },
+    };
+    const io = memIo({
+      ...project(),
+      ["/proj/components.lock.json"]: `${JSON.stringify(existing, null, 2)}\n`,
+      ["/proj/src/components/ui/solo/solo.vue"]: "old",
+    });
+    const summary = await runAdd(io, "/proj", [], { all: true, overwrite: true });
+    expect(summary.files).toContain("/proj/src/components/ui/solo/solo.vue");
+    expect(summary.files).toContain("/proj/src/components/ui/multi/A.vue");
+    expect(summary.files).toContain("/proj/src/components/ui/multi/B.vue");
+    expect(io.readFile("/proj/src/components/ui/solo/solo.vue")).toContain("solo");
+  });
+
+  it("--all 与显式组件名互斥", async () => {
+    const io = memIo(project());
+    await expect(runAdd(io, "/proj", ["solo"], { all: true })).rejects.toThrow(/互斥/);
+  });
+
+  it("lockfile 为空时 --all 报错提示先装具体组件", async () => {
+    const io = memIo(project());
+    await expect(runAdd(io, "/proj", [], { all: true })).rejects.toThrow(/没有记录/);
+  });
+
+  it("未指定组件名且未启用 --all → 报错提示", async () => {
+    const io = memIo(project());
+    await expect(runAdd(io, "/proj", [], {})).rejects.toThrow(/未指定组件名/);
+  });
+});
+
+describe("runAdd --no-install", () => {
+  it("跳过依赖安装，但依赖清单照常返回", async () => {
+    const io = memIo(project());
+    const summary = await runAdd(io, "/proj", ["button"], { noInstall: true });
+    expect(summary.dependencies).toEqual(["tailwind-merge@^3", "clsx@^2"]);
+    expect(io.exists("__exec__")).toBe(false);
+  });
+});
+
+describe("runAdd --relative-imports", () => {
+  it("写入内容为相对导入，lock 记录改写后归一化 hash 与 relativeImports 标记", async () => {
+    const io = memIo(project());
+    io.fetchJson = async () => aliasItem("ali");
+    const summary = await runAdd(io, "/proj", ["ali"], { relativeImports: true });
+    expect(summary.files).toEqual([ALI_TARGET]);
+    expect(io.readFile(ALI_TARGET)).toBe(ALI_REWRITTEN);
+    const lock = readLockfile(io, "/proj");
+    expect(lock.packages.ali?.relativeImports).toBe(true);
+    expect(lock.packages.ali?.files[ALI_TARGET]).toBe(hashNormalizedContent(ALI_REWRITTEN));
+  });
+
+  it("二次 dry-run：本地（改写后内容）→ upToDate", async () => {
+    const io = memIo(project());
+    io.fetchJson = async () => aliasItem("ali");
+    await runAdd(io, "/proj", ["ali"], { relativeImports: true });
+    const s = await runAdd(io, "/proj", ["ali"], { relativeImports: true, dryRun: true });
+    expect(s.upToDate).toEqual([ALI_TARGET]);
+    expect(s.overwrites).toEqual([]);
+  });
+
+  it("用户 fmt 重排空白不触发覆盖（归一化比对）", async () => {
+    const io = memIo(project());
+    io.fetchJson = async () => aliasItem("ali");
+    await runAdd(io, "/proj", ["ali"], { relativeImports: true });
+    io.writeFile(
+      ALI_TARGET,
+      `import  {  cn  }  from  "../../../lib/utils";\n\n<template>  <!--  ali  -->  </template>`,
+    );
+    const s = await runAdd(io, "/proj", ["ali"], { relativeImports: true, dryRun: true });
+    expect(s.upToDate).toEqual([ALI_TARGET]);
+    expect(s.overwrites).toEqual([]);
+  });
+
+  it("未启用改写时内容原样写入（回归：行为与 0.5.0 一致）", async () => {
+    const io = memIo(project());
+    io.fetchJson = async () => aliasItem("ali");
+    await runAdd(io, "/proj", ["ali"], {});
+    expect(io.readFile(ALI_TARGET)).toBe(
+      `import { cn } from "@/lib/utils";\n<template><!-- ali --></template>`,
+    );
   });
 });
