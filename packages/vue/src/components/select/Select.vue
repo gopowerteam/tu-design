@@ -5,6 +5,7 @@ import { createListCollection } from "@ark-ui/vue/collection";
 import { Select as ArkSelect } from "@ark-ui/vue/select";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import { normalizeSelectItem, type SelectItemOption } from "./types";
 
 // modelValue 为 String 类型无 Boolean casting 问题；「未传」经 default: undefined 保持 undefined
@@ -82,17 +83,7 @@ const { isOpen, setOpen } = useControlledBoolean({
       >
         <!-- 注意：不能向 ValueText 传插槽内容，其内部会对默认插槽做字符串化渲染 -->
         <ArkSelect.ValueText :placeholder="props.placeholder" />
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="size-4 opacity-50"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
+        <slot name="trigger-icon"><ChevronIcon class="size-4 rotate-90 opacity-50" /></slot>
       </ArkSelect.Trigger>
     </ArkSelect.Control>
 

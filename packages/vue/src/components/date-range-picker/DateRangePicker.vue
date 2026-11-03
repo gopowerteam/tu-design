@@ -5,8 +5,8 @@ import type { PropType } from "vue";
 import { computed, provide, shallowRef, watch } from "vue";
 import { cn } from "@/lib/utils";
 import { Calendar as TCalendar } from "../calendar";
-import CalendarIcon from "../date-shared/CalendarIcon.vue";
-import ClearIcon from "../date-shared/ClearIcon.vue";
+import CalendarIcon from "../icon-shared/CalendarIcon.vue";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import {
   CALENDAR_IN_PICKER,
   controlCls,
@@ -174,10 +174,10 @@ function openFromInput() {
         @keydown.down.prevent="openFromInput"
       />
       <ArkDatePicker.ClearTrigger :class="iconBtnCls">
-        <ClearIcon />
+        <CloseIcon class="size-4" />
       </ArkDatePicker.ClearTrigger>
       <ArkDatePicker.Trigger :class="iconBtnCls">
-        <CalendarIcon />
+        <CalendarIcon class="size-4" />
       </ArkDatePicker.Trigger>
     </ArkDatePicker.Control>
 

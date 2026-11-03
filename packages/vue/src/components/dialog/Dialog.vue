@@ -4,6 +4,7 @@ import { computed } from "vue";
 import { Dialog as ArkDialog } from "@ark-ui/vue/dialog";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 
 // 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，
 // 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。
@@ -104,19 +105,10 @@ const contentClass = computed(() =>
           v-if="props.showCloseButton"
           class="absolute right-4 top-4 cursor-pointer rounded-sm opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none"
         >
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-4"
-          >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 12 12" />
-          </svg>
-          <span class="sr-only">关闭</span>
+          <slot name="close">
+            <CloseIcon class="size-4" />
+            <span class="sr-only">关闭</span>
+          </slot>
         </ArkDialog.CloseTrigger>
       </ArkDialog.Content>
     </ArkDialog.Positioner>

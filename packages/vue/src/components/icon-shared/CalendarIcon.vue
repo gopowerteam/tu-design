@@ -6,7 +6,7 @@
     stroke-width="2"
     stroke-linecap="round"
     stroke-linejoin="round"
-    class="size-4"
+    aria-hidden="true"
   >
     <rect width="18" height="18" x="3" y="4" rx="2" />
     <path d="M16 2v4" />

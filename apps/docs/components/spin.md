@@ -31,6 +31,14 @@ npx @tu-design/cli add spin
 
 <DemoPreview file="spin/SpinWrapDemo.vue" />
 
+## 图标定制
+
+`#icon` 插槽替换默认的圆环转圈图形（独立态与包裹态遮罩中的 spinner 均生效），外层 `role="status"`、`animate-spin` 尺寸语义不受影响：
+
+<DemoPreview file="spin/SpinIconSlot.vue" />
+
+使用 Iconify 时可放 `<Icon icon="svg-spinners:180-ring" />`（@iconify/vue）或 `<span class="icon-[line-md--loading-loop] size-6" />`（@iconify/tailwind4）。
+
 ## 组件结构
 
 Spin 为单文件组件，无子组件；尺寸用 cva 变体（`spinVariants`），颜色固定 `text-primary`（暗色模式随 token 自动适配）。遮罩使用 `rounded-[inherit]`，会跟随包裹容器的圆角。
@@ -55,6 +63,7 @@ Spin 不声明自定义事件，原生事件随 attrs 透传到根元素。
 | Slot    | 说明                                                                                   |
 | ------- | -------------------------------------------------------------------------------------- |
 | default | 提供内容即进入包裹态；不提供则为独立 spinner。独立态下 `spinning=false` 不渲染任何内容 |
+| `icon`  | 替换默认圆环转圈图形（`animate-spin` 与尺寸变体仍作用于默认图形，自定义内容自行控制）  |
 
 ## 无障碍
 

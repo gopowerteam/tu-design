@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Calendar } from "./index";
 
@@ -41,6 +42,31 @@ describe("Calendar（standalone）", () => {
     // 收缩包裹卡片宽度（否则块级撑满父容器，边框拉满整行）
     expect(host?.className).toContain("w-fit");
     w.unmount();
+  });
+
+  it("#prev-icon/#next-icon 插槽穿透覆盖翻页箭头（CalendarBody → CalendarNav 五处导航条）", async () => {
+    const w = await openCalendar({ defaultValue: "2026-10-09" });
+    // 默认：内置 Chevron 图标
+    expect(document.body.querySelectorAll('[data-part="prev-trigger"] svg').length).toBeGreaterThan(
+      0,
+    );
+    w.unmount();
+
+    const w2 = mount(Calendar, {
+      props: { defaultValue: "2026-10-09" },
+      slots: {
+        "prev-icon": () => h("span", { "data-testid": "prev" }, "‹"),
+        "next-icon": () => h("span", { "data-testid": "next" }, "›"),
+      },
+      attachTo: document.body,
+    });
+    await vi.waitFor(() => {
+      expect(document.body.querySelector('[data-scope="date-picker"] [role="grid"]')).toBeTruthy();
+    });
+    // 每个可见视图的导航条均被覆盖（day/month/year 多视图并存）
+    expect(document.body.querySelectorAll('[data-testid="prev"]').length).toBeGreaterThan(0);
+    expect(document.body.querySelectorAll('[data-testid="next"]').length).toBeGreaterThan(0);
+    w2.unmount();
   });
 
   it("v-model：点格子发出 ISO 串", async () => {

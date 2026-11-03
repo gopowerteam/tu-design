@@ -86,7 +86,10 @@ function handleValueUpdate(next: DateValue[]) {
           :num-of-months="props.numOfMonths"
           :week="props.week"
           :locale="props.locale"
-        />
+        >
+          <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+          <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+        </CalendarBody>
       </ArkDatePicker.Content>
     </ArkDatePicker.Root>
   </div>
@@ -98,5 +101,8 @@ function handleValueUpdate(next: DateValue[]) {
     :num-of-months="props.numOfMonths"
     :week="props.week"
     :locale="props.locale"
-  />
+  >
+    <template v-if="$slots['prev-icon']" #prev-icon><slot name="prev-icon" /></template>
+    <template v-if="$slots['next-icon']" #next-icon><slot name="next-icon" /></template>
+  </CalendarBody>
 </template>

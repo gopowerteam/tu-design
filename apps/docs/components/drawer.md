@@ -43,6 +43,14 @@ npx @tu-design/cli add drawer
 
 <DemoPreview file="drawer/DrawerFooter.vue" />
 
+## 图标定制
+
+`#close` 插槽替换右上角关闭按钮的内容（默认内置 X 图标），关闭行为仍由 Ark CloseTrigger 承担：
+
+<DemoPreview file="drawer/DrawerCloseSlot.vue" />
+
+使用 Iconify 时可放 `<Icon icon="lucide:x" />`（@iconify/vue）或 `<span class="icon-[lucide--x] size-4" />`（@iconify/tailwind4）。
+
 ## API
 
 ### Props
@@ -84,6 +92,7 @@ npx @tu-design/cli add drawer
 | `title`              | 覆盖标题渲染（未提供时回退 `title` prop，皆无则不渲染）       |
 | `description`        | 覆盖描述渲染（未提供时回退 `description` prop，皆无则不渲染） |
 | `footer="{ close }"` | 底部操作区，作用域注入 `close` 函数                           |
+| `close`              | 替换右上角关闭按钮内容（默认内置 X 图标）                     |
 
 ## 无障碍
 

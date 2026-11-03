@@ -150,6 +150,13 @@
       "description": "配置驱动表单渲染器：defineForm 聚合 TanStack Form 实例与字段配置，柯里化 widget DSL 声明控件，Tailwind 栅格自适应布局，复用 Form 家族 aria 接线。"
     },
     {
+      "name": "icon-shared",
+      "version": "0.5.0",
+      "title": "IconShared",
+      "type": "registry:ui",
+      "description": "内置功能性图标（CloseIcon/ChevronIcon/CalendarIcon），内部共享，非公共 API。图标组件零默认类：尺寸/旋转/过渡类由使用处显式传入，避免 fallthrough 拼接时同名工具类排序冲突。"
+    },
+    {
       "name": "input",
       "version": "0.5.0",
       "title": "Input",

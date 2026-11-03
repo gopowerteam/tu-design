@@ -31,6 +31,14 @@ npx @tu-design/cli add select
 
 <DemoPreview file="select/SelectCustomItem.vue" />
 
+## 图标定制
+
+`#trigger-icon` 插槽替换触发器内置的下拉箭头（默认 ChevronRight 旋转 90°、`opacity-50`）：
+
+<DemoPreview file="select/SelectTriggerIconSlot.vue" />
+
+使用 Iconify 时可放 `<Icon icon="lucide:chevron-down" />`（@iconify/vue）或 `<span class="icon-[lucide--chevron-down] size-4 opacity-50" />`（@iconify/tailwind4）。选项勾选指示的定制由 [`#item`](#自定义选项渲染) 插槽整体接管。
+
 ## API
 
 ### Props
@@ -55,9 +63,10 @@ npx @tu-design/cli add select
 
 ### Slots
 
-| 插槽    | 作用域                      | 说明                                          |
-| ------- | --------------------------- | --------------------------------------------- |
-| `#item` | `{ item, label, selected }` | 自定义选项渲染；未提供时渲染 label 与勾选指示 |
+| 插槽            | 作用域                      | 说明                                          |
+| --------------- | --------------------------- | --------------------------------------------- |
+| `#item`         | `{ item, label, selected }` | 自定义选项渲染；未提供时渲染 label 与勾选指示 |
+| `#trigger-icon` | —                           | 替换触发器内置下拉箭头                        |
 
 ## 说明
 

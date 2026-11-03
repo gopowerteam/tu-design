@@ -17,6 +17,7 @@ interface Slots {
   title?: () => unknown;
   description?: () => unknown;
   footer?: (ctx: { close: () => void }) => unknown;
+  close?: () => unknown;
 }
 
 function mountDialog(props: Record<string, unknown> = {}, slots: Slots = {}) {
@@ -170,5 +171,29 @@ describe("Dialog", () => {
     expect(content()!.getAttribute("aria-labelledby")).toBe(title()!.id);
     expect(content()!.getAttribute("aria-describedby")).toBe(description()!.id);
     w.unmount();
+  });
+
+  it("#close 插槽覆盖内置关闭图标，CloseTrigger 行为保留", async () => {
+    // 默认：内置 X 图标
+    const w = mountFull();
+    await openDialog(w);
+    const triggerEl = document.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
+    expect(triggerEl!.querySelector("svg")).not.toBeNull();
+    w.unmount();
+
+    // 覆盖：自定义内容替换图标（关闭行为仍由 Ark CloseTrigger 承担）
+    const w2 = mountDialog(
+      { title: "x" },
+      {
+        trigger: () => h("button", { type: "button" }, "打开"),
+        close: () => h("span", { "data-testid": "custom-close" }, "关"),
+      },
+    );
+    await w2.find("button[data-part='trigger']").trigger("click");
+    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+    const closeEl = document.querySelector('[data-scope="dialog"][data-part="close-trigger"]');
+    expect(closeEl!.querySelector('[data-testid="custom-close"]')).not.toBeNull();
+    expect(closeEl!.querySelector("svg")).toBeNull();
+    w2.unmount();
   });
 });

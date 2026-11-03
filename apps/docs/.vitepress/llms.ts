@@ -18,7 +18,13 @@ const FRONTMATTER_RE = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/;
 const SECTION_SEPARATOR = "\n\n---\n\n";
 
 /** registry 中 type 为 registry:ui 但属于内部共享实现、无独立文档页的项。 */
-const INTERNAL_ITEMS = new Set(["date-shared", "overlay-shared", "slot", "tree-shared"]);
+const INTERNAL_ITEMS = new Set([
+  "date-shared",
+  "icon-shared",
+  "overlay-shared",
+  "slot",
+  "tree-shared",
+]);
 
 /** llms.txt 固定收录的指南页（顺序即输出顺序）。 */
 const GUIDE_PAGES = [

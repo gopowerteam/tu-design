@@ -4,8 +4,8 @@ import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
 import { provide } from "vue";
 import { cn } from "@/lib/utils";
-import CalendarIcon from "./CalendarIcon.vue";
-import ClearIcon from "./ClearIcon.vue";
+import CalendarIcon from "../icon-shared/CalendarIcon.vue";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { CALENDAR_IN_PICKER, controlCls, iconBtnCls } from "./shared";
 
 /** 单值日期族（Date/Month/Year/Week）共用外壳：触发器 + 清空/日历按钮 + 弹层容器。 */
@@ -80,10 +80,10 @@ function openFromInput() {
         @keydown.down.prevent="openFromInput"
       />
       <ArkDatePicker.ClearTrigger :class="iconBtnCls">
-        <ClearIcon />
+        <CloseIcon class="size-4" />
       </ArkDatePicker.ClearTrigger>
       <ArkDatePicker.Trigger :class="iconBtnCls">
-        <CalendarIcon />
+        <CalendarIcon class="size-4" />
       </ArkDatePicker.Trigger>
     </ArkDatePicker.Control>
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, useSlots } from "vue";
 import { cn } from "@/lib/utils";
+import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { alertIconPaths, alertIconVariants, alertVariants, type AlertVariants } from "./index";
 
 interface Props {
@@ -87,19 +88,7 @@ function onClose() {
         class="shrink-0 rounded-sm opacity-60 transition-opacity hover:opacity-100 focus-visible:outline-2 focus-visible:outline-ring -m-1 p-1"
         @click="onClose"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-          class="size-4"
-        >
-          <path d="M18 6 6 18M6 6l12 12" />
-        </svg>
+        <CloseIcon class="size-4" />
       </button>
     </slot>
   </div>

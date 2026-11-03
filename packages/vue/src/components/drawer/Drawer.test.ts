@@ -17,6 +17,7 @@ interface Slots {
   title?: () => unknown;
   description?: () => unknown;
   footer?: (ctx: { close: () => void }) => unknown;
+  close?: () => unknown;
 }
 
 function mountDrawer(props: Record<string, unknown> = {}, slots: Slots = {}) {
@@ -212,5 +213,27 @@ describe("Drawer", () => {
     expect(content()!.getAttribute("aria-labelledby")).toBe(title()!.id);
     expect(content()!.getAttribute("aria-describedby")).toBe(description()!.id);
     w.unmount();
+  });
+
+  it("#close 插槽覆盖内置关闭图标，CloseTrigger 行为保留", async () => {
+    // 默认：内置 X 图标
+    const w = mountFull();
+    await openDrawer(w);
+    expect(closeTrigger()!.querySelector("svg")).not.toBeNull();
+    w.unmount();
+
+    // 覆盖：自定义内容替换图标（关闭行为仍由 Ark CloseTrigger 承担）
+    const w2 = mountDrawer(
+      { title: "x" },
+      {
+        trigger: () => h("button", { type: "button" }, "打开"),
+        close: () => h("span", { "data-testid": "custom-close" }, "关"),
+      },
+    );
+    await w2.find("button[data-part='trigger']").trigger("click");
+    await vi.waitFor(() => expect(content()!.dataset.state).toBe("open"));
+    expect(closeTrigger()!.querySelector('[data-testid="custom-close"]')).not.toBeNull();
+    expect(closeTrigger()!.querySelector("svg")).toBeNull();
+    w2.unmount();
   });
 });
