@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "calendar",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "registry:ui",
   "description": "日历（TCalendar）：紧凑日历卡。Picker 弹层内为 embedded 内嵌形态（TDatePicker/TDateRangePicker 自动挂靠，纯卡片内核）；独立使用即 standalone 独立形态（自带日历状态与 v-model，恒开展示）。",
   "registryDependencies": ["icon-shared", "utils", "date-shared"],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "avatar",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "type": "registry:ui",
   "description": "头像，支持尺寸/形状、加载占位与失败回退（Ark UI）。",
   "registryDependencies": ["utils"],
