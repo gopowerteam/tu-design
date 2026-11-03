@@ -8,7 +8,7 @@
     "prepare": "vp config",
     "publish:pkg": "pnpm -r --filter '@tu-design/*' publish --no-git-checks",
     "docs": "pnpm --filter @tu-design/docs dev",
-    "release": "bumpp -r --tag \"v{version}\" --commit \"chore: 🔖 release v{version}\""
+    "release": "bumpp"
   },
   "devDependencies": {
     "bumpp": "catalog:",

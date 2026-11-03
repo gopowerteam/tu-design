@@ -39,7 +39,7 @@ vp run ready            # 全量体检 = vp check + 递归 test + 递归 build�
 
 ## 发版（bumpp 锁定版本模型）
 
-1. conventional commits 累积变更，发版时根目录 `pnpm release`：全 workspace 统一升版本（vue/cli 锁定同版本）→ 单 commit + tag `v{version}` + push。
+1. conventional commits 累积变更，发版时根目录 `pnpm release <version>`（版本号显式传入）：配置集中在根目录 `bump.config.ts` —— `--execute` 钩子自动 `vp run -r generate:registry` 同步 registry 版本号，并以 `git add --all` 把全部产物一并纳入 release commit（`all: true` + `confirm: false`，非交互安全）→ 全 workspace 统一升版本（vue/cli 锁定同版本）→ 单 commit + tag `v{version}` + push。**不再需要手动补 `chore: registry 产物同步 vX` commit。**
 2. tag 触发 `.github/workflows/publish.yml`：遍历 `PACKAGES` 清单校验锁定版本 → 逐包 pnpm pack（prepack 完整构建）→ 逐包 npm publish（OIDC，无需 NPM_TOKEN，需在 npmjs.com 配置 Trusted Publisher）→ changelogithub 生成单个 GitHub Release。
 3. **新增可发布包时必须同步更新 publish.yml 的 `PACKAGES` 清单**，否则该包永不发布。
 4. 手动兜底：`vp run publish:pkg`（注意 pnpm publish 会触发 prepack 构建）。changesets 已退役，`.changeset/` 与 `version:pkg` 已移除。
