@@ -27,6 +27,7 @@ vp run ready            # 全量体检 = vp check + 递归 test + 递归 build�
 - 一切经由 `vp`：`vp run <script>` 跑 package.json 脚本，`vp <name>` 是内置命令，两者可能不同。不要直接调 vite/vitest/oxlint。
 - 依赖版本统一走 pnpm catalog（`catalogMode: prefer`）：新增依赖须加进 `pnpm-workspace.yaml` 的 `catalog:`，包内写 `"catalog:"`。
 - **registry 是生成物且已提交**：改动 `src/components/`、`src/lib/utils.ts`、`src/styles/tokens.css` 或 workspace catalog 后，必须 `cd packages/vue && vp run generate:registry` 重新生成 `registry/vue/*.json`，否则防漂移测试失败。生成时会将 `catalog:` 依赖翻译为真实版本号并剔除 `.test.ts` 文件。
+- **cli 注入源码是生成物且已提交**：改动 `packages/vue/src/styles/tokens.css` 或 `packages/vue/src/lib/utils.ts` 后，还需 `pnpm --filter @tu-design/cli generate:sources` 再生成 `packages/cli/src/lib/generated-sources.ts`（与 generate:registry 触发时机相同，一起跑），否则 init-core.test.ts 守卫失败。
 - `TuDesignResolver`（`src/resolver.ts`）用组件名白名单而非 `/^T[A-Z]/` 正则（避免误捕 Transition/Teleport 等内置组件）；白名单必须与 `index.ts` 导出保持同步，`resolver.test.ts` 强制校验。
 - 环境要求：Node ≥ 22.18.0，pnpm 12.6.0（`packageManager` 字段固定）。
 

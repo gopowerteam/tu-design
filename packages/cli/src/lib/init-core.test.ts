@@ -68,12 +68,19 @@ describe("mergeTokensCss", () => {
 });
 
 describe("TOKENS_CSS_SOURCE / CN_UTIL_SOURCE", () => {
+  const REGEN_HINT = "提示：运行 pnpm --filter @tu-design/cli generate:sources";
+
   it("TOKENS_CSS_SOURCE 与 @tu-design/vue 的 tokens.css 一致（防漂移）", () => {
     const real = readFileSync(
       new URL("../../../vue/src/styles/tokens.css", import.meta.url),
       "utf8",
     );
-    expect(TOKENS_CSS_SOURCE.trimEnd()).toBe(real.trimEnd());
+    expect(TOKENS_CSS_SOURCE.trimEnd(), REGEN_HINT).toBe(real.trimEnd());
+  });
+
+  it("CN_UTIL_SOURCE 与 @tu-design/vue 的 lib/utils.ts 一致（防漂移）", () => {
+    const real = readFileSync(new URL("../../../vue/src/lib/utils.ts", import.meta.url), "utf8");
+    expect(CN_UTIL_SOURCE.trimEnd(), REGEN_HINT).toBe(real.trimEnd());
   });
 
   it("CN_UTIL_SOURCE 导出 cn 且使用 clsx + tailwind-merge", () => {

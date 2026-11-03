@@ -34,6 +34,7 @@
     "access": "public"
   },
   "scripts": {
+    "generate:sources": "tsx scripts/generate-sources.ts && vp fmt src/lib/generated-sources.ts",
     "prepack": "vp run build",
     "build": "vp pack && tsx scripts/fix-bin.ts",
     "typecheck": "tsc --noEmit",
