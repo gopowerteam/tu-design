@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "tabs",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "registry:ui",
   "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。",
   "registryDependencies": ["utils"],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "date-range-picker",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "registry:ui",
   "description": "日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点，值以 [\"yyyy-MM-dd\", \"yyyy-MM-dd\"] 有序元组受控，空值归一 null。",
   "registryDependencies": ["utils", "date-shared", "calendar", "overlay-shared"],

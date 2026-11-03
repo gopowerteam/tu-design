@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "button",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "registry:ui",
   "description": "带变体与尺寸的按钮，支持 as 标签切换与 asChild 组合。",
   "registryDependencies": ["utils", "slot"],

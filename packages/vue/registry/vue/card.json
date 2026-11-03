@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "card",
-  "version": "0.4.3",
+  "version": "0.5.0",
   "type": "registry:ui",
   "description": "卡片容器：单组件 API，title/description 头部 + 命名插槽（cover/action/footer/header），支持尺寸、视觉变体、分段分隔与可关闭。",
   "registryDependencies": ["utils"],
