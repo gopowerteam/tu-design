@@ -163,6 +163,23 @@ const table = defineTable<Order>({
 - **`onSubmit` 纪律**：reload 归表格层（内置区点击 → 归位第 1 页重载，或组合式外置按钮），`onSubmit` 只做业务副作用（携带值上报等）；`defineForm({ onSubmit: () => table.reload(true) })` 的前引闭包虽合法但会双 onLoad，标为反例
 - **不做**：查询按钮 loading、搜索区布局自定义插槽、`v-model` 受控——需要时先取 `search.form` 自行扩展
 
+按钮预设示例——按钮配置随 definition 走，内置搜索区自动跟随（含缺省跟随的重置按钮），组件侧零 props：
+
+```vue
+<script setup lang="ts">
+import { defineForm } from "@tu-design/vue";
+
+const search = defineForm({
+  items: [/* ... */],
+  searchable: true, // actions 进 definition：搜索 + 重置按钮由内置搜索区渲染
+});
+</script>
+
+<template>
+  <TTableRender :definition="table" row-key="id" />
+</template>
+```
+
 ## 拆分式
 
 不想（或不能）在 `setup` 里建内核时，可直接把配置拆成 props（`definition` 优先，存在时忽略其余）：
@@ -234,6 +251,52 @@ function onReset() {
 - `show-search="false"` 后 `search` / `reset` 事件不再有内置触发源（二者由内置搜索区触发）——查询/重置的 reload 由外层按钮负责；
 - `TTablePagination` 也可脱离 definition 手动传 `page-index` / `page-size` / `total` + `@update:page-index` / `@update:page-size` 使用（此时恒渲染，可见性自理；definition 与手动 props 同传时 definition 优先）；
 - `definition.page` 是 reactive 投影，勿顶层解构——模板中保持 `table.page.pageIndex` 形式访问。
+
+### TTablePagination API
+
+`TablePagination` 已随 TableRender 一并公开，可在组合式布局中独立使用：
+
+| prop             | 类型                    | 默认     | 说明                                                                                                      |
+| ---------------- | ----------------------- | -------- | --------------------------------------------------------------------------------------------------------- |
+| `definition`     | `TableRenderDefinition` | —        | 组合式自动接线：状态取 `definition.page`、动作接 `setPageIndex` / `setPageSize`（R29）；单页自隐藏（R13） |
+| `pageIndex`      | `number`                | —        | 手动模式当前页（1-based）                                                                                 |
+| `pageSize`       | `number`                | —        | 手动模式每页条数                                                                                          |
+| `pageSizeOpts`   | `number[]`              | —        | 手动模式每页条数选项                                                                                      |
+| `total`          | `number`                | —        | 手动模式总条数                                                                                            |
+| `showTotal`      | `boolean`               | `true`   | 「共 N 条」                                                                                               |
+| `showSizeSelect` | `boolean`               | `false`  | 条/页 select                                                                                              |
+| `navMode`        | `"text" \| "icon"`      | `"text"` | 上一页/下一页形态：文字按钮或 chevron 图标                                                                |
+
+事件：`update:page-index` / `update:page-size`——两种模式恒触发（动作幂等，重复回调无害）。组件根为 `flex justify-between p-2` 布局，**不带** `border-t`（位置样式归使用方，`TableRender` 内置使用处自行补边框）。
+
+模式语义：`definition` 与手动 props 同传时 definition 优先并 DEV 警告；仅手动时 `pageIndex` / `pageSize` / `total` 齐备才渲染（缺关键项 DEV 警告），且恒渲染、可见性由使用方控制。
+
+手动模式示例（可见性自行控制）：
+
+```vue
+<TTablePagination
+  v-if="table.page.total > table.page.pageSize"
+  :page-index="table.page.pageIndex"
+  :page-size="table.page.pageSize"
+  :page-size-opts="table.page.pageSizeOpts"
+  :total="table.page.total"
+  show-size-select
+  @update:page-index="table.setPageIndex"
+  @update:page-size="table.setPageSize"
+/>
+```
+
+半组合形态——只外置搜索表单，分页仍走内置（R13 单页隐藏、列设置等内置行为全部保留）：
+
+```vue
+<TFormRender
+  :definition="table.search"
+  :min-width="200"
+  @search="() => table.reload(true)"
+  @reset="() => table.reload(true)"
+/>
+<TTableRender :definition="table" row-key="id" :show-search="false" />
+```
 
 ## 行选择
 
@@ -837,12 +900,12 @@ const table = defineTable<Task>({
 
 ## 组件结构
 
-| 成员                      | 说明                                                                                                                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TTableRender`            | 表格本体：包装 TanStack `useVueTable`，内置分页器（`TablePagination`）、行选择、固定列、虚拟滚动与树形展开；列单元格渲染见上文[内置列渲染器](#内置列渲染器) |
-| `defineTable<T>(config)`  | 聚合函数：`useTableRender` 的别名，一步返回 `TableRenderDefinition`（须在组件 setup 中调用，TanStack 约束）                                                 |
-| `useTableRender(options)` | 底层组合函数：包装 TanStack `useVueTable`，供已有实例 / 动态配置的高级场景                                                                                  |
-| `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                      |
+| 成员                      | 说明                                                                                                                                                                                                |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TTableRender`            | 表格本体：包装 TanStack `useVueTable`，内置分页器（`TablePagination`，已公开、可独立使用，见下方组合式布局节）、行选择、固定列、虚拟滚动与树形展开；列单元格渲染见上文[内置列渲染器](#内置列渲染器) |
+| `defineTable<T>(config)`  | 聚合函数：`useTableRender` 的别名，一步返回 `TableRenderDefinition`（须在组件 setup 中调用，TanStack 约束）                                                                                         |
+| `useTableRender(options)` | 底层组合函数：包装 TanStack `useVueTable`，供已有实例 / 动态配置的高级场景                                                                                                                          |
+| `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                                                              |
 
 ## API
 
@@ -862,6 +925,8 @@ const table = defineTable<Task>({
 | `loading`                                                                                                                                        | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                      |
 | `emptyText`                                                                                                                                      | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                            |
 | `search`                                                                                                                                         | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                               |
+| `showSearch`                                                                                                                                     | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                  |
+| `showPagination`                                                                                                                                 | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                         |
 | `rowSelection` / `virtual` / `height` / `tree` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
 
 ### Events
@@ -971,6 +1036,8 @@ const table = defineTable<Task>({
 - **`onClick` 能拿到事件对象吗？** —— 不能，回调签名是 `(record, index)`。这是有意收敛：需要事件的特殊场景请用自定义 `render` 完全接管。
 - **`date` 的时区行为是什么？** —— 走浏览器本地时区解析与显示；服务端返回 UTC 字符串且需要固定时区展示时，请先在自己的数据层转换为目标时区的 `Date`。
 - **`serial` 翻页后重头计数正常吗？** —— 正常，这是页内序号的设计语义；跨页连续序号需要总行数偏移，属二期。
+- **外置了查询按钮但点击没反应？** —— `show-search="false"` 后内置 `search` / `reset` 事件不再触发（二者由内置搜索区发出）；外层按钮请直接调 `table.reload(true)`（需校验时用 `await table.search.submit()`）。
+- **`TTablePagination` 的 `definition` 和手动 props 同时传了？** —— definition 优先并 DEV 警告；混传没有意义，二选一。
 - **金额带千分位但想要 `1,234.50`（无货币符号）？** —— `currency` 固定走货币格式；纯千分位请自定义 `render` 用 `Intl.NumberFormat({ style: "decimal" })`。
 
 ## 注意事项
@@ -987,6 +1054,7 @@ const table = defineTable<Task>({
 - **列显隐基于可见列集**：隐藏 fixed 列后 sticky 偏移自动重算（组空无残留边框）；`columnSettings: false` 只隐藏 UI，受控 `visibleKeys` 不受影响；显隐不触发 onLoad、不重置分页/排序/选择（R25）。
 - **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
+- **`TTablePagination` 两种模式的可见性语义不同**：`definition` 模式单页自隐藏（R13）；手动模式恒渲染（缺关键 props 时 DEV 警告并不渲染），可见性由使用方控制。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。
 - 二期规划：列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
 
