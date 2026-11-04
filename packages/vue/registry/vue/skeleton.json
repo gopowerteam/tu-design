@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "skeleton",
-  "version": "0.5.2",
+  "version": "0.5.3",
   "type": "registry:ui",
   "description": "加载占位骨架屏。",
   "registryDependencies": ["utils"],
