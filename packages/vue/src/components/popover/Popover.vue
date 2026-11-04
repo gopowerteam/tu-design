@@ -14,6 +14,7 @@ import {
 import type { PopoverRootProps } from "@ark-ui/vue/popover";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
+import { isInIframeRealm, isInWujie } from "../overlay-shared/sandbox";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 
 /** 面板相对触发器的对齐方向 */
@@ -59,7 +60,7 @@ const props = defineProps({
   /** 是否 Teleport（浮层定位不受嵌套裁剪影响）；false 时面板留在原地 */
   portal: { type: Boolean, default: true },
   /** Teleport 目标（选择器或元素），仅 portal=true 时生效；
-      缺省时若应用挂载容器处于 shadow DOM（微前端沙箱）自动降级为该容器，否则 body */
+      缺省时若应用挂载容器处于 shadow DOM 或 wujie graft 沙箱，自动降级为该容器，否则 body */
   to: { type: [String, Object] as PropType<string | HTMLElement>, default: undefined },
   /** 面板宽度与触发元素一致 */
   matchTriggerWidth: { type: Boolean, default: false },
@@ -76,21 +77,24 @@ const emit = defineEmits<{ "update:open": [open: boolean] }>();
 const slots = useSlots();
 const attrs = useAttrs();
 
-// —— Teleport 目标解析：显式 to > shadow DOM 自动降级 > body ——
+// —— Teleport 目标解析：显式 to > shadow DOM / wujie graft 自动降级 > body ——
 // app._container 在 mount 的 render 完成后才赋值（runtime-core 3.5.43：render L4337
 // → 赋值 L4340），而子组件 onMounted 在 render 内同步执行、届时仍为 undefined，
 // 故检测再延后一个微任务（mount 调用栈结束后 _container 必已赋值），结果存 ref
 // 驱动 computed 重算；getCurrentInstance 仅 setup 同步上下文可用，须顶层捕获。
 // 共享 Vue（__MICRO_SHARED__）下各子应用 app._container 相互独立，检测按实例隔离；
-// 非 shadow 环境 getRootNode() 返回 Document → 兜底 body，零破坏
+// 沙箱两类：真 shadow DOM 由 getRootNode() 命中；wujie graft 下 getRootNode/父链
+// 被 patch 伪装成 iframe 文档语义（实测），结构探测失效，须叠加官方标记位。
+// 其余微前端（qiankun / micro-app light DOM）body 即主文档 body，兜底正确
 const instance = getCurrentInstance();
+const inWujie = isInWujie();
 const detectedTarget = ref<string | HTMLElement>("body");
 onMounted(() => {
   queueMicrotask(() => {
     if (props.to) return;
     const container = (instance?.appContext.app as { _container?: HTMLElement } | undefined)
       ?._container;
-    if (container && container.getRootNode() instanceof ShadowRoot) {
+    if (container && (container.getRootNode() instanceof ShadowRoot || inWujie)) {
       detectedTarget.value = container;
     }
   });
@@ -173,13 +177,25 @@ const onPanelLeave = () => {
 onBeforeUnmount(clearTimer);
 
 // side/align → Ark positioning.placement（12 方位，居中不带对齐后缀）；
-// 外部经 attrs 传入的 positioning 已显式指定 placement 时以其为准，其余字段原样合并
+// 外部经 attrs 传入的 positioning 已显式指定 placement 时以其为准，其余字段原样合并。
+// iframe realm（wujie graft / iframe 型沙箱 / iframe 嵌入）且未显式指定 strategy 时
+// 默认 fixed：非 graft 拓扑下 fixed 与 absolute 坐标等价（零副作用），graft 拓扑
+// （wujie）absolute 包含块错位，fixed 是唯一正确解 —— 详见 overlay-shared/sandbox.ts
+const inIframeRealm = isInIframeRealm();
 const rootPositioning = computed<ArkPositioning>(() => {
   const user = (attrs.positioning ?? {}) as ArkPositioning;
   const placement = (
     props.align === "center" ? props.side : `${props.side}-${props.align}`
   ) as ArkPlacement;
-  return { ...user, placement, sameWidth: props.matchTriggerWidth || user.sameWidth };
+  const merged: ArkPositioning = {
+    ...user,
+    placement,
+    sameWidth: props.matchTriggerWidth || user.sameWidth,
+  };
+  if (inIframeRealm && user.strategy == null) {
+    merged.strategy = "fixed";
+  }
+  return merged;
 });
 
 // 面板样式：内置类 + contentClass + contentProps.class 三方合并（twMerge 自动去冲突，后者优先）
@@ -233,7 +249,8 @@ const positionerStyle = computed(() =>
 
     <!-- portal：Teleport（Ark Vue 原语不自带传送，浮层定位不受嵌套 overflow 裁剪影响）；
          portal=false 时 disabled Teleport 面板留在原地；to 显式指定目标，
-         缺省时在 shadow DOM 沙箱（wujie 等）自动降级为应用挂载容器，避免传送出 shadow root -->
+         缺省时真 shadow DOM（getRootNode 检测）与 wujie graft（marker 检测）沙箱
+         自动降级为应用挂载容器，避免传送出 shadow root -->
     <Teleport :to="teleportTarget" :disabled="!props.portal">
       <ArkPopover.Positioner :class="positionerClass" :style="positionerStyle">
         <ArkPopover.Content

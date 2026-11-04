@@ -6,6 +6,12 @@
   "description": "弹层家族共享逻辑：受控开合桥接（useControlledBoolean）与确认 pending 语义（useConfirmPending）。",
   "files": [
     {
+      "path": "overlay-shared/sandbox.ts",
+      "type": "registry:lib",
+      "target": "components/ui/overlay-shared/sandbox.ts",
+      "content": "/**\n * 微前端沙箱探测（按渲染拓扑分派，框架无关）。\n *\n * 拓扑三分：\n * - 同文档（无沙箱 / qiankun / micro-app light DOM / 降级 iframe）：absolute 正确\n * - 真 shadow DOM（web component 沙箱 / micro-app shadowDOM 模式）：absolute 正确，\n *   由组件的 `getRootNode() instanceof ShadowRoot` 检测命中\n * - graft 型（wujie）：iframe 文档树 graft 进 shadowRoot 渲染，absolute 输出视口系\n *   坐标但包含块是 graft body → 错位；fixed 以最近视口为包含块，是唯一正确解\n *\n * 安全性论证：非 graft 拓扑下 absolute 与 fixed 坐标等价（包含块同为最近视口），\n * iframe realm 下默认 fixed 零副作用；跨域 iframe 下 self/top 仅引用比较，\n * 不读属性，无 SecurityError。\n *\n * 已知边界：\n * - fixed 元素祖先有 transform/filter 时包含块被劫持（宿主布局应避免；graft 下\n *   absolute 的 offsetParent 解析本就失效，错法不同而非新增错误）\n * - fixed 面板在祖先滚动时依赖 autoUpdate 重算，重算前一帧有视口驻留（瞬时视觉差异）\n * - 若未来出现「非 iframe 的 graft 型沙箱」，本探测无法覆盖，需追加该沙箱的 marker 信号\n */\n\n/** 组件 JS 是否运行在 iframe realm（wujie / iframe 型沙箱 / 普通 iframe 嵌入） */\nexport function isInIframeRealm(): boolean {\n  return typeof window !== \"undefined\" && window.self !== window.top;\n}\n\n/** 是否处于 wujie graft 沙箱（getRootNode/父链被 wujie patch 伪装，结构探测失效，\n *  依赖官方标记；wujie 在子应用脚本执行前注入，时序可靠） */\nexport function isInWujie(): boolean {\n  return (\n    typeof window !== \"undefined\" &&\n    (window as { __POWERED_BY_WUJIE__?: boolean }).__POWERED_BY_WUJIE__ === true\n  );\n}\n"
+    },
+    {
       "path": "overlay-shared/useConfirmPending.ts",
       "type": "registry:lib",
       "target": "components/ui/overlay-shared/useConfirmPending.ts",
