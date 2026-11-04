@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "date-picker",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "registry:ui",
   "description": "日期选择器：输入框 + 日历弹层（月/年视图切换），支持手动键入/清空/min-max 边界/不可选谓词，值以 \"yyyy-MM-dd\" 字符串受控。",
   "registryDependencies": ["utils", "date-shared", "calendar"],

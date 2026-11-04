@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "utils",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "type": "registry:lib",
   "description": "cn 类名合并工具（clsx + tailwind-merge）。",
   "dependencies": ["clsx@^2.1.1", "tailwind-merge@^3.7.0", "class-variance-authority@^0.7.1"],
