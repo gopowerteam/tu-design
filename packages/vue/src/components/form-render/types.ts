@@ -180,9 +180,29 @@ export interface FormRenderItem<T extends object> {
   componentProps?: Record<string, unknown>;
 }
 
+/** 按钮预设（A1 块级互斥：actions 存在时 <FormRender> 组件按钮 props 全量忽略） */
+export interface FormActionsConfig {
+  /** 搜索按钮，缺省 false */
+  searchable?: boolean;
+  /** 提交按钮，缺省 false */
+  submitable?: boolean;
+  /** 重置按钮；缺省跟随 searchable（A2，域内解析） */
+  resetable?: boolean;
+  /** 取消按钮；缺省跟随 submitable（A2，域内解析） */
+  cancelable?: boolean;
+  searchText?: string;
+  submitText?: string;
+  resetText?: string;
+}
+
 export interface FormRenderDefinition<T extends object> {
   items: FormRenderItem<T>[];
   form: FormRenderFormApi;
   /** 重置到 items.default（搜索表单"重置"语义） */
   resetToDefaults: () => void;
+  /** 全量校验并返回是否通过（R30）；不触发 FormRender 的 search/submit 事件。
+   * 组合式外部查询标准链路：`if (await table.search.submit()) table.reload(true)` */
+  submit: () => Promise<boolean>;
+  /** 按钮预设投影（引擎从 options 七项直传；未配置为 undefined——此时组件按钮 props 全量生效） */
+  actions?: FormActionsConfig;
 }

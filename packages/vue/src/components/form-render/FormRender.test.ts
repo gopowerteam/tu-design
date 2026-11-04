@@ -2,7 +2,7 @@ import { flushPromises, mount } from "@vue/test-utils";
 import * as v from "valibot";
 import { defineComponent, h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import { defineForm } from "./define-form";
+import { defineForm, type DefineFormOptions } from "./define-form";
 import FormRender from "./FormRender.vue";
 import type { FormRenderDefinition, FormRenderItem } from "./types";
 
@@ -25,15 +25,20 @@ function baseItems(): FormRenderItem<SearchParams>[] {
 /** Host 在 setup 内 defineForm（TanStack 约束）并渲染 FormRender */
 function makeFormRender(
   props: Record<string, unknown> = {},
-  config: { items?: FormRenderItem<SearchParams>[]; schema?: unknown } = {},
+  config: Omit<DefineFormOptions<SearchParams>, "items" | "schema"> & {
+    items?: FormRenderItem<SearchParams>[];
+    schema?: unknown;
+  } = {},
 ) {
   const box: { def?: FormRenderDefinition<SearchParams> } = {};
   const Host = defineComponent({
     setup() {
+      const { items: configItems, schema: configSchema, ...rest } = config;
       box.def = defineForm<SearchParams>({
-        items: config.items ?? baseItems(),
-        ...(config.schema ? { schema: config.schema } : {}),
+        items: configItems ?? baseItems(),
+        ...(configSchema ? { schema: configSchema } : {}),
         onSubmit: () => {},
+        ...rest,
       });
       return () => h(FormRender, { definition: box.def, ...props });
     },
@@ -218,5 +223,128 @@ describe("FormRender 归一化与防御", () => {
     (fr.vm as any).resetToDefaults();
     await flushPromises();
     expect((wrapper.find("input").element as HTMLInputElement).value).toBe("");
+  });
+});
+
+describe("FormRenderDefinition.submit（R30）", () => {
+  it("校验通过 → true，并触发 onSubmit（携带表单值）", async () => {
+    const onSubmit = vi.fn();
+    const box: { def?: FormRenderDefinition<SearchParams> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineForm<SearchParams>({ items: baseItems(), onSubmit });
+        return () => h(FormRender, { definition: box.def });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await wrapper.find("input").setValue("abc");
+
+    expect(await box.def!.submit()).toBe(true);
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].value).toEqual({ keyword: "abc", status: "" });
+    wrapper.unmount();
+  });
+
+  it("schema 校验失败 → false，不触发 onSubmit，且不抛错", async () => {
+    const onSubmit = vi.fn();
+    const schema = v.object({
+      keyword: v.pipe(v.string(), v.minLength(3, "至少 3 个字符")),
+      status: v.optional(v.string()),
+    });
+    const box: { def?: FormRenderDefinition<SearchParams> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineForm<SearchParams>({ items: baseItems(), schema, onSubmit });
+        return () => h(FormRender, { definition: box.def });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await wrapper.find("input").setValue("a");
+
+    expect(await box.def!.submit()).toBe(false);
+    expect(onSubmit).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("FormRender 搜索按钮复用同一实现：submit() 通过后按钮点击照常 emit search（R30 回归）", async () => {
+    const { wrapper } = makeFormRender({ searchable: true });
+    await wrapper.find("input").setValue("ok");
+    await clickButton(wrapper, "搜索");
+    await flushPromises();
+    expect(wrapper.getComponent(FormRender).emitted("search")).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  function clickButton(wrapper: ReturnType<typeof mount>, text: string) {
+    const target = wrapper.findAll("button").find((button) => button.text() === text);
+    if (!target) throw new Error(`未找到按钮：${text}`);
+    return target.trigger("click");
+  }
+});
+
+describe("defineForm 按钮预设（actions 进 definition）", () => {
+  it("A1/A2 actions 域：searchable=true → 搜索+重置（resetable 域内缺省跟随），无提交/取消", () => {
+    const { wrapper } = makeFormRender({}, { searchable: true });
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toEqual(["搜索", "重置"]);
+    wrapper.unmount();
+  });
+
+  it("A1 actions.searchable 显式 false → 无按钮（showActions=false，字段照常）", () => {
+    const { wrapper } = makeFormRender({}, { searchable: false });
+    expect(wrapper.findAll("button").length).toBe(0);
+    expect(labelTexts(wrapper)).toEqual(["关键词", "状态"]);
+    wrapper.unmount();
+  });
+
+  it("A2 actions.submitable=true → 提交+取消（cancelable 域内缺省跟随），无搜索/重置", () => {
+    const { wrapper } = makeFormRender({}, { submitable: true });
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toEqual(["提交", "取消"]);
+    wrapper.unmount();
+  });
+
+  it("A1 块级互斥：actions={searchable:true} + props resetable=false 同传 → 以 actions 为准（重置仍显示）+ DEV 警告", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { wrapper } = makeFormRender({ resetable: false }, { searchable: true });
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toEqual(["搜索", "重置"]);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(String(warn.mock.calls[0][0])).toContain("definition.actions");
+    warn.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("A6 actions 存在 + props 全缺省 → 无 DEV 警告", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { wrapper } = makeFormRender({}, { searchable: true });
+    expect(warn).not.toHaveBeenCalled();
+    warn.mockRestore();
+    wrapper.unmount();
+  });
+
+  it("文案三项在 actions 域生效（searchText/resetText；submitText 同构）", () => {
+    const { wrapper } = makeFormRender(
+      {},
+      { searchable: true, searchText: "查一下", resetText: "清空" },
+    );
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toEqual(["查一下", "清空"]);
+    wrapper.unmount();
+  });
+
+  it("A5 #actions 插槽在 actions 存在时仍覆盖默认按钮", () => {
+    const box: { def?: FormRenderDefinition<SearchParams> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineForm<SearchParams>({ items: baseItems(), searchable: true });
+        return () =>
+          h(FormRender, { definition: box.def }, { actions: () => h("button", "自定义动作") });
+      },
+    });
+    const wrapper = mount(Host);
+    expect(wrapper.text()).toContain("自定义动作");
+    expect(wrapper.findAll("button").map((button) => button.text())).toEqual(["自定义动作"]);
+    wrapper.unmount();
   });
 });

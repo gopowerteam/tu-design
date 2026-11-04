@@ -7,6 +7,7 @@ import type { FormRenderDefinition, FormRenderItem } from "../form-render/types"
 import { defineColumns } from "./define-columns";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
+import TablePagination from "./TablePagination.vue";
 import type { ColumnRenders } from "./column-renders";
 import type {
   SortableOptions,
@@ -932,11 +933,12 @@ function makeSearchRender(
   onLoad: (params: TableLoadParams<User>) => void | Promise<unknown>,
   config: Record<string, unknown> = {},
   via: "config" | "prop" = "config",
+  formConfig: Record<string, unknown> = {},
 ) {
   const box: { def?: TableRenderDefinition<User>; form?: FormRenderDefinition<Query> } = {};
   const Host = defineComponent({
     setup() {
-      const form = defineForm<Query>({ items: searchItems() });
+      const form = defineForm<Query>({ items: searchItems(), ...formConfig });
       box.form = form;
       box.def = defineTable<User>({
         columns: baseColumns(),
@@ -2036,6 +2038,135 @@ describe("TableRender 受控模式（v-model）", () => {
     expect(def().page.pageIndex).toBe(1);
     expect(def().sort.value).toEqual({ key: "age", direction: "asc" });
     expect(onLoad).toHaveBeenCalledTimes(3); // 初始 + 翻页 + 排序（无重复）
+    wrapper.unmount();
+  });
+});
+
+// ---- 组合式开关（showSearch / showPagination，R27/R28） ----------------------
+
+describe("TableRender 组合式开关", () => {
+  it("showSearch=false：内置搜索区不渲染；外部 FormRender 改值 + reload(true) → onLoad form 携带新值（R27）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 5), 100));
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        const search = defineForm<Query>({ items: searchItems() });
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          onLoad,
+          search,
+          rowKey: "id",
+        });
+        return () => [
+          h(FormRender, { definition: box.def!.search, minWidth: 200 }),
+          h(TableRender, { rowKey: "id", definition: box.def, showSearch: false }),
+        ];
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    // 内置搜索区关闭（无「搜索」按钮）；列设置触发器不受影响（R27 + 矩阵 14）
+    expect(wrapper.findAll("button").some((b) => b.text() === "搜索")).toBe(false);
+    expect(wrapper.find('[aria-label="列设置"]').exists()).toBe(true);
+
+    // 外部 FormRender 改值 → reload(true) 归位第 1 页且 form 携带新值
+    await wrapper.find("input").setValue("张三");
+    box.def!.reload(true);
+    await flushPromises();
+    const last = onLoad.mock.calls.at(-1)![0];
+    expect(last.page.pageIndex).toBe(1);
+    expect(last.form).toEqual({ name: "张三" });
+    wrapper.unmount();
+  });
+
+  it("showPagination=false：多页时不渲染内置分页条（R28）；缺省模式不受影响（矩阵 13）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 5), 100));
+
+    const { wrapper } = makeTableRender(
+      { columns: baseColumns(), onLoad, data: undefined },
+      { showPagination: false },
+    );
+    await flushPromises();
+    expect(wrapper.text()).not.toContain("共 100 条");
+    expect(wrapper.find("nav").exists()).toBe(false);
+    wrapper.unmount();
+
+    // 对照：缺省（未传开关）多页仍渲染分页条
+    const { wrapper: defaultWrapper } = makeServerRender(onLoad);
+    await flushPromises();
+    expect(defaultWrapper.text()).toContain("共 100 条");
+    defaultWrapper.unmount();
+  });
+
+  it("组合式 + 受控分页：外部 TablePagination 翻页 → pageControlled watch 通知 update:page-index（矩阵 15）", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 5), 100));
+    const page = ref(1);
+    const updates: number[] = [];
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          onLoad,
+          rowKey: "id",
+          pageIndex: () => page.value,
+        });
+        return () => [
+          h(TableRender, {
+            rowKey: "id",
+            definition: box.def,
+            showSearch: false,
+            showPagination: false,
+            pageIndex: page.value,
+            "onUpdate:pageIndex": (value: number) => {
+              updates.push(value);
+              page.value = value;
+            },
+          }),
+          h(TablePagination, { definition: box.def, showTotal: false }),
+        ];
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    const page2 = wrapper.findAll("button").find((b) => b.text() === "2");
+    expect(page2).toBeTruthy();
+    await page2!.trigger("click");
+    await flushPromises();
+
+    expect(updates.at(-1)).toBe(2);
+    expect(page.value).toBe(2);
+    expect(onLoad.mock.calls.at(-1)![0].page.pageIndex).toBe(2);
+    wrapper.unmount();
+  });
+});
+
+describe("TableRender 内置搜索区按钮预设适配（D4）", () => {
+  it("D4 正向：definition 配 actions.searchable=true → 内置区渲染搜索/重置按钮", () => {
+    const { wrapper } = makeSearchRender(() => {}, {}, "config", { searchable: true });
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toContain("搜索");
+    expect(texts).toContain("重置");
+    wrapper.unmount();
+  });
+
+  it("D4 反向：actions.searchable=false → 内置区渲染字段无按钮（A3 合法外置布局）", () => {
+    const { wrapper } = makeSearchRender(() => {}, {}, "config", { searchable: false });
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).not.toContain("搜索");
+    expect(texts).not.toContain("重置");
+    // 字段照常渲染（actions 存在时内置区不再传 searchable prop，无冲突警告路径）
+    expect(wrapper.findAll("label").map((label) => label.text())).toContain("姓名");
+    wrapper.unmount();
+  });
+
+  it("actions 未配置 → 内置区行为与现状一致（回归：条件传递等价硬编码 searchable）", () => {
+    const { wrapper } = makeSearchRender(() => {});
+    const texts = wrapper.findAll("button").map((button) => button.text());
+    expect(texts).toContain("搜索");
+    expect(texts).toContain("重置");
     wrapper.unmount();
   });
 });

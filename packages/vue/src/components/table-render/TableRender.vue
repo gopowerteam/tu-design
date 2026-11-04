@@ -72,6 +72,10 @@ const props = defineProps({
   defaultVisibleKeys: { type: Array as PropType<string[]> },
   /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
   columnSettings: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 搜索区渲染开关（R27）：false 关闭内置搜索区（组合式外置 FormRender）；数据链路不变 */
+  showSearch: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 分页条渲染开关（R28）：false 关闭内置分页条（组合式外置 TablePagination）；缺省模式 R13 不变 */
+  showPagination: { type: Boolean as PropType<boolean | undefined>, default: undefined },
 });
 
 const emit = defineEmits<{
@@ -208,6 +212,10 @@ const rows = computed(() => instance.table.getRowModel().rows);
 /** 内部加载态 ∪ 外部受控加载态（R14） */
 const loading = computed(() => props.loading === true || instance.loading.value);
 const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
+/** 内置分页条开关（R28）：showPagination=false 关闭；R13 仅作用于缺省模式 */
+const showPaginationBar = computed(() => showPagination.value && props.showPagination !== false);
+/** 内置搜索区开关（R27）：配置了 search 且未被 showSearch=false 关闭；列设置触发器不受影响 */
+const showSearchArea = computed(() => search !== undefined && props.showSearch !== false);
 
 // ---- 错误态（服务端模式 onLoad 失败） ----------------------------------------
 // loading 判定优先；error 优先于正常数据（load 开始时引擎已清除旧错误，loading 期间 error 恒空）
@@ -544,13 +552,16 @@ defineExpose({
 
 <template>
   <div :class="cn('w-full', $attrs.class)">
-    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方 -->
-    <div v-if="search || showColumnSettings" class="mb-2 flex items-end justify-between gap-2">
+    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方（R27：showSearch=false 关闭搜索区） -->
+    <div
+      v-if="showSearchArea || showColumnSettings"
+      class="mb-2 flex items-end justify-between gap-2"
+    >
       <FormRender
-        v-if="search"
+        v-if="showSearchArea"
         class="min-w-0 flex-1"
         :definition="search"
-        searchable
+        :searchable="search.actions ? undefined : true"
         @search="onSearch"
         @reset="onReset"
       />
@@ -799,12 +810,15 @@ defineExpose({
       </table>
     </div>
 
+    <!-- R31：手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；显式补 border-t 与 size select 保持现状 -->
     <TablePagination
-      v-if="showPagination"
+      v-if="showPaginationBar"
+      class="border-t"
       :page-index="instance.page.pageIndex"
       :page-size="instance.page.pageSize"
       :page-size-opts="instance.page.pageSizeOpts"
       :total="instance.page.total"
+      :show-size-select="true"
       @update:page-index="onPageIndex"
       @update:page-size="onPageSize"
     />

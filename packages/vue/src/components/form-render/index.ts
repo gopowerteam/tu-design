@@ -8,6 +8,7 @@ export type {
   CurrencyWidgetOptions,
   DatePickerWidgetOptions,
   DateRangeWidgetOptions,
+  FormActionsConfig,
   FormRenderDefinition,
   FormRenderFormApi,
   FormRenderItem,

@@ -159,6 +159,8 @@ const table = defineTable<Order>({
 - **重置即重载**：FormRender 将表单重置为 `items.default`（未配 `default` 的字段为 `null`）后，表格归位第 1 页重载；重置后的 defaults 会随 `onLoad` 下发
 - **事件转发**：`search` / `reset` 事件携带当前表单值快照（`(values) => void`），便于上报埋点或同步外部状态
 - **双模式装配**：`defineTable({ search })`（聚合式）或 `<TTableRender search>` prop（拆分式）皆可；两者同传时 definition 优先并 DEV 警告。definition 未配置时 prop 回填生效（与 rowSelection 的「聚合式忽略」不同）
+- **按钮预设跟随**：`defineForm({ searchable: true })` 配置的 `actions` 存在时，内置搜索区跟随 actions 渲染按钮；`actions.searchable: false` → 内置区只渲染字段无按钮——「字段区在表格上方、按钮外置」的合法布局，查询走外置按钮 + `table.reload(true)`
+- **`onSubmit` 纪律**：reload 归表格层（内置区点击 → 归位第 1 页重载，或组合式外置按钮），`onSubmit` 只做业务副作用（携带值上报等）；`defineForm({ onSubmit: () => table.reload(true) })` 的前引闭包虽合法但会双 onLoad，标为反例
 - **不做**：查询按钮 loading、搜索区布局自定义插槽、`v-model` 受控——需要时先取 `search.form` 自行扩展
 
 ## 拆分式
@@ -170,6 +172,68 @@ const table = defineTable<Order>({
 ```
 
 <DemoPreview file="table-render/SplitUsageDemo.vue" />
+
+## 组合式布局（Form / Pagination 拆分组装）
+
+复杂布局（如左侧搜索面板 + 表格撑满 + 独立分页条贴底）可在 `defineTable` 返回的 definition 上直接取三个消费面自行组装，布局完全归你的 DOM：
+
+- **table**：`<TTableRender :definition>` 传 `show-search="false"` / `show-pagination="false"` 关闭对应内置区（数据链路不变，`onLoad` 的 `form` 仍自动携带表单值）；
+- **form**：`definition.search` 是标准 FormRender definition，任意位置渲染（窄容器 + 小 `min-width` 即单列面板）；
+- **pagination**：`<TTablePagination :definition>` 自动接线分页状态与动作，`show-total` / `show-size-select` / `nav-mode` 裁剪形态；definition 模式下单页自隐藏（R13）。
+
+<DemoPreview file="table-render/CompositionDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { defineForm, defineTable } from "@tu-design/vue";
+
+const search = defineForm<{ keyword: string }>({
+  items: [{ key: "keyword", title: "关键词", default: "" }],
+});
+
+const table = defineTable<Order>({
+  columns: [/* ... */],
+  search,
+  onLoad: query, // params.form 自动携带 search 表单当前值
+});
+
+// 查询/重置链路（R30）：submit() 返回校验是否通过，通过才归位第 1 页重载
+async function onSearch() {
+  if (await table.search?.submit()) table.reload(true);
+}
+function onReset() {
+  table.search?.resetToDefaults();
+  table.reload(true);
+}
+</script>
+
+<template>
+  <div class="flex gap-3">
+    <aside class="w-52 shrink-0 space-y-3">
+      <TFormRender v-if="table.search" :definition="table.search" :min-width="200" />
+      <TButton class="w-full" @click="onSearch">查 询</TButton>
+      <TButton variant="outline" class="w-full" @click="onReset">重 置</TButton>
+    </aside>
+    <div class="flex min-w-0 flex-1 flex-col gap-3">
+      <TTableRender
+        class="flex-1"
+        :definition="table"
+        row-key="id"
+        :show-search="false"
+        :show-pagination="false"
+      />
+      <TTablePagination :definition="table" :show-size-select="false" nav-mode="icon" />
+    </div>
+  </div>
+</template>
+```
+
+注意：
+
+- **`FormRenderDefinition` 新增必选 `submit()`（破坏性变更）**：自行手搭 definition 字面量（绕过工厂）的场景请改用 `defineForm` 统一产出（`items` / `form` / `resetToDefaults` / `submit`）；
+- `show-search="false"` 后 `search` / `reset` 事件不再有内置触发源（二者由内置搜索区触发）——查询/重置的 reload 由外层按钮负责；
+- `TTablePagination` 也可脱离 definition 手动传 `page-index` / `page-size` / `total` + `@update:page-index` / `@update:page-size` 使用（此时恒渲染，可见性自理；definition 与手动 props 同传时 definition 优先）；
+- `definition.page` 是 reactive 投影，勿顶层解构——模板中保持 `table.page.pageIndex` 形式访问。
 
 ## 行选择
 

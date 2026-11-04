@@ -83,20 +83,60 @@ function spanStyle(span?: number | "full") {
   return undefined;
 }
 
-const showReset = computed(() => props.resetable ?? !!props.searchable);
-const showCancel = computed(() => props.cancelable ?? !!props.submitable);
-const showActions = computed(
-  () => props.searchable || props.submitable || showReset.value || showCancel.value,
+// ---- 按钮解析（A1 块级互斥）：definition.actions 存在 → 七项全量 actions 域解析，props 域不参与；
+// actions 未配置 → 现状 props 域解析（含缺省跟随），行为逐字节不变
+const actions = props.definition?.actions;
+const searchable = computed(() => (actions ? actions.searchable : props.searchable) ?? false);
+const submitable = computed(() => (actions ? actions.submitable : props.submitable) ?? false);
+const showReset = computed(
+  () => (actions ? actions.resetable : props.resetable) ?? !!searchable.value,
 );
+const showCancel = computed(
+  () => (actions ? actions.cancelable : props.cancelable) ?? !!submitable.value,
+);
+const showActions = computed(
+  () => searchable.value || submitable.value || showReset.value || showCancel.value,
+);
+const resolvedSearchText = computed(
+  () => (actions ? actions.searchText : props.searchText) ?? "搜索",
+);
+const resolvedSubmitText = computed(
+  () => (actions ? actions.submitText : props.submitText) ?? "提交",
+);
+const resolvedResetText = computed(() => (actions ? actions.resetText : props.resetText) ?? "重置");
 
-/** I4：校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受 S1 限制） */
+// A6：actions 存在且显式传了任一按钮 prop → definition 优先，DEV 警告一次
+// （actions 存在 + props 全缺省是正常用法——如 TableRender 内置区经条件传递不传 searchable——不告警）
+if (import.meta.env.DEV && actions) {
+  const provided =
+    props.searchable !== undefined ||
+    props.submitable !== undefined ||
+    props.resetable !== undefined ||
+    props.cancelable !== undefined ||
+    props.searchText !== undefined ||
+    props.submitText !== undefined ||
+    props.resetText !== undefined;
+  if (provided) {
+    console.warn(
+      "[tu-design] <FormRender> definition.actions 与按钮 props 同传，已按 actions 渲染。",
+    );
+  }
+}
+
+/** I4：校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受 S1 限制）。
+ * 校验语义单点化（R30）：definition 存在时复用 definition.submit()；拆分式 :form + :items 走内联逻辑 */
 async function submit(mode: "search" | "submit") {
   if (!instance) return;
-  await instance.handleSubmit();
-  if (instance.state.isFieldsValid) {
-    if (mode === "search") emit("search");
-    else emit("submit");
+  let valid: boolean;
+  if (props.definition) {
+    valid = await props.definition.submit();
+  } else {
+    await instance.handleSubmit();
+    valid = instance.state.isFieldsValid;
   }
+  if (!valid) return;
+  if (mode === "search") emit("search");
+  else emit("submit");
 }
 
 function onReset() {
@@ -124,13 +164,13 @@ defineExpose({
     <div v-if="showActions" class="col-span-full flex justify-end gap-2">
       <slot name="actions">
         <Button v-if="searchable" @click="submit('search')">
-          {{ searchText ?? "搜索" }}
+          {{ resolvedSearchText }}
         </Button>
         <Button v-if="showReset" variant="outline" @click="onReset">
-          {{ resetText ?? "重置" }}
+          {{ resolvedResetText }}
         </Button>
         <Button v-if="submitable" @click="submit('submit')">
-          {{ submitText ?? "提交" }}
+          {{ resolvedSubmitText }}
         </Button>
         <Button v-if="showCancel" variant="outline" @click="emit('cancel')"> 取消 </Button>
       </slot>

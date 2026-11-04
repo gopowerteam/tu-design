@@ -51,6 +51,7 @@ export const COMPONENT_NAMES = [
   "Slot",
   "Spin",
   "Switch",
+  "TablePagination",
   "TableRender",
   "Tabs",
   "Textarea",

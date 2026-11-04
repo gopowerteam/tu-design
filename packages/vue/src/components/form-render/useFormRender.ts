@@ -6,6 +6,14 @@ export interface UseFormRenderOptions<T extends object> {
   /** Standard Schema（valibot v.object 输出直接兼容），映射到 TanStack validators.onSubmit */
   schema?: unknown;
   onSubmit?: (ctx: { value: T }) => void | Promise<void>;
+  /** 按钮预设七项（A1）：显式传任一项即投影为 actions（definition 域，组件按钮 props 全量忽略） */
+  searchable?: boolean;
+  submitable?: boolean;
+  resetable?: boolean;
+  cancelable?: boolean;
+  searchText?: string;
+  submitText?: string;
+  resetText?: string;
   /** 其余 TanStack useForm 选项透传（如 onSubmitInvalid） */
   formOptions?: Record<string, unknown>;
 }
@@ -20,7 +28,31 @@ export interface UseFormRenderOptions<T extends object> {
 export function useFormRender<T extends object>(
   options: UseFormRenderOptions<T>,
 ): FormRenderDefinition<T> {
-  const { items, schema, onSubmit, formOptions } = options;
+  const {
+    items,
+    schema,
+    onSubmit,
+    formOptions,
+    searchable,
+    submitable,
+    resetable,
+    cancelable,
+    searchText,
+    submitText,
+    resetText,
+  } = options;
+
+  // 按钮预设七项直传投影（A1 块级互斥的 definition 域；全 undefined = 未配置 → 组件 props 域生效）
+  const actions =
+    searchable === undefined &&
+    submitable === undefined &&
+    resetable === undefined &&
+    cancelable === undefined &&
+    searchText === undefined &&
+    submitText === undefined &&
+    resetText === undefined
+      ? undefined
+      : { searchable, submitable, resetable, cancelable, searchText, submitText, resetText };
 
   const defaultValues = Object.fromEntries(
     items.map((item) => [
@@ -43,5 +75,15 @@ export function useFormRender<T extends object>(
     ...formOptions,
   });
 
-  return { items, form, resetToDefaults: () => form.reset() };
+  return {
+    items,
+    form,
+    resetToDefaults: () => form.reset(),
+    // canSubmitWhenInvalid 已放开门控：每次 handleSubmit 都执行完整校验流（R30 校验语义单点化）
+    submit: async () => {
+      await form.handleSubmit();
+      return form.state.isFieldsValid;
+    },
+    actions,
+  };
 }

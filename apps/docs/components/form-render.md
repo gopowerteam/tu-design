@@ -139,6 +139,22 @@ npx @tu-design/cli add form-render
 - 也可直接用 `search.form`（TanStack 实例：`reset()/validate()/handleSubmit()`）与 `search.resetToDefaults()`。
 - `defineForm` 的返回值也可拆分消费：`<TFormRender :form="search.form" :items="search.items" />`，与 `<TForm :form>` 模式兼容，便于 items 复用。
 
+### 按钮预设进 definition（actions）
+
+按钮配置可在 `defineForm` 里直接声明，随 definition 走——`<TFormRender :definition>` 无需再传按钮 props：
+
+```ts
+const search = defineForm({
+  items: [...],
+  searchable: true, // 搜索 + 重置（resetable 缺省跟随）
+  // submitable / cancelable / searchText / submitText / resetText 同理
+});
+```
+
+- **块级互斥（A1）**：`definition.actions` 存在时，组件按钮 props（`searchable` / `resetable` 等七项）全量忽略（同传 DEV 警告）；`actions` 未配置时组件 props 行为不变。
+- **语义与组件 props 完全一致**：`resetable` 缺省跟随 `searchable`、`cancelable` 缺省跟随 `submitable`，文案缺省「搜索 / 提交 / 重置」。
+- `#actions` 插槽与 `search.submit()` 不受影响（插槽覆盖默认按钮；`submit()` 与按钮汇入同一 `handleSubmit`）。
+
 ## 注意事项
 
 - **须在 setup 中调用 `defineForm`**：TanStack `useForm` 内部依赖 `onMounted` 注册挂载。
