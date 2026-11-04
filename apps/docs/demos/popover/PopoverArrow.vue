@@ -7,7 +7,7 @@
       </template>
     </TPopover>
 
-    <TPopover arrow side="top" :arrow-class="[--arrow-size:14px]">
+    <TPopover arrow side="top" :arrow-class="'[--arrow-size:14px]'">
       <TButton variant="outline" size="sm">上方弹出 + 大箭头</TButton>
       <template #content>
         <p class="text-sm">arrow-class 可调整箭头尺寸等样式（--arrow-size: 14px）。</p>
