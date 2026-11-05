@@ -19,6 +19,7 @@ catalog:
   vite-plus: 1.0.0
   vue: ^3.5.43
   "@ark-ui/vue": ^5.39.2
+  "@zag-js/popper": ^1.43.3
   "@tanstack/vue-form": ^1.33.5
   "@tanstack/vue-table": ^8.21.3
   "@tanstack/vue-virtual": ^3.13.47

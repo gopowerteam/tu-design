@@ -191,6 +191,9 @@ catalogs:
     '@vue/test-utils':
       specifier: ^2.5.1
       version: 2.5.1
+    '@zag-js/popper':
+      specifier: ^1.43.3
+      version: 1.43.3
     bumpp:
       specifier: ^12.3.0
       version: 12.3.0
@@ -363,6 +366,9 @@ importers:
       '@tanstack/vue-virtual':
         specifier: 'catalog:'
         version: 3.13.47(vue@3.5.43(typescript@5.9.3))
+      '@zag-js/popper':
+        specifier: 'catalog:'
+        version: 1.43.3
       class-variance-authority:
         specifier: 'catalog:'
         version: 0.7.1

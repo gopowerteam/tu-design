@@ -17,7 +17,7 @@ import {
 } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
-import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
+import type { PickerPositioning } from "../date-shared/positioning";
 
 const props = defineProps({
   /** 受控值 [start, end]（"yyyy-MM-dd"，start ≤ end）；undefined 走内部非受控，null 表示空 */
@@ -54,7 +54,7 @@ const props = defineProps({
   /** Ark DatePicker Root 的 positioning 配置（placement/gutter 等）；
       iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed */
   positioning: {
-    type: Object as PropType<DatePickerRootProps["positioning"]>,
+    type: Object as PropType<PickerPositioning>,
     default: undefined,
   },
   class: { type: String, default: undefined },

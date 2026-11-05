@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { DateValue } from "@ark-ui/vue/date-picker";
-import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
+import type { PickerPositioning } from "../date-shared/positioning";
 import type { PropType } from "vue";
 import { computed, provide } from "vue";
 import { Calendar as TCalendar } from "../calendar";
@@ -36,7 +36,7 @@ const props = defineProps({
       iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed
       （absolute 包含块错位修正，机制详注见 useSandboxOverlay / sandbox.ts） */
   positioning: {
-    type: Object as PropType<DatePickerRootProps["positioning"]>,
+    type: Object as PropType<PickerPositioning>,
     default: undefined,
   },
   class: { type: String, default: undefined },
