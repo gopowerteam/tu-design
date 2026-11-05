@@ -127,3 +127,7 @@ Drawer 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
   </div>
 </template>
 ```
+
+::: tip 微前端环境
+本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。
+:::

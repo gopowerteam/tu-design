@@ -1,5 +1,25 @@
 # CLI
 
+CLI 提供两类命令：`init` 一键初始化项目（推荐先执行），`add` 按需添加组件源码。
+
+## init：一键初始化
+
+```bash
+npx @tu-design/cli init
+```
+
+自动完成：
+
+- 写入 `components.json`，记录 registry 数据源等配置
+- 注入 `cn` 工具（生成/合并 `lib/utils.ts`）
+- 将 tokens 合并进你的全局 CSS（已包含则自动跳过）
+- 写入 `AGENTS.md` AI 协作规则（`--no-agents` 可跳过）
+- 探测包管理器并安装运行时依赖（clsx、tailwind-merge、class-variance-authority、tw-animate-css）
+
+选项：`--registry <url>` 覆盖数据源；`--css <path>` 指定全局 CSS 路径（默认自动探测常见位置）。
+
+## add：添加组件
+
 通过 `npx @tu-design/cli add <name>` 把组件源码添加到你的项目：
 
 ```bash
@@ -39,7 +59,7 @@ CLI 从 registry 服务拉取组件的 **registry JSON**（遵循 [shadcn regist
 | `utils`  | 生成 `lib/utils.ts` 的 `cn` 工具（clsx + tailwind-merge） |
 | `tokens` | 生成 `tokens.css` 主题变量（shadcn 风格，oklch）          |
 
-例如 `button` 声明了 `registryDependencies: ["utils"]`，`avatar` 基于 Ark UI 并声明相应 npm 依赖——首次添加组件时建议先手动补齐 `utils` 与 `tokens`。
+例如 `button` 声明了 `registryDependencies: ["utils"]`，`avatar` 基于 Ark UI 并声明相应 npm 依赖——已运行 [`init`](#init一键初始化) 的项目 utils 与 tokens 已就位；未运行 init 时，首次添加组件前建议先手动补齐：`npx @tu-design/cli add utils tokens`。
 
 ## 更新已安装组件
 

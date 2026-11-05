@@ -89,3 +89,7 @@ npx @tu-design/cli add alert-dialog
 ## 主题定制
 
 按钮样式由 Button 组件的 `default` / `destructive` / `outline` 变体驱动；面板、遮罩沿用 Dialog 的 token（`--background` / `--border` / `--muted-foreground` 等），暗色模式自动跟随主题变量，无需额外适配。
+
+::: tip 微前端环境
+本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。
+:::

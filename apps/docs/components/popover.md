@@ -111,31 +111,13 @@ hover/focus/manual 模式下面板锚点使用 Ark 的 `Anchor`（无内建 clic
 
 ### 微前端 / Shadow DOM
 
-微前端沙箱中浮层组件面临两类问题，Popover 通过 `overlay-shared/sandbox.ts` 的双信号探测自动适配，无需任何配置：
+微前端沙箱中浮层组件面临两类问题（面板归属与定位坐标空间），Popover 经 `overlay-shared/sandbox.ts` 的双信号探测自动适配，无需任何配置：
 
-**面板归属（Teleport 目标）**：默认 Teleport 到 `body` 会把面板传送出沙箱应用——Tailwind 样式与 `--popover` 等主题变量的继承链断裂。两类信号命中任一即自动降级为传送**应用挂载容器**（`app._container`）：
+- 真 shadow DOM 或 wujie 沙箱下，面板 Teleport 目标自动降级为**应用挂载容器**（而非 `body`），避免样式与主题变量继承链断裂；显式 `to` 优先级最高；
+- wujie graft 树下定位引擎默认改用 `strategy: "fixed"` 修正包含块错位；显式传入 `positioning.strategy` 时以其为准；
+- 非 shadow 环境（含 qiankun / micro-app 同文档渲染）行为不变，零破坏。
 
-- 真 shadow DOM（如 micro-app `strictStyleIsolation`）：结构探测命中（容器 `getRootNode()` 返回 `ShadowRoot`）；
-- wujie：wujie 会 patch iframe realm 的 `Node.prototype.getRootNode`（真实 root 为 shadowRoot 时返回 iframe document），结构探测失效，故叠加 `window.__POWERED_BY_WUJIE__` 标记（wujie 在子应用代码执行前注入，时序可靠）；
-- 非 shadow 环境行为不变，仍是 `body`，零破坏；
-- 显式 `to` 优先级最高，可手动指定任意目标（建议指向**无 `overflow` 裁剪**的子应用根容器，否则大面板可能被裁剪）。
-
-**定位策略（坐标空间）**：wujie 把子应用文档树 graft 进 shadowRoot 渲染，graft 树的 CSS 包含块原点是**容器在主页面中的位置**，而 Ark 定位引擎默认 `strategy: "absolute"` 按**视口空间**产出坐标，两者相差一个容器偏移（实测偏移值恰为容器位置）。探测信号为框架无关的 `window.self !== window.top`（iframe realm）：
-
-- iframe realm 下默认改用 `strategy: "fixed"`——fixed 以视口为包含块，与定位引擎的坐标空间一致（wujie graft 树下是唯一正确解）；
-- 非 graft 拓扑下 fixed 与 absolute 坐标等价，该默认值零副作用；
-- 显式传入 `positioning.strategy` 时以其为准。
-
-::: tip 已知边界
-
-- `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；
-- 触发器祖先带 `transform`（如入场动画容器）会劫持 `fixed` 的包含块，此时建议 `portal: false` 让面板留在原地；
-- qiankun / micro-app 为同文档渲染（无 iframe realm），预期无需适配（尚未实测）；非 iframe 型 graft 沙箱若未来出现，`sandbox.ts` 的 marker 探测为扩展点。
-  :::
-
-::: tip wujie degrade 降级模式
-wujie 以 degrade 模式（iframe 保活）运行时页面无 shadowRoot，组件样式随子应用留在 iframe 内，此时建议显式传 `portal: false` 让面板留在原地。
-:::
+完整机制（ids 无冒号覆盖、探测信号与降级细节、graft 坐标空间原理、`sandbox.ts` marker 扩展点、wujie degrade 模式等已知边界）见[微前端与沙箱](/guide/micro-frontend)。
 
 ### Events
 

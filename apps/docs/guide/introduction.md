@@ -6,7 +6,9 @@ tu-design 是一个 [shadcn/ui](https://ui.shadcn.com) 思路的 **Vue 3 组件�
 
 - **源码交付**：`npx @tu-design/cli add <name>` 将组件源码写入 `components/ui/<name>/`，无运行时依赖绑定
 - **Tailwind CSS 4**：组件样式由 utility class 与 CSS 变量（shadcn 风格 tokens，oklch 色彩空间）驱动
+- **可桥接的主题系统**：定义一组 `--app-*` 变量即可让整套组件跟随你的应用主题（见[主题](/guide/theming)），未桥接时与默认主题观感一致；状态色（success / warning / info / destructive）三件套开箱即用
 - **明暗模式**：`<html>` 上切换 `.dark` class 即可翻转全部主题变量
+- **微前端友好**：浮层组件在 wujie / Shadow DOM 沙箱下自动适配传送目标与定位策略（见[微前端与沙箱](/guide/micro-frontend)）
 - **无头交互**：交互类组件（如 Avatar）基于 [Ark UI Vue](https://ark-ui.com) 的无头实现，可访问性开箱即用
 - **registry 规范**：registry JSON 遵循 shadcn [registry-item schema](https://ui.shadcn.com/schema/registry-item.json)，工具链兼容
 
@@ -18,4 +20,4 @@ tu-design 是一个 [shadcn/ui](https://ui.shadcn.com) 思路的 **Vue 3 组件�
 
 ## 当前组件
 
-组件清单见左侧「组件」分组：Avatar、Badge、Button、Card、Input、Label、Separator、Skeleton。
+覆盖**基础、表单、交互、高阶**四类共 45+ 组件——从 Avatar、Button 等基础件，到 Select、Cascader 等表单件，再到 TableRender、FormRender 等高阶组合件。完整清单与分类见[组件总览](/components/)。

@@ -154,6 +154,7 @@ export default defineConfig({
             { text: "CLI", link: "/guide/cli" },
             { text: "主题", link: "/guide/theming" },
             { text: "自动导入", link: "/guide/auto-import" },
+            { text: "微前端与沙箱", link: "/guide/micro-frontend" },
           ],
         },
       ],
