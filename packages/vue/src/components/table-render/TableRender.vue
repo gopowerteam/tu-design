@@ -367,6 +367,12 @@ const tableMinWidth = computed(() => {
   return sum;
 });
 
+/** 列宽 inline style 值（R33）：数字补 px 单位——Vue :style 不自动加单位，
+ * 裸数字会被浏览器当非法 CSS 值丢弃，列宽即失效；字符串视为已带单位原样输出。 */
+function widthOf(width?: number | string) {
+  return typeof width === "number" ? `${width}px` : width;
+}
+
 /** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
 const selectableKeys = computed(() =>
   rows.value.filter((row) => row.getCanSelect()).map((row) => rowKeyOf(row.original, row.index)),
@@ -748,7 +754,7 @@ defineExpose({
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
               :class="[stickyClass(stickyOf, column.key), theadThClass]"
               :style="[
-                { width: column.width, textAlign: column.align },
+                { width: widthOf(column.width), textAlign: column.align },
                 stickyStyle(stickyOf, column.key, true),
               ]"
               :aria-sort="ariaSort(column)"

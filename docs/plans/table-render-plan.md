@@ -178,6 +178,7 @@ definition 传？──是→ 聚合模式（columns/onLoad/data 等拆分 props
 | R16 | 可达性：排序表头 `<button>` + `aria-sort="ascending/descending"`（未排序不加）+ 原生键盘                                                                                                                                                                                                                |
 | R17 | 单元格取值链：`render > formatter > String(record[key] ?? "")`                                                                                                                                                                                                                                          |
 | R32 | 列宽硬约束：可见列数字 `width` 之和（含选择列）作为 `<table>` `min-width` 下限；容器不足 → 横滚 + 列渲染宽度 == 指定值 + sticky 偏移精确；容器充足 → 仍 100% 拉伸（sticky 按指定值累计的漂移为既有限制）；字符串 `width` 仅提示值不参与求和；和为 0 不挂（零回归）；≥10 列全无数字 width → DEV 提示一次 |
+| R33 | 列宽 inline style 单位：数字 `width` 以 `${width}px` 渲染到 th（Vue `:style` 不自动补单位，裸数字会被浏览器丢弃致列宽失效）；字符串 `width` 视为已带单位原样输出；sticky 偏移与列宽渲染自此同源生效                                                                                                     |
 
 ## 6. 测试矩阵（12 项）
 

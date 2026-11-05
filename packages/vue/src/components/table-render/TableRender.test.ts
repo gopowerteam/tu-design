@@ -1372,6 +1372,32 @@ describe("TableRender 表格 min-width（R32）", () => {
   });
 });
 
+// ---- 列宽 inline style（R33） ---------------------------------------------------
+
+describe("TableRender 列宽 inline style（R33）", () => {
+  it("数字 width 补 px 单位；字符串 width 原样输出（Vue :style 不自动加单位）", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 120, fixed: "left" },
+        { key: "age", title: "年龄", width: 100 },
+        { key: "id", title: "ID", width: "10rem" },
+      ],
+    });
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).width).toBe("120px"); // fixed 列
+    expect(cellStyle(head[1]).width).toBe("100px"); // 普通列同样受约束
+    expect(cellStyle(head[2]).width).toBe("10rem"); // 字符串视为已带单位
+    wrapper.unmount();
+  });
+
+  it("选择列 width 保持 px 渲染（既有行为锚定）", () => {
+    const { wrapper } = makeTableRender({ rowSelection: "checkbox" });
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).width).toBe("48px");
+    wrapper.unmount();
+  });
+});
+
 // ---- 虚拟滚动（virtual） -------------------------------------------------------
 
 const USERS_1000: User[] = Array.from({ length: 1000 }, (_, i) => ({
