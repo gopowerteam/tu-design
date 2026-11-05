@@ -41,7 +41,7 @@ npx @tu-design/cli add select
 
 ## 宽度
 
-触发器默认撑满父容器（`w-full`），与 Input、DatePicker、Cascader 等表单类控件在 [Form](/components/form) 的 `FormItem` 中自动对齐，不会出现组件长短不一；超长选中值与占位文案自动省略号截断。需要自定义宽度或恢复收缩包裹内容时，经 `trigger-class` 覆盖（`cn` 走 tailwind-merge，宽度类可覆盖默认）：
+触发器默认撑满父容器（`w-full`），与 Input、DatePicker、Cascader 等表单类控件在 [Form](/components/form) 的 `FormItem` 中自动对齐，不会出现组件长短不一；超长选中值与占位文案自动省略号截断。弹层与触发器同宽（`positioning.sameWidth` 默认开启，触发器较窄时弹层保底 `min-w-[8rem]`）。需要自定义宽度或恢复收缩包裹内容时，经 `trigger-class` 覆盖（`cn` 走 tailwind-merge，宽度类可覆盖默认）：
 
 <DemoPreview file="select/SelectWidth.vue" />
 

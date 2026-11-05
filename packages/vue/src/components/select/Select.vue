@@ -90,9 +90,12 @@ const { isOpen, setOpen } = useControlledBoolean({
 });
 
 // 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：面板无 Teleport 留原地，
-// iframe realm 下 strategy 默认 fixed 消除 absolute 包含块（最近 positioned 祖先）错位
+// iframe realm 下 strategy 默认 fixed 消除 absolute 包含块（最近 positioned 祖先）错位。
+// 弹层与触发器同宽（zag popper：Positioner width = var(--reference-width)，size middleware
+// 恰在 sameWidth 启用时激活；机制先例见 Popover matchTriggerWidth）。
+// spread 顺序保证用户显式传 positioning.sameWidth 时以其为准。
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { ...props.positioning }),
+  withSandboxStrategy(props.positioning, { sameWidth: true, ...props.positioning }),
 );
 </script>
 
@@ -146,7 +149,7 @@ const rootPositioning = computed(() =>
             :label="entry.item.label"
             :selected="entry.item.value === modelValue"
           >
-            <ArkSelect.ItemText>{{ entry.item.label }}</ArkSelect.ItemText>
+            <ArkSelect.ItemText class="truncate">{{ entry.item.label }}</ArkSelect.ItemText>
             <ArkSelect.ItemIndicator class="absolute right-2">
               <svg
                 viewBox="0 0 24 24"

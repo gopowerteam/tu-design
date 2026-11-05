@@ -1,5 +1,5 @@
 {
   "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）、日历样式常量与单值选择器外壳（PickerShell/usePickerBridge）。",
   "registryDependencies": ["icon-shared", "utils", "overlay-shared"],
-  "dependencies": { "@ark-ui/vue": "catalog:" }
+  "dependencies": { "@ark-ui/vue": "catalog:", "@zag-js/popper": "catalog:" }
 }

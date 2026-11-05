@@ -4,8 +4,10 @@
     <TSelect v-model="b" :items="items" placeholder="自定义宽度（w-64）" trigger-class="w-64" />
     <TSelect v-model="c" :items="items" placeholder="收缩包裹内容（w-fit）" trigger-class="w-fit" />
     <p class="text-xs text-muted-foreground">
-      默认撑满父容器，与 Input、DatePicker 等表单控件在 FormItem 中自动对齐；触发器宽度可经
-      <code>trigger-class</code> 覆盖（tailwind-merge 合并），超长选中值自动省略号截断。
+      默认撑满父容器，与 Input、DatePicker 等表单控件在 FormItem
+      中自动对齐；弹层与触发器同宽（触发器较窄时弹层保底
+      <code>min-w-[8rem]</code>）；触发器宽度可经 <code>trigger-class</code> 覆盖（tailwind-merge
+      合并），超长选中值自动省略号截断。
     </p>
   </div>
 </template>
