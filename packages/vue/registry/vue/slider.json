@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "slider",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "type": "registry:ui",
   "description": "滑块：基于 Ark UI Slider 原语，支持单值/区间、步进与键盘微调。",
   "registryDependencies": ["utils"],
