@@ -158,25 +158,26 @@ definition 传？──是→ 聚合模式（columns/onLoad/data 等拆分 props
 
 ## 5. 行为规则表
 
-| #   | 规则                                                                                                                      |
-| --- | ------------------------------------------------------------------------------------------------------------------------- |
-| R1  | `columns` 空 → DEV 警告 + 空表不抛错                                                                                      |
-| R2  | `data` 非数组 → 回退 `[]` + DEV 警告                                                                                      |
-| R3  | `rowKey` 值缺失 → `getRowId` 索引兜底；字段缺失 → 索引 + DEV 警告**一次**                                                 |
-| R4  | definition/columns、onLoad/data 冲突 → 优先级 + DEV 警告                                                                  |
-| R5  | `onLoad` 抛错 → 捕获 + `console.error` + 保持空态，不炸组件                                                               |
-| R6  | 竞态守卫：自增请求序号，旧响应丢弃                                                                                        |
-| R7  | `defaultSort` 无 `sortable: true` → DEV 警告并忽略                                                                        |
-| R8  | 排序三态 `无 → asc → desc → 无`；服务端模式每次变化：`pageIndex=1` + 重调 onLoad + `sort-change`；取消时 `sort=undefined` |
-| R9  | `pageSize` 变更 → `pageIndex=1`                                                                                           |
-| R10 | `update(data, total?)`：total 缺省保留旧值                                                                                |
-| R11 | `autoLoad`（默认 true）：服务端模式 onMounted 触发一次                                                                    |
-| R12 | `reload(resetPage = false)`：true → 先 `pageIndex=1`；静态模式仅重同步 data                                               |
-| R13 | 单页（`ceil(total/pageSize) ≤ 1` / 静态 `rows.length ≤ pageSize`）→ 隐藏分页条                                            |
-| R14 | 加载态 = 内部 loading ∪ `props.loading` → **5 行** Skeleton 骨架                                                          |
-| R15 | `ellipsis` → `truncate` 类 + 原生 `title` 属性                                                                            |
-| R16 | 可达性：排序表头 `<button>` + `aria-sort="ascending/descending"`（未排序不加）+ 原生键盘                                  |
-| R17 | 单元格取值链：`render > formatter > String(record[key] ?? "")`                                                            |
+| #   | 规则                                                                                                                                                                                                                                                                                                    |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | `columns` 空 → DEV 警告 + 空表不抛错                                                                                                                                                                                                                                                                    |
+| R2  | `data` 非数组 → 回退 `[]` + DEV 警告                                                                                                                                                                                                                                                                    |
+| R3  | `rowKey` 值缺失 → `getRowId` 索引兜底；字段缺失 → 索引 + DEV 警告**一次**                                                                                                                                                                                                                               |
+| R4  | definition/columns、onLoad/data 冲突 → 优先级 + DEV 警告                                                                                                                                                                                                                                                |
+| R5  | `onLoad` 抛错 → 捕获 + `console.error` + 保持空态，不炸组件                                                                                                                                                                                                                                             |
+| R6  | 竞态守卫：自增请求序号，旧响应丢弃                                                                                                                                                                                                                                                                      |
+| R7  | `defaultSort` 无 `sortable: true` → DEV 警告并忽略                                                                                                                                                                                                                                                      |
+| R8  | 排序三态 `无 → asc → desc → 无`；服务端模式每次变化：`pageIndex=1` + 重调 onLoad + `sort-change`；取消时 `sort=undefined`                                                                                                                                                                               |
+| R9  | `pageSize` 变更 → `pageIndex=1`                                                                                                                                                                                                                                                                         |
+| R10 | `update(data, total?)`：total 缺省保留旧值                                                                                                                                                                                                                                                              |
+| R11 | `autoLoad`（默认 true）：服务端模式 onMounted 触发一次                                                                                                                                                                                                                                                  |
+| R12 | `reload(resetPage = false)`：true → 先 `pageIndex=1`；静态模式仅重同步 data                                                                                                                                                                                                                             |
+| R13 | 单页（`ceil(total/pageSize) ≤ 1` / 静态 `rows.length ≤ pageSize`）→ 隐藏分页条                                                                                                                                                                                                                          |
+| R14 | 加载态 = 内部 loading ∪ `props.loading` → **5 行** Skeleton 骨架                                                                                                                                                                                                                                        |
+| R15 | `ellipsis` → `truncate` 类 + 原生 `title` 属性                                                                                                                                                                                                                                                          |
+| R16 | 可达性：排序表头 `<button>` + `aria-sort="ascending/descending"`（未排序不加）+ 原生键盘                                                                                                                                                                                                                |
+| R17 | 单元格取值链：`render > formatter > String(record[key] ?? "")`                                                                                                                                                                                                                                          |
+| R32 | 列宽硬约束：可见列数字 `width` 之和（含选择列）作为 `<table>` `min-width` 下限；容器不足 → 横滚 + 列渲染宽度 == 指定值 + sticky 偏移精确；容器充足 → 仍 100% 拉伸（sticky 按指定值累计的漂移为既有限制）；字符串 `width` 仅提示值不参与求和；和为 0 不挂（零回归）；≥10 列全无数字 width → DEV 提示一次 |
 
 ## 6. 测试矩阵（12 项）
 

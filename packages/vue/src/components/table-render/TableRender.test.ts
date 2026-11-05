@@ -1258,6 +1258,120 @@ describe("TableRender 固定列（fixed）", () => {
   });
 });
 
+// ---- 表格 min-width（列宽硬约束，R32） ------------------------------------------
+
+describe("TableRender 表格 min-width（R32）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  function tableStyle(wrapper: ReturnType<typeof mount>): CSSStyleDeclaration {
+    return cellStyle(wrapper.find("table"));
+  }
+
+  it("全数字 width：table min-width = 数字 width 之和", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 120 },
+        { key: "age", title: "年龄", width: 100 },
+        { key: "id", title: "ID", width: 80 },
+      ],
+    });
+    expect(tableStyle(wrapper).minWidth).toBe("300px");
+    wrapper.unmount();
+  });
+
+  it("无数字 width 且无选择列：不挂 min-width（现状零变化）", () => {
+    const { wrapper } = makeTableRender();
+    expect(tableStyle(wrapper).minWidth).toBe("");
+    wrapper.unmount();
+  });
+
+  it("字符串 width 仅渲染提示值，不参与求和", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: "10rem" },
+        { key: "age", title: "年龄", width: 100 },
+      ],
+    });
+    expect(tableStyle(wrapper).minWidth).toBe("100px");
+    wrapper.unmount();
+  });
+
+  it("选择列计入 min-width：默认 48，自定义 width 生效", () => {
+    const { wrapper } = makeTableRender({ rowSelection: "checkbox" });
+    expect(tableStyle(wrapper).minWidth).toBe("48px"); // baseColumns 无数字 width + 选择列 48
+    wrapper.unmount();
+
+    const custom = makeTableRender({
+      rowSelection: { type: "checkbox", width: 64 },
+    });
+    expect(tableStyle(custom.wrapper).minWidth).toBe("64px");
+    custom.wrapper.unmount();
+  });
+
+  it("隐藏列不计入：列显隐后 min-width 按可见集重算（R23 口径）", async () => {
+    const { wrapper, def } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 120 },
+        { key: "age", title: "年龄", width: 100 },
+        { key: "id", title: "ID", width: 80 },
+      ],
+    });
+    expect(tableStyle(wrapper).minWidth).toBe("300px");
+    def().setVisibleKeys(["name", "age"]);
+    await flushPromises();
+    expect(tableStyle(wrapper).minWidth).toBe("220px");
+    wrapper.unmount();
+  });
+
+  it("0 与负数 width 不进求和", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 0 },
+        { key: "age", title: "年龄", width: 100 },
+        { key: "id", title: "ID", width: -50 },
+      ],
+    });
+    expect(tableStyle(wrapper).minWidth).toBe("100px");
+    wrapper.unmount();
+  });
+
+  it("口径一致性：min-width 与 sticky 偏移链自洽（fixed-left 场景）", () => {
+    const { wrapper } = makeTableRender({
+      columns: [
+        { key: "name", title: "姓名", width: 120, fixed: "left" },
+        { key: "age", title: "年龄", width: 100, fixed: "left" },
+        { key: "id", title: "ID", width: 80 },
+      ],
+    });
+    // sticky 链：name offset 0 + 120 → age offset 120 + 100 → 链尾 220；非 fixed id 80 → 总 300
+    expect(tableStyle(wrapper).minWidth).toBe("300px");
+    const head = wrapper.findAll("thead th");
+    expect(cellStyle(head[0]).left).toBe("0px");
+    expect(cellStyle(head[1]).left).toBe("120px");
+    expect(cellStyle(head[2]).position).toBe("");
+    wrapper.unmount();
+  });
+
+  it("≥10 列全无数字 width：DEV 提示一次；少量列不提示", () => {
+    makeTableRender({
+      columns: Array.from({ length: 10 }, (_, i) => ({ key: `c${i}`, title: `列${i}` })),
+    }).wrapper.unmount();
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("均无数字 width"));
+
+    makeTableRender().wrapper.unmount();
+    expect(warn).toHaveBeenCalledTimes(1); // 2 列 baseColumns：未新增提示
+  });
+});
+
 // ---- 虚拟滚动（virtual） -------------------------------------------------------
 
 const USERS_1000: User[] = Array.from({ length: 1000 }, (_, i) => ({

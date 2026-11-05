@@ -32,6 +32,8 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   key: string;
   title: string;
   align?: "left" | "center" | "right";
+  /** 列宽（R32）。数字（px）：布局硬约束 —— 参与表格 min-width 求和与 fixed 列 sticky 偏移推算；
+   * 字符串（如 "10rem"）：仅渲染提示值，不参与求和与 sticky。 */
   width?: number | string;
   /** 自定义单元格渲染，取值链 render > formatter > record[key]（R17） */
   render?: (r: ColumnRenders<T>) => ColumnRender<T>;

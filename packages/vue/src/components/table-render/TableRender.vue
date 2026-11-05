@@ -308,6 +308,15 @@ for (const column of columns.value) {
   }
 }
 
+// DEV 提示（一次性，columns setup 期定版，R32）：多列宽表全列无数字 width 时，
+// min-width 横滚不可达 —— 宽表请为列声明数字 width（px）。
+if (columns.value.length >= 10 && !columns.value.some((c) => typeof c.width === "number")) {
+  console.warn(
+    `[tu-design] <TableRender> ${columns.value.length} 列均无数字 width，` +
+      `窄容器下不会出现横向滚动（R32）；宽表请为列声明数字 width（px）。`,
+  );
+}
+
 /** sticky 单元格映射（纯渲染层 computed，不进 TanStack pinning state）：
  * 选择列视作最左 fixed 列参与累计（offset 0）；fixed-left 按列序累加，
  * fixed-right 从最右列反向累计。edge = 该 sticky 组朝滚动方向的交界列（加分隔边框）。
@@ -341,6 +350,21 @@ const stickyOf = computed<StickyMap>(() => {
     racc += right.width;
   }
   return map;
+});
+
+// ---- 表格 min-width（列宽硬约束，R32） ----------------------------------------
+// 可见业务列数字 width 之和（含选择列）作为 <table> min-width 下限：
+// 容器不足 → 表格被顶到 Σwidth，auto 布局下列渲染宽度 == 指定宽度，stickyOf 偏移精确成立，
+// 滚动区 overflow-x-auto 横滚；容器充足 → 表格仍 100% 拉伸（有宽列可能被拉伸，
+// sticky 偏移按指定值累计的漂移为既有限制，非 R32 引入）。
+// 字符串 width 仅渲染提示值，不参与求和（与 stickyOf 口径一致）；和为 0 不挂 style（零回归）。
+const tableMinWidth = computed(() => {
+  let sum = 0;
+  for (const column of visibleColumns.value) {
+    if (typeof column.width === "number" && column.width > 0) sum += column.width;
+  }
+  if (hasSelection.value && selection.value.width > 0) sum += selection.value.width;
+  return sum;
 });
 
 /** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
@@ -692,7 +716,11 @@ defineExpose({
       :class="cn('overflow-x-auto', fill && 'min-h-0 flex-1 overflow-y-auto')"
       :style="scrollStyle"
     >
-      <table class="w-full caption-bottom text-sm" :class="tableClass">
+      <table
+        class="w-full caption-bottom text-sm"
+        :class="tableClass"
+        :style="tableMinWidth > 0 ? { minWidth: `${tableMinWidth}px` } : undefined"
+      >
         <thead ref="theadEl" :class="theadSticky ? undefined : '[&_tr]:border-b'">
           <tr>
             <!-- 选择列：checkbox 型表头为本页全选三态（S3/S10）；radio 型占位；视作最左固定列 -->

@@ -433,9 +433,10 @@ const table = defineTable<Order>({
 
 - **offset 累计**：`fixed: "left"` 列偏移 = 之前所有 fixed-left 列宽之和（有选择列时先累加选择列宽 48）；`fixed: "right"` 从最右列反向累计。纯渲染层 computed，不写 TanStack pinning state
 - **呈现分层**：sticky 单元格统一 `bg-background`（防滚动透出）；表头 z-index（20）高于表体（10）；每个 sticky 组朝滚动方向的交界列加分隔边框（左组 `border-r`、右组 `border-l`）
-- **滚动容器**：`<table>` 外层的 `overflow-x-auto` 容器始终存在（分页条不参与横向滚动）；固定列只是 sticky 定位，不引入 `table-fixed`，表格仍由内容与列宽协商宽度
+- **滚动容器**：`<table>` 外层的 `overflow-x-auto` 容器始终存在（分页条不参与横向滚动）；固定列只是 sticky 定位，不引入 `table-fixed`
+- **列宽硬约束（R32）**：可见列数字 `width` 之和（含选择列）作为 `<table>` 的 `min-width` 下限——容器不足时表格被顶到列宽之和，横滚出现且**列渲染宽度 == 指定值**、sticky 偏移精确成立；容器充足时表格仍 100% 铺满（有宽列可能被拉伸，sticky 偏移按指定值累计的漂移为既有限制）；字符串 `width` 仅渲染提示值，不参与求和与 sticky；全列无数字 width 时和为 0 不挂，行为不变（≥10 列此配置 DEV 提示一次）
 - **骨架同构**：加载骨架行的固定列同 sticky 同偏移；空态行是横跨全列的单单元格，不参与 sticky
-- **不做**：纵向 sticky 表头、滚动位置动态阴影、`min-width` 弹性列宽、TanStack pinning 状态接入
+- **不做**：纵向 sticky 表头、滚动位置动态阴影、`table-fixed`/`<colgroup>` 确定性列布局、TanStack pinning 状态接入
 
 ## 虚拟滚动
 
