@@ -26,6 +26,9 @@ export type OverlayIds = Record<string, string | ((value: string) => string)>;
  * 边界：parts 只声明「字符串型覆盖口」的 part；函数型 part（如 select 的
  * item/itemGroup/itemGroupLabel——元素必渲染，[id="…"] 首查即命中，无炸点）不进
  * parts，由 user 经 attrs.ids 直传原样保留。user 永远最后展开：显式传入以其为准。
+ * @param attrs - 组件透传 attrs（其中的 ids 为用户覆盖项，可为 undefined）
+ * @param options - 生成配置：primary 为主 part（stemId 不加后缀），parts 为声明覆盖口的 part 列表
+ * @returns ids（合并用户覆盖后的完整 id 映射，供 :ids 受控绑定）与 resolveId（取实际生效的字符串 id，供 aria 手动接线）
  */
 export function useOverlayIds(
   attrs: Record<string, unknown>,
@@ -33,7 +36,10 @@ export function useOverlayIds(
 ) {
   const stemId = useId();
   const userIds = computed(() => (attrs.ids ?? {}) as OverlayIds);
-  /** 默认派生值（不含 user 覆盖），独立于 ids 供 resolveId 回退；构造恒为字符串 */
+  /**
+   * 默认派生值（不含 user 覆盖），独立于 ids 供 resolveId 回退；构造恒为字符串。
+   * @returns 以 part 为键的默认 id 映射
+   */
   const buildBase = (): Record<string, string> => {
     const base: Record<string, string> = {};
     for (const part of options.parts) {
@@ -42,7 +48,11 @@ export function useOverlayIds(
     return base;
   };
   const ids = computed<OverlayIds>(() => ({ ...buildBase(), ...userIds.value })); // user 永远收尾
-  /** aria 接线用：user 字符串覆盖优先，函数型 user 回退默认值 */
+  /**
+   * aria 接线用：user 字符串覆盖优先，函数型 user 回退默认值。
+   * @param part - 目标 part 名（如 "title"、"trigger"）
+   * @returns 该 part 实际生效的字符串 id；part 未声明覆盖口时返回 undefined
+   */
   const resolveId = (part: string) => {
     const v = userIds.value[part];
     return typeof v === "string" ? v : buildBase()[part];

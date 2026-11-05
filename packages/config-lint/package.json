@@ -1,0 +1,15 @@
+{
+  "name": "@tu-design/config-lint",
+  "version": "0.0.0",
+  "private": true,
+  "description": "共享 lint 配置片段包：defineLintConfig 组合器 + jsdoc 片段（自研 require-jsdoc 插件 + oxlint 原生完整性规则）",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./config": "./src/index.ts",
+    "./jsdoc-plugin": "./jsdoc-plugin.js"
+  },
+  "devDependencies": {
+    "vite-plus": "catalog:"
+  }
+}

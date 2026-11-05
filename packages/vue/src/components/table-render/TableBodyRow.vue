@@ -37,8 +37,13 @@ function cellText(line: TableBodyLine, index: number): string {
   return isVNode(value) ? "" : String(value ?? "");
 }
 
-/** ellipsis: "tooltip" 的单元格内容：默认插槽承载截断内容（触发元素本体，不额外包裹），content 显示完整文本。
- * VNode（render 工厂）单元格经 cloneVNode 复制进触发位（VNode 不可二次挂载）。 */
+/**
+ * ellipsis: "tooltip" 的单元格内容：默认插槽承载截断内容（触发元素本体，不额外包裹），content 显示完整文本。
+ * VNode（render 工厂）单元格经 cloneVNode 复制进触发位（VNode 不可二次挂载）。
+ * @param value - 单元格原始内容（VNode 或文本）
+ * @param text - 用于 tooltip content 与纯文本兜底的完整文本
+ * @returns 包裹 Tooltip 后的渲染结果
+ */
 function tooltipCell(value: VNodeChild, text: string): VNodeChild {
   const trigger = isVNode(value) ? cloneVNode(value) : h("span", { class: "block truncate" }, text);
   return h(Tooltip, { delayDuration: 0, content: text }, { default: () => [trigger] });
@@ -55,7 +60,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
     <td
       v-if="props.selection"
-      class="w-12 p-2 align-middle"
+      class="w-12 p-2 text-center align-middle"
       :class="stickyClass(props.sticky, SELECTION_CELL)"
       :style="stickyStyle(props.sticky, SELECTION_CELL, false)"
       @click.stop
@@ -87,7 +92,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
       ]"
       :title="props.columns[index].ellipsis === true ? cellText(props.line, index) : undefined"
       :style="[
-        { textAlign: props.columns[index].align },
+        { textAlign: props.columns[index].align ?? 'center' },
         stickyStyle(props.sticky, props.columns[index].key, false),
       ]"
       @click="emit('cell-click', props.columns[index].key, $event)"

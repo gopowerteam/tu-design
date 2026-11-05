@@ -6,6 +6,8 @@ import type { DataRecord, DefineTableOptions, TableRenderDefinition } from "./ty
  *
  * 返回值直接传给 `<TableRender :definition="def" />`；
  * 须在组件 setup 中调用（TanStack useVueTable 约束）。
+ * @param config - 表格配置：列定义、数据源（静态 data 或服务端 onLoad）、分页排序、行选择等
+ * @returns 表格渲染定义，直接传给 TableRender 组件的 definition prop
  */
 export function defineTable<T extends DataRecord>(
   config: DefineTableOptions<T>,

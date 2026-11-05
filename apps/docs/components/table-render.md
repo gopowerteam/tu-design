@@ -1045,6 +1045,13 @@ const table = defineTable<Task>({
 
 辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
 
+### 对齐规则
+
+- **默认居中**：未配置 `align` 时，业务列单元格与表头默认水平居中（表头/表体一致）；显式 `"left"` / `"right"` 覆盖默认。
+- **选择列恒居中**：checkbox/radio 窄列不随 `align` 配置，表头与表体控件始终居中。
+- **操作列按钮组**：`r.button()` 渲染的按钮组为行内级（inline-flex），随单元格 `align` 对齐——此前为块级布局恒左起（`align` 不生效）。
+- **树形首列**：展开 caret + 层级缩进随列对齐整体居中；若偏好贴左习惯，可显式 `align: "left"`。
+
 ### 类型速查
 
 #### `TableColumnOptions<T>`
@@ -1053,7 +1060,7 @@ const table = defineTable<Task>({
 | -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
 | `key`          | `string`                                           | 列标识，同时作为默认取值字段                                                                         |
 | `title`        | `string`                                           | 表头文本                                                                                             |
-| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐                                                                                           |
+| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐；默认居中（表头/表体一致），显式 `"left"` 退出默认                                        |
 | `width?`       | `number \| string`                                 | 列宽                                                                                                 |
 | `render?`      | `(record: T, index: number, column) => VNodeChild` | 自定义单元格；优先于 `formatter`；第三参 `column` 供内置渲染器读取字段值                             |
 | `formatter?`   | `(record: T) => string \| number \| Date`          | 纯数据格式化                                                                                         |

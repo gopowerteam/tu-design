@@ -20,12 +20,19 @@ import type { FormRenderDefinition } from "../form-render";
 
 const DEFAULT_PAGE_SIZE_OPTS = [10, 20, 50, 100];
 
-/** 数值配置防御：受控 getter（组件层）与数值配置（defineTable 层）同字段共存时只认数字 */
+/**
+ * 数值配置防御：受控 getter（组件层）与数值配置（defineTable 层）同字段共存时只认数字
+ * @param value - 待判定的配置值
+ * @returns 值为数字时原样返回，否则返回 undefined
+ */
 function numericOption(value: unknown): number | undefined {
   return typeof value === "number" ? value : undefined;
 }
 
-/** DEV 兜底提示：生产构建静默，只留可读的降级行为（R1–R7） */
+/**
+ * DEV 兜底提示：生产构建静默，只留可读的降级行为（R1–R7）
+ * @param message - 提示文本
+ */
 function warn(message: string) {
   if (import.meta.env.DEV) console.warn(`[tu-design] <TableRender> ${message}`);
 }
@@ -35,6 +42,9 @@ function warn(message: string) {
  *
  * 状态真相源是 TanStack 引擎（pageIndex 为 0-based），
  * `page`/`sort` 是对外的 1-based 只读投影，由 watch 同步。
+ * @param options - 表格配置：列定义、数据源（静态 data 或服务端 onLoad）、分页排序、
+ *   行选择、树形、列显隐、搜索表单等
+ * @returns 表格渲染定义（含只读投影与实例动作），供 TableRender 组件消费
  */
 export function useTableRender<T extends DataRecord>(
   options: UseTableRenderOptions<T>,
@@ -78,7 +88,10 @@ export function useTableRender<T extends DataRecord>(
   // any：FormRenderDefinition 对 T 不变，DataRecord 版拒收具体 defineForm<Q> 结果（见 types.ts）
   let search: FormRenderDefinition<any> | undefined;
 
-  /** search 唯一装配入口：静态模式 / 缺 form·items 时 DEV 警告并忽略 */
+  /**
+   * search 唯一装配入口：静态模式 / 缺 form·items 时 DEV 警告并忽略
+   * @param next - 待装配的搜索表单定义，undefined 表示移除
+   */
   function applySearch(next: FormRenderDefinition<any> | undefined) {
     if (next === undefined) {
       search = undefined;
@@ -99,7 +112,10 @@ export function useTableRender<T extends DataRecord>(
 
   applySearch(options.search);
 
-  /** 拆分式/组件级装配口：definition 未配置 search 时由 TableRender 回填 prop（对齐 setRowKey） */
+  /**
+   * 拆分式/组件级装配口：definition 未配置 search 时由 TableRender 回填 prop（对齐 setRowKey）
+   * @param next - 待回填的搜索表单定义
+   */
   function setSearch(next: FormRenderDefinition<any> | undefined) {
     if (search || !next) return;
     applySearch(next);
@@ -162,13 +178,21 @@ export function useTableRender<T extends DataRecord>(
     );
   }
 
-  /** 选中集写入的唯一入口：赋受控 state + 重建对外投影 */
+  /**
+   * 选中集写入的唯一入口：赋受控 state + 重建对外投影
+   * @param next - TanStack 行选择状态（row id → 是否选中）
+   */
   function applyRowSelection(next: RowSelectionState) {
     rowSelectionState.value = next;
     selectionEmitSafe();
   }
 
-  /** 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达，S1） */
+  /**
+   * 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达，S1）
+   * @param record - 行记录
+   * @param index - 行索引（rowKey 缺失时的退化 id 来源）
+   * @returns 稳定的行标识字符串
+   */
   function rowIdOf(record: T, index: number): string {
     const key = rowKey.value;
     const value = key ? record[key] : undefined;
@@ -303,7 +327,9 @@ export function useTableRender<T extends DataRecord>(
   }
 
   /** 排序应用的唯一管线：服务端模式归位第 1 页（R8）+ 投影落值 + TanStack setSorting。
-   * 受控 sort 的外部同步与此共用（直接 setSorting 会漏服务端重载） */
+   * 受控 sort 的外部同步与此共用（直接 setSorting 会漏服务端重载）
+   * @param next - 目标排序（key + direction），undefined 表示取消排序
+   */
   function applySort(next: SortableOptions | undefined) {
     // 服务端模式按新排序取数，必须先归位到首页（R8）
     if (serverMode && page.pageIndex !== 1) setPageIndex(1);
@@ -312,7 +338,10 @@ export function useTableRender<T extends DataRecord>(
     table.setSorting(next ? [{ id: next.key, desc: next.direction === "desc" }] : []);
   }
 
-  /** 排序三态：无 → asc → desc → 取消；非 sortable 列为空操作（R8） */
+  /**
+   * 排序三态：无 → asc → desc → 取消；非 sortable 列为空操作（R8）
+   * @param key - 目标列 key
+   */
   function toggleSort(key: string) {
     if (!columns.some((column) => column.key === key && column.sortable === true)) return;
 
@@ -421,7 +450,11 @@ export function useTableRender<T extends DataRecord>(
   // 列显隐只动本 ref——不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）。
   let emptyVisibleWarned = false;
 
-  /** 规范化：未知 key 静默忽略、按 columns 原序、空数组钳制为首列（R24，warn 一次） */
+  /**
+   * 规范化：未知 key 静默忽略、按 columns 原序、空数组钳制为首列（R24，warn 一次）
+   * @param keys - 目标可见列 key 列表（任意顺序，可含未知 key）
+   * @returns 规范化后的可见列 key 列表（columns 原序）
+   */
   function normalizeVisibleKeys(keys: readonly string[]): string[] {
     const known = columns.filter((column) => keys.includes(column.key)).map((column) => column.key);
     if (known.length > 0) return known;
@@ -450,7 +483,10 @@ export function useTableRender<T extends DataRecord>(
       : (parsedDefaultVisibleKeys ?? columns.map((column) => column.key)),
   );
 
-  /** 列显隐动作（面板交互/程序化）：规范化后更新统一投影 */
+  /**
+   * 列显隐动作（面板交互/程序化）：规范化后更新统一投影
+   * @param keys - 目标可见列 key 列表
+   */
   function setVisibleKeys(keys: string[]) {
     visibleKeysInternal.value = normalizeVisibleKeys(keys);
   }
@@ -484,7 +520,10 @@ export function useTableRender<T extends DataRecord>(
 
   // ---- 行选择动作与联动（S 系列） -------------------------------------------
 
-  /** 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12）；不可选行被过滤（对齐 S5） */
+  /**
+   * 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12）；不可选行被过滤（对齐 S5）
+   * @param keys - 目标选中行的 key 列表（整体替换现有选中集）
+   */
   function setSelection(keys: Array<string | number>) {
     const next: RowSelectionState = {};
     for (const key of keys) {
@@ -519,7 +558,10 @@ export function useTableRender<T extends DataRecord>(
     applyRowSelection(next);
   }
 
-  /** 拆分式装配口：TableRender setup 时回传组件 rowKey（S1） */
+  /**
+   * 拆分式装配口：TableRender setup 时回传组件 rowKey（S1）
+   * @param key - 行主键字段名
+   */
   function setRowKey(key: string | undefined) {
     if (rowKey.value === key) return;
     rowKey.value = key;

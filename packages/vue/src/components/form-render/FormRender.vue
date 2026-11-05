@@ -123,8 +123,11 @@ if (import.meta.env.DEV && actions) {
   }
 }
 
-/** I4：校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受 S1 限制）。
- * 校验语义单点化（R30）：definition 存在时复用 definition.submit()；拆分式 :form + :items 走内联逻辑 */
+/**
+ * I4：校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受 S1 限制）。
+ * 校验语义单点化（R30）：definition 存在时复用 definition.submit()；拆分式 :form + :items 走内联逻辑
+ * @param mode - 提交语义："search" 触发 search 事件（查询按钮），"submit" 触发 submit 事件
+ */
 async function submit(mode: "search" | "submit") {
   if (!instance) return;
   let valid: boolean;

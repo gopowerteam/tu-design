@@ -23,7 +23,7 @@
       "path": "select/types.ts",
       "type": "registry:lib",
       "target": "components/ui/select/types.ts",
-      "content": "export interface SelectItemOption {\n  label: string;\n  value: string;\n  disabled?: boolean;\n}\n\nexport function normalizeSelectItem(item: string | SelectItemOption): SelectItemOption {\n  return typeof item === \"string\" ? { label: item, value: item } : item;\n}\n"
+      "content": "export interface SelectItemOption {\n  label: string;\n  value: string;\n  disabled?: boolean;\n}\n\n/**\n * 将字符串简写归一为完整选项对象：字符串同时作为 label 与 value。\n * @param item - 字符串简写或完整选项对象\n * @returns 归一后的选项对象（字符串入参转为 label/value 同值的选项）\n */\nexport function normalizeSelectItem(item: string | SelectItemOption): SelectItemOption {\n  return typeof item === \"string\" ? { label: item, value: item } : item;\n}\n"
     }
   ]
 }

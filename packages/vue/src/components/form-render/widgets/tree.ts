@@ -18,6 +18,12 @@ type SfcAllProps<C> = C extends abstract new (...args: never[]) => any
   ? Partial<ComponentPublicInstance["$props"]> & InstanceType<C>["$props"]
   : never;
 
+/**
+ * treeSelect widget：树形下拉选择，options 原名直传（TreeOption 命名穿透），
+ * placeholder 先用 item 级回退（I1），options.placeholder 展开时覆盖。
+ * @param options - widget 选项，原名直传给 TreeSelect，placeholder 以 item 级缺省兜底
+ * @returns 渲染函数，接收渲染上下文并产出 TreeSelect vnode
+ */
 export function renderTreeSelectItem<T extends object>(
   options: TreeSelectWidgetOptions,
 ): WidgetRenderReturn<T> {
@@ -31,6 +37,12 @@ export function renderTreeSelectItem<T extends object>(
     } as SfcAllProps<typeof TreeSelect>);
 }
 
+/**
+ * cascader widget：级联选择，绑定与 treeSelect 一致（modelValue 受控形态），
+ * placeholder 先用 item 级回退（I1），options.placeholder 展开时覆盖。
+ * @param options - widget 选项，原名直传给 Cascader，placeholder 以 item 级缺省兜底
+ * @returns 渲染函数，接收渲染上下文并产出 Cascader vnode
+ */
 export function renderCascaderItem<T extends object>(
   options: CascaderWidgetOptions,
 ): WidgetRenderReturn<T> {

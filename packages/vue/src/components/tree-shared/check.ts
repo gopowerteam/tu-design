@@ -14,6 +14,13 @@ export class SubtreeNotLoadedError extends Error {
   }
 }
 
+/**
+ * 计算勾选后的完整选中 key 集合：把新增勾选并入当前选中集，再级联扩展到子孙节点。
+ * @param checkKeys - 本次新增勾选的节点 key 列表
+ * @param currentCheckedKeys - 当前已选中的 key 列表
+ * @param treeMate - 树 mate 实例，用于查询节点与子树
+ * @returns 扩展后的选中 key 集合
+ */
 function getExtendedCheckedKeySetAfterCheck<R, G, I>(
   checkKeys: Key[],
   currentCheckedKeys: Key[],
@@ -22,6 +29,13 @@ function getExtendedCheckedKeySetAfterCheck<R, G, I>(
   return getExtendedCheckedKeySet(currentCheckedKeys.concat(checkKeys), treeMate);
 }
 
+/**
+ * 收集取消勾选节点的可用祖先 key 集合（级联反选时这些祖先需同步取消勾选）；
+ * 上溯在遇到 disabled 节点或已访问节点时截断。
+ * @param uncheckedKeys - 被取消勾选的节点 key 列表
+ * @param treeMate - 树 mate 实例，用于查询节点父子关系
+ * @returns 需要联动取消勾选的祖先 key 集合
+ */
 function getAvailableAscendantNodeSet<R, G, I>(
   uncheckedKeys: Key[],
   treeMate: TreeMate<R, G, I>,
@@ -44,6 +58,14 @@ function getAvailableAscendantNodeSet<R, G, I>(
   return visitedKeys;
 }
 
+/**
+ * 计算取消勾选后的完整选中 key 集合：从扩展选中集移除被取消的 key
+ * 及其可用祖先，返回剩余集合。
+ * @param uncheckedKeys - 本次取消勾选的节点 key 列表
+ * @param currentCheckedKeys - 当前已选中的 key 列表
+ * @param treeMate - 树 mate 实例
+ * @returns 取消勾选后剩余的选中 key 集合
+ */
 function getExtendedCheckedKeySetAfterUncheck<R, G, I>(
   uncheckedKeys: Key[],
   currentCheckedKeys: Key[],
@@ -62,6 +84,15 @@ function getExtendedCheckedKeySetAfterUncheck<R, G, I>(
   return extendedCheckedKeySet;
 }
 
+/**
+ * 计算树勾选结果：cascade=false 时直接在现有选中集上增删；
+ * cascade=true 时先扩展选中集，再自底向上按层归并出最终勾选状态
+ * （checkStrategy 为 all/parent/child 时分别保留全部/父节点/叶子选中）。
+ * @param options - 勾选参数：当前选中与半选 key、本次勾选/取消的 key、
+ *   cascade、leafOnly 与 checkStrategy
+ * @param treeMate - 树 mate 实例，提供层级节点表用于自底向上归并
+ * @returns 最终的选中 key 列表与半选 key 列表
+ */
 export function getCheckedKeys<R, G, I>(
   options: {
     checkedKeys: Key[];
@@ -192,6 +223,14 @@ export function getCheckedKeys<R, G, I>(
 }
 
 // unchecking is safe when doing cascade uncheck in async mode
+/**
+ * 计算扩展选中 key 集合：把每个选中节点连同其可达子孙并入集合，遇 disabled 子树停止下钻；
+ * 子树未完全加载时，勾选流程抛出 SubtreeNotLoadedError，取消勾选流程安全截断。
+ * @param checkedKeys - 当前选中的节点 key 列表
+ * @param treeMate - 树 mate 实例，提供节点映射与 getChildren
+ * @param isUnchecking - 是否处于取消勾选流程，决定未加载子树的处理方式
+ * @returns 含全部级联选中节点的 key 集合
+ */
 export function getExtendedCheckedKeySet<R, G, I>(
   checkedKeys: Key[],
   treeMate: TreeMate<R, G, I>,

@@ -9,6 +9,11 @@
 
 type EventCtor = abstract new (type: string | Event, init?: EventInit) => Event;
 
+/**
+ * 包装事件构造器：以 Date.now() 逐实例覆盖 timeStamp，绕过 Vue 过时事件守卫。
+ * @param Original - 原始事件构造器（Event 及其子类，各子类需独立包装）
+ * @returns 修补后的构造器，签名与原始构造器一致
+ */
 function patchEventCtor(Original: EventCtor): EventCtor {
   return class PatchedEvent extends (Original as abstract new (
     type: string | Event,

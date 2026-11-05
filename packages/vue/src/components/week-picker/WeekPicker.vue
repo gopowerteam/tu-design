@@ -59,7 +59,11 @@ defineOptions({ inheritAttrs: false });
 // 弹层内的 TCalendar 探测到宿主标记 → embedded 内嵌形态（纯卡片内核，不自建 Root，值归本 Picker）
 provide(CALENDAR_IN_PICKER, true);
 
-/** "yyyy-MM-dd" → 归一到所在周起始日的 ISO 串（非法输入返回 undefined） */
+/**
+ * "yyyy-MM-dd" → 归一到所在周起始日的 ISO 串（非法输入返回 undefined）
+ * @param raw - 输入的 ISO 日期串
+ * @returns 该日期所在周起始日的 ISO 串；解析失败返回 undefined
+ */
 function formatIsoWeekStart(raw: string): string | undefined {
   const date = parseIsoDate(raw);
   return date ? weekStartOf(date, props.locale).toString() : undefined;

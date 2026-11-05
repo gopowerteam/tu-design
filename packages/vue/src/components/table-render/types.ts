@@ -31,6 +31,7 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   /** 列标识，同时作为默认取值字段 */
   key: string;
   title: string;
+  /** 单元格水平对齐；未配置默认居中（表头/表体一致），显式 "left" 退出默认 */
   align?: "left" | "center" | "right";
   /** 列宽（R32）。数字（px）：布局硬约束 —— 参与表格 min-width 求和与 fixed 列 sticky 偏移推算；
    * 字符串（如 "10rem"）：仅渲染提示值，不参与求和与 sticky。 */

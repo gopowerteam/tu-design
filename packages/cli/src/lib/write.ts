@@ -3,6 +3,11 @@ import type { ComponentsConfig } from "./config";
 import type { RegistryItem } from "./registry-types";
 import { hashNormalizedContent } from "./rewrite";
 
+/**
+ * 返回目录的父目录（POSIX 路径）；根目录 "/" 没有父级。
+ * @param dir - 目录路径
+ * @returns 父目录路径；已是根目录时为 null
+ */
 function parentDir(dir: string): string | null {
   if (dir === "/") {
     return null;
@@ -11,7 +16,12 @@ function parentDir(dir: string): string | null {
   return idx <= 0 ? "/" : dir.slice(0, idx);
 }
 
-/** 自 cwd 向上找最近的 components.json；到文件系统根仍无 → 抛错提示 init。 */
+/**
+ * 自 cwd 向上找最近的 components.json；到文件系统根仍无 → 抛错提示 init。
+ * @param io - IO 通道
+ * @param cwd - 起始目录
+ * @returns 命中 components.json 的项目根目录
+ */
 export function findProjectRoot(io: Io, cwd: string): string {
   // 纯逻辑层统一 POSIX 分隔符，真实 Windows cwd（反斜杠）也能正确逐级上溯
   let dir = cwd.replace(/\\/g, "/");
@@ -36,6 +46,10 @@ export function findProjectRoot(io: Io, cwd: string): string {
  * 绝对路径、盘符路径、或逸出 aliasRoot 的 `..` 一律拒绝，否则一个恶意/损坏的
  * registry 项能把源码写到项目外（`~/.bashrc`、`/etc/…`）。
  * 逐段归一后仍留在 aliasRoot 内的 `..`（如 `components/ui/../../x.ts`）允许。
+ * @param target - registry item 声明的目标相对路径
+ * @param config - 项目配置（预留 alias 语义扩展位）
+ * @param aliasRoot - 组件源码落点根目录
+ * @returns 拼接 aliasRoot 后的安全路径
  */
 export function resolveTarget(target: string, config: ComponentsConfig, aliasRoot: string): string {
   // config 当前用于保留 alias 语义的扩展位（target 已按 components/ui 布局生成）
@@ -71,6 +85,15 @@ export interface WritePlan {
   exists: boolean;
 }
 
+/**
+ * 将 registry item 列表展开为逐文件写入计划（路径解析 + 已存在标记）；
+ * 单个文件 target 非法时报错点名所属 registry 项与文件，便于定位数据源。
+ * @param items - 拓扑排序后的 registry item 列表
+ * @param io - IO 通道（探测目标文件是否已存在）
+ * @param aliasRoot - 组件源码落点根目录
+ * @param config - 项目配置
+ * @returns 逐文件写入计划
+ */
 export function planWrites(
   items: RegistryItem[],
   io: Io,
@@ -112,6 +135,10 @@ export interface WriteResult {
  * 覆盖安全语义：归一化内容比对（sha256，空白不敏感）优先于存在性判断——
  * 内容相同的重复安装不算冲突，静默跳过；只有「存在且归一化内容不同」才进入
  * 覆盖询问 / conflict 分支。空白不敏感：用户 fmt 重排不触发覆盖询问。
+ * @param plans - 写入计划列表
+ * @param io - IO 通道
+ * @param opts - 覆盖策略（overwrite 直接覆盖；confirm 逐文件询问用户）
+ * @returns 各类文件处置结果的清单
  */
 export async function writeFiles(
   plans: WritePlan[],

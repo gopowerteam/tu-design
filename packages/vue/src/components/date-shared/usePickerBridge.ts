@@ -23,6 +23,8 @@ export interface PickerBridgeOptions {
 /**
  * 单值日期选择器的受控桥接：值以内部 ref 为镜像、Root 恒走受控，
  * 开合复用 useControlledBoolean，openFromInput 统一「点击/↓ 输入框即开」。
+ * @param options - 桥接配置：值与开合的受控/非受控读写、解析与回写转换、事件回调
+ * @returns rootValue（zag 受控值）、isOpen 与 setOpen（开合状态）、openFromInput（输入框驱动开弹层）与 handleValueUpdate（日历值更新处理）
  */
 export function usePickerBridge(options: PickerBridgeOptions) {
   const initial = options.defaultValue();

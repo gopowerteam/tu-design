@@ -11,6 +11,7 @@
     "release": "bumpp"
   },
   "devDependencies": {
+    "@tu-design/config-lint": "workspace:*",
     "bumpp": "catalog:",
     "vite-plus": "catalog:"
   },

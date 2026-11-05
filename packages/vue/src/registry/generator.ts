@@ -14,6 +14,10 @@ export interface RegistryIo {
  * 递归收集组件目录下的相对文件路径（支持子目录，如 form-render/widgets/）。
  * 文件判定用 readFile 可读性：真实 fs 读目录抛 EISDIR、mock io 未知路径抛 ENOENT，
  * 两种实现下「可读 = 文件、不可读 = 目录」均成立。
+ * @param io - 文件系统 IO 抽象，提供 readDir 与 readFile
+ * @param dir - 当前遍历的目录路径
+ * @param prefix - 相对组件目录累积的子路径前缀；根层调用时为空
+ * @returns 相对组件目录的文件路径列表（目录不进入结果）
  */
 function collectRelativeFiles(io: RegistryIo, dir: string, prefix = ""): string[] {
   return io.readDir(dir).flatMap((name) => {
@@ -28,11 +32,23 @@ function collectRelativeFiles(io: RegistryIo, dir: string, prefix = ""): string[
   });
 }
 
+/**
+ * 解析 pnpm-workspace.yaml，提取 catalog 段的包名 → 版本映射。
+ * @param workspaceYaml - pnpm-workspace.yaml 的原始文本
+ * @returns catalog 映射；无 catalog 段时返回空对象
+ */
 export function parseCatalog(workspaceYaml: string): Record<string, string> {
   const doc = parse(workspaceYaml) as { catalog?: Record<string, string> };
   return doc.catalog ?? {};
 }
 
+/**
+ * 把 meta 里的依赖声明翻译为可发布的具体版本：catalog 占位符替换为 catalog 实际版本。
+ * workspace 协议与 catalog 缺版本都会直接抛错，避免生成不可安装的 registry。
+ * @param deps - meta 中的依赖映射（包名 → 版本说明符）
+ * @param catalog - pnpm-workspace.yaml 的 catalog 映射
+ * @returns 翻译后的依赖映射（包名 → 具体版本）
+ */
 export function translateDeps(
   deps: Record<string, string>,
   catalog: Record<string, string>,
@@ -55,6 +71,11 @@ export function translateDeps(
   return out;
 }
 
+/**
+ * kebab-case 名称转 PascalCase（如 date-picker → DatePicker），用作 registry 索引标题。
+ * @param name - kebab-case 组件目录名
+ * @returns PascalCase 形式的名称
+ */
 function toPascal(name: string): string {
   return name.replace(/(^|-)([a-z])/g, (_, __: string, c: string) => c.toUpperCase());
 }
@@ -66,7 +87,12 @@ const SPECIFIER_PATTERNS = [
   /(\bimport\s*\(\s*)(["'])([^"']+)\2/g,
 ];
 
-/** 对内容里每个模块说明符施加 fn，保留原关键字与引号风格。 */
+/**
+ * 对内容里每个模块说明符施加 fn，保留原关键字与引号风格。
+ * @param content - 源码文本
+ * @param fn - 说明符变换函数；返回原说明符表示保持不变
+ * @returns 完成替换后的文本
+ */
 function mapSpecifiers(content: string, fn: (spec: string) => string): string {
   let out = content;
   for (const re of SPECIFIER_PATTERNS) {
@@ -78,7 +104,12 @@ function mapSpecifiers(content: string, fn: (spec: string) => string): string {
   return out;
 }
 
-/** POSIX 相对解析：返回 fromDir 下解析 spec 后的路径。 */
+/**
+ * POSIX 相对解析：返回 fromDir 下解析 spec 后的路径。
+ * @param fromDir - 起始目录路径
+ * @param spec - 相对模块说明符（以 . 或 .. 开头）
+ * @returns 解析后的路径
+ */
 function resolvePosix(fromDir: string, spec: string): string {
   const segs = fromDir.split("/").filter(Boolean);
   for (const part of spec.split("/")) {
@@ -88,7 +119,12 @@ function resolvePosix(fromDir: string, spec: string): string {
   return segs.join("/");
 }
 
-/** srcPath（别名根相对）所在目录解析相对说明符后的落点。 */
+/**
+ * srcPath（别名根相对）所在目录解析相对说明符后的落点。
+ * @param srcPath - 分发源文件相对别名根的路径
+ * @param spec - 相对模块说明符
+ * @returns 说明符落点在别名根坐标系下的路径
+ */
 function resolveFromSrc(srcPath: string, spec: string): string {
   return resolvePosix(srcPath.split("/").slice(0, -1).join("/"), spec);
 }
@@ -112,6 +148,9 @@ const ALIAS_COMPONENTS = "@/components/";
  * - `../../lib/utils` 之类上溯到 components 之外：装机后落在 `src/components/lib/utils`
  *   —— 换成别名绝对形式 `@/lib/utils`（utils 的目标就是 lib/utils.ts）。
  * 落在 components 树内的相对引用（同目录、兄弟目录）在 ui 布局下依然成立，保持原样。
+ * @param content - 分发源码文本
+ * @param layout - 改写所需的布局坐标
+ * @returns 完成说明符归一后的源码文本
  */
 export function rewriteShippedImports(content: string, layout: ShippedLayout): string {
   const { srcPath, componentsRel, aliasPrefix } = layout;
@@ -130,7 +169,11 @@ export function rewriteShippedImports(content: string, layout: ShippedLayout): s
   });
 }
 
-/** 分发文件的 registry type：按扩展名映射，未知扩展名不静默发布。 */
+/**
+ * 分发文件的 registry type：按扩展名映射，未知扩展名不静默发布。
+ * @param name - 文件名（含扩展名）
+ * @returns 对应的 registry type 字符串；不支持的分发格式直接抛错
+ */
 function fileTypeOf(name: string): string {
   if (name.endsWith(".vue")) return "registry:component";
   if (name.endsWith(".ts")) return "registry:lib";
@@ -139,6 +182,10 @@ function fileTypeOf(name: string): string {
 
 /**
  * 该说明符（改写后）引用了哪个组件目录；非组件引用（utils/tokens/三方包/自身目录）返回 null。
+ * @param ownDir - 当前 item 的组件目录名
+ * @param layout - 引用分析所需的布局坐标
+ * @param spec - 改写后的模块说明符
+ * @returns 引用的其它组件目录名；非跨组件引用返回 null
  */
 function referencedComponent(ownDir: string, layout: ShippedLayout, spec: string): string | null {
   const alias = /^@\/components\/(?:ui\/)?([^/]+)/.exec(spec);
@@ -152,7 +199,14 @@ function referencedComponent(ownDir: string, layout: ShippedLayout, spec: string
   return null;
 }
 
-/** 汇总一个 item 分发源码里的跨组件引用集，用于反查 registryDependencies 漏声明。 */
+/**
+ * 汇总一个 item 分发源码里的跨组件引用集，用于反查 registryDependencies 漏声明。
+ * @param dir - 当前 item 的组件目录名
+ * @param files - 该 item 的分发文件列表（相对路径与改写后的内容）
+ * @param componentsRel - 组件目录相对别名根的路径
+ * @param aliasPrefix - 别名根目录名前缀（如 "src/"；无法判定时为空串）
+ * @returns 引用的其它组件目录名集合
+ */
 function collectCrossRefs(
   dir: string,
   files: { path: string; content: string }[],
@@ -179,6 +233,9 @@ function collectCrossRefs(
  * tokens.css 里的 `@import "<pkg>"` 必须声明为 npm 依赖，否则用户项目首屏构建报
  * Can't resolve。版本取自 catalog（与库内开发同源）；catalog 缺版本即生成失败 ——
  * 发布一个装完就跑不起来的 style 项比生成报错更糟。
+ * @param css - tokens.css 的文本内容
+ * @param catalog - pnpm-workspace.yaml 的 catalog 映射
+ * @returns 排序后的 name@version 依赖列表；catalog 缺版本时抛错
  */
 function cssImportDependencies(css: string, catalog: Record<string, string>): string[] {
   const names = new Set(
@@ -200,6 +257,8 @@ function cssImportDependencies(css: string, catalog: Record<string, string>): st
  * 相对引用与 `@/` 别名（跨组件/lib 引用，归 registryDependencies 校验管）豁免；
  * `vue` 是 peerDependencies、meta 按惯例不声明，同样豁免。
  * `@/` 豁免必须精确匹配两字符前缀，否则会误豁免 @scope 形式的 npm 包。
+ * @param files - 分发文件列表
+ * @returns 外部 npm 包名集合（已归一为裸包名并去重）
  */
 function collectExternalImports(files: RegistryFile[]): Set<string> {
   const names = new Set<string>();
@@ -214,11 +273,24 @@ function collectExternalImports(files: RegistryFile[]): Set<string> {
   return names;
 }
 
-/** 官方 registry-item schema 的 dependencies 是字符串数组 —— 以 name@version 形式钉具体版本。 */
+/**
+ * 官方 registry-item schema 的 dependencies 是字符串数组 —— 以 name@version 形式钉具体版本。
+ * @param deps - 包名 → 版本映射
+ * @returns "name@version" 形式的依赖字符串数组
+ */
 function toNameAtVersion(deps: Record<string, string>): string[] {
   return Object.entries(deps).map(([name, version]) => `${name}@${version}`);
 }
 
+/**
+ * 生成 registry 分发产物：遍历组件目录产出各组件的 registry item（含说明符改写与
+ * 依赖完整性校验：npm 依赖漏声明、registryDependencies 漏声明、引用项不存在均显式失败），
+ * 并附上 utils 与 tokens 两个内置 item，最后按名称排序产出全局索引。
+ * @param io - 文件系统 IO 抽象，提供 readDir 与 readFile
+ * @param input - 生成输入：组件目录、utils/tokens 源文件路径、workspace yaml
+ *   文本与发布版本号
+ * @returns 按名称排序的 registry item 列表与对应的索引对象
+ */
 export function generateRegistry(
   io: RegistryIo,
   input: {

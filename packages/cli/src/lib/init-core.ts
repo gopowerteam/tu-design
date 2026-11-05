@@ -35,6 +35,13 @@ export interface InitSummary {
   skippedAgents: boolean;
 }
 
+/**
+ * 判定项目是否满足 Tailwind CSS v4 前置条件：依赖中存在 tailwindcss 4.x 版本声明
+ * （容忍 ~ 前缀等写法），且全局 CSS 已引入 tailwindcss。二者缺一即 false。
+ * @param pkg - package.json 反序列化结果（取 dependencies 与 devDependencies）
+ * @param globalCss - 全局 CSS 文件内容
+ * @returns 满足 v4 前置条件返回 true
+ */
 export function detectTailwindV4(
   pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> },
   globalCss: string,
@@ -47,6 +54,13 @@ export function detectTailwindV4(
   return globalCss.includes('@import "tailwindcss"');
 }
 
+/**
+ * 将 tokens 合并进用户全局 CSS：已含 dark variant 定制视为用户自管，原样返回；
+ * 否则在 `import "tailwindcss";` 语句之后插入 tokens（无该语句则追加到文件尾部）。
+ * @param userCss - 用户全局 CSS 内容
+ * @param tokensCss - tokens CSS 内容
+ * @returns 合并后的 CSS 内容；无需合并时为原文
+ */
 export function mergeTokensCss(userCss: string, tokensCss: string): string {
   if (userCss.includes("@custom-variant dark")) {
     return userCss;
@@ -60,6 +74,11 @@ export function mergeTokensCss(userCss: string, tokensCss: string): string {
   return `${userCss.slice(0, end)}\n${tokensCss}${userCss.slice(end)}`;
 }
 
+/**
+ * 以 POSIX 分隔符拼接路径片段：首段去尾斜杠、其余段去两端斜杠，空段剔除。
+ * @param parts - 路径片段（依次为从根到叶）
+ * @returns 拼接后的 POSIX 路径
+ */
 function joinPosix(...parts: string[]): string {
   return parts
     .map((p, i) => (i === 0 ? p.replace(/\/+$/, "") : p.replace(/^\/+|\/+$/g, "")))
@@ -77,6 +96,14 @@ const CSS_PROBE = [
   "style.css",
 ];
 
+/**
+ * 探测实际生效的全局 CSS 路径：优先配置（或默认）路径，依次尝试常见位置，
+ * 取第一个存在且含 tailwindcss 引入语句的文件；全部未命中则回退配置值。
+ * @param io - IO 通道
+ * @param cwd - 项目根目录
+ * @param configured - 配置的 CSS 相对路径（--css 或默认值）
+ * @returns 实际生效的 CSS 相对路径
+ */
 function probeCssPath(io: Io, cwd: string, configured: string): string {
   for (const rel of [configured, ...CSS_PROBE]) {
     const full = joinPosix(cwd, rel);
@@ -87,6 +114,15 @@ function probeCssPath(io: Io, cwd: string, configured: string): string {
   return configured;
 }
 
+/**
+ * 运行 init 命令：校验 Tailwind v4 环境 → 写/验 components.json → 注入 cn 工具与
+ * tokens CSS → 按需写入 AGENTS.md → 配置路径别名。components.json 已存在时只校验不覆盖；
+ * AGENTS.md 已存在或显式关闭时跳过（不覆盖用户自定义内容）。
+ * @param io - IO 通道
+ * @param cwd - 项目根目录
+ * @param opts - init 选项（registry 地址、alias 根目录、CSS 路径、AGENTS.md 开关）
+ * @returns 写入路径与跳过情况的摘要
+ */
 export function runInit(
   io: Io,
   cwd: string,

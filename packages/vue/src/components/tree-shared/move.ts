@@ -5,6 +5,12 @@
  */
 import type { GetPrevNextOptions, TreeNode } from "./interface";
 
+/**
+ * 返回树中第一个可用节点（非 group、非 ignored、非 disabled）；
+ * 首节点不可用时沿 getNext 继续向后找。
+ * @param nodes - 顶层节点列表
+ * @returns 首个可用节点；整树不可用时返回 null
+ */
 export function getFirstAvailableNode<R, G, I>(
   nodes: Array<TreeNode<R, G, I>>,
 ): TreeNode<R> | null {
@@ -16,6 +22,12 @@ export function getFirstAvailableNode<R, G, I>(
   return node as unknown as TreeNode<R>;
 }
 
+/**
+ * 取同级下一兄弟节点；loop 为 true 时越过末尾循环回首节点，否则返回 null。
+ * @param node - 当前节点
+ * @param loop - 是否循环绕回
+ * @returns 下一兄弟节点或 null
+ */
 function rawGetNext(node: TreeNode, loop: boolean): TreeNode | null {
   const sibs = node.siblings;
   const l = sibs.length;
@@ -28,6 +40,16 @@ function rawGetNext(node: TreeNode, loop: boolean): TreeNode | null {
   }
 }
 
+/**
+ * 沿 dir 方向游标移动到下一个可用节点（非 group、非 ignored；disabled 需 includeDisabled），
+ * 遇 group 节点下钻其子节点；loop 为 true 时绕树循环一周回到起点即以起点为结果。
+ * @param fromNode - 起始节点
+ * @param dir - 移动方向：prev 向前、next 向后
+ * @param root0 - 移动选项对象（GetPrevNextOptions）
+ * @param root0.loop - 到达端点后是否循环绕回
+ * @param root0.includeDisabled - 是否把 disabled 节点纳入游标可达范围
+ * @returns 目标节点；无可达节点时返回 null
+ */
 function move(
   fromNode: TreeNode,
   dir: "prev" | "next",
@@ -39,6 +61,11 @@ function move(
   };
   let meet = false;
   let endNode: TreeNode | null = null;
+  /**
+   * 沿方向游标遍历，记录第一个遇到的可用节点。
+   * @param node - 当前游标节点
+   * @returns 无返回值
+   */
   function traverse(node: TreeNode | null): void {
     if (node === null) return;
     if (node === fromNode) {
@@ -79,6 +106,12 @@ function move(
   return endNode;
 }
 
+/**
+ * 取同级上一兄弟节点；loop 为 true 时越过开头循环回尾节点，否则返回 null。
+ * @param node - 当前节点
+ * @param loop - 是否循环绕回
+ * @returns 上一兄弟节点或 null
+ */
 function rawGetPrev(node: TreeNode, loop: boolean): TreeNode | null {
   const sibs = node.siblings;
   const l = sibs.length;
@@ -91,10 +124,22 @@ function rawGetPrev(node: TreeNode, loop: boolean): TreeNode | null {
   }
 }
 
+/**
+ * 取节点的直接父节点。
+ * @param node - 当前节点
+ * @returns 父节点；根节点返回 null
+ */
 function rawGetParent(node: TreeNode): TreeNode | null {
   return node.parent;
 }
 
+/**
+ * 取节点下第一个可用子节点（非 disabled、非 ignored，递归下钻 group）；
+ * reverse 为 true 时从末尾向前查找。
+ * @param node - 父节点
+ * @param options - 查找选项；reverse 表示从末尾向前查找
+ * @returns 可用子节点；不存在时返回 null
+ */
 function getChild(node: TreeNode, options: { reverse?: boolean } = {}): TreeNode | null {
   const { reverse = false } = options;
   const { children } = node;

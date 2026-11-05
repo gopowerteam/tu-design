@@ -3,6 +3,9 @@ import type { Io } from "./io";
 /**
  * 将 paths 合并进 tsconfig 文本。优先 JSON round-trip；
  * JSONC（带注释等无法解析）时回退纯文本插入，保留原注释。
+ * @param source - tsconfig 文件原始文本
+ * @param paths - 要合并的 compilerOptions.paths 映射
+ * @returns 合并后的 tsconfig 文本
  */
 export function mergeTsconfigPaths(source: string, paths: Record<string, string[]>): string {
   let parsed: unknown;
@@ -29,8 +32,11 @@ export function mergeTsconfigPaths(source: string, paths: Record<string, string[
 }
 
 /**
- * JSONC 回退：在 "compilerOptions": { 后做纯文本插入，保留注释；
+ * JSONC 回退：在 "compilerOptions" 对象的开括号后做纯文本插入，保留注释；
  * 已有 paths 或结构不识别时返回原文（调用方提示手动配置）。
+ * @param source - tsconfig 文件原始文本
+ * @param paths - 要插入的 compilerOptions.paths 映射
+ * @returns 插入后的文本；无法安全插入时为原文
  */
 function insertPathsText(source: string, paths: Record<string, string[]>): string {
   if (/"paths"\s*:/.test(source)) {
@@ -54,8 +60,11 @@ export interface ViteAlias {
  * 将 alias 注入 vite 配置文本（纯字符串变换，无 AST）：
  * - 已有 alias 对象 → 在对象首行后追加键
  * - 有 resolve 无 alias → 在 resolve 块内补 alias
- * - 都没有 → 在 defineConfig({ 后插入 resolve 块
+ * - 都没有 → 在 defineConfig 的配置对象开头插入 resolve 块
  * - 无 defineConfig / 结构不识别 → 返回原文（调用方打印手动指引）
+ * @param source - vite.config.ts 原始文本
+ * @param alias - 要注入的 alias 键值（find → replacement）
+ * @returns 注入后的配置文本
  */
 export function mergeViteAlias(source: string, alias: ViteAlias): string {
   if (!source.includes("defineConfig(")) {
@@ -88,6 +97,14 @@ export function mergeViteAlias(source: string, alias: ViteAlias): string {
   return `${source.slice(0, insertAt)}${block}${source.slice(insertAt)}`;
 }
 
+/**
+ * 为项目配置 `@/` 路径别名（init 收尾步骤）：依次改写 tsconfig.json / tsconfig.app.json
+ * 的 compilerOptions.paths 与 vite.config.ts 的 resolve.alias。文件不存在则跳过，
+ * 结构不识别时保持原文。
+ * @param io - IO 通道
+ * @param cwd - 项目根目录
+ * @param aliasRoot - 别名指向的源码根目录（相对项目根）
+ */
 export function applyAliases(io: Io, cwd: string, aliasRoot: string): void {
   const paths = { "@/*": [`./${aliasRoot}/*`] };
   for (const name of ["tsconfig.json", "tsconfig.app.json"]) {

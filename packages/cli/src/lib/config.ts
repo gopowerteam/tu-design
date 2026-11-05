@@ -14,6 +14,12 @@ export const DEFAULT_REGISTRY = "https://gopowerteam.github.io/tu-design/r/vue";
 const CONFIG_FILE = "components.json";
 const ALIAS_KEYS = ["components", "utils", "ui", "lib"] as const;
 
+/**
+ * 校验 components.json 结构：framework 必须为 "vue"，registry、aliases 四键、
+ * tailwind.css 必须为字符串；缺失或非法字段一次性汇总报错，避免用户逐次修。
+ * @param raw - JSON 反序列化结果（任意形态）
+ * @returns 校验通过的项目配置
+ */
 export function validateConfig(raw: unknown): ComponentsConfig {
   if (typeof raw !== "object" || raw === null) {
     throw new Error(`${CONFIG_FILE} 内容不是 JSON 对象`);
@@ -55,6 +61,11 @@ export function validateConfig(raw: unknown): ComponentsConfig {
   return raw as ComponentsConfig;
 }
 
+/**
+ * 生成 init 写入的默认配置：别名指向约定的 src 布局，tailwind.css 用常见默认路径。
+ * @param registry - 用户经 --registry 指定（或默认）的 registry URL
+ * @returns 默认 ComponentsConfig
+ */
 export function defaultConfig(registry: string): ComponentsConfig {
   return {
     framework: "vue",
@@ -69,10 +80,21 @@ export function defaultConfig(registry: string): ComponentsConfig {
   };
 }
 
+/**
+ * 拼接项目根下 components.json 的完整路径。
+ * @param cwd - 项目根目录
+ * @returns 配置文件路径
+ */
 function configPath(cwd: string): string {
   return `${cwd}/${CONFIG_FILE}`;
 }
 
+/**
+ * 读取并校验项目配置；文件缺失时抛错提示先运行 init。
+ * @param io - IO 通道
+ * @param cwd - 项目根目录
+ * @returns 校验通过的 ComponentsConfig
+ */
 export function loadConfig(io: Io, cwd: string): ComponentsConfig {
   const path = configPath(cwd);
   if (!io.exists(path)) {
@@ -81,6 +103,12 @@ export function loadConfig(io: Io, cwd: string): ComponentsConfig {
   return validateConfig(parseJson(io.readFile(path), CONFIG_FILE));
 }
 
+/**
+ * 将配置以两空格缩进 JSON 写入 components.json，末尾补换行。
+ * @param io - IO 通道
+ * @param cwd - 项目根目录
+ * @param config - 要写入的项目配置
+ */
 export function saveConfig(io: Io, cwd: string, config: ComponentsConfig): void {
   io.writeFile(configPath(cwd), `${JSON.stringify(config, null, 2)}\n`);
 }

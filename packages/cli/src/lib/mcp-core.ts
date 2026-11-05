@@ -11,11 +11,20 @@ export interface RegistryIndexEntry {
 /** 组件名只允许小写字母、数字与连字符：防路径穿越与 URL 注入。 */
 const NAME_RE = /^[a-z0-9-]+$/;
 
-/** registry URL 尾斜杠会让拼接变成 //name.json，多数静态托管据此 404。 */
+/**
+ * registry URL 尾斜杠会让拼接变成 //name.json，多数静态托管据此 404。
+ * @param registryUrl - registry 基础 URL
+ * @returns 去掉尾部斜杠后的 URL
+ */
 function trimUrl(registryUrl: string): string {
   return registryUrl.replace(/\/+$/, "");
 }
 
+/**
+ * 提取任意抛出值的可读信息：Error 取 message，其余值字符串化。
+ * @param error - catch 捕获的任意值
+ * @returns 错误消息文本
+ */
 function reasonOf(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -23,6 +32,9 @@ function reasonOf(error: unknown): string {
 /**
  * 拉取 registry 索引（GET `${registryUrl}/registry.json`），过滤只留 registry:ui 组件。
  * 最小形态校验：items 为数组、每项 name 为 string；错误消息中文且含 URL，便于定位数据源问题。
+ * @param fetcher - URL 通道实现（HTTP 拉取 JSON）
+ * @param registryUrl - registry 基础 URL
+ * @returns registry:ui 组件的精简索引项列表
  */
 export async function fetchRegistryIndex(
   fetcher: RegistryFetcher,
@@ -62,7 +74,13 @@ export async function fetchRegistryIndex(
     }));
 }
 
-/** 在 name / title / description 上做大小写不敏感子串过滤（空 query 返回全部）。 */
+/**
+ * 在 name / title / description 上做大小写不敏感子串过滤（空 query 返回全部）。
+ * @param fetcher - URL 通道实现（HTTP 拉取 JSON）
+ * @param registryUrl - registry 基础 URL
+ * @param query - 检索子串（大小写不敏感）
+ * @returns 命中的索引项列表
+ */
 export async function searchComponents(
   fetcher: RegistryFetcher,
   registryUrl: string,
@@ -83,6 +101,10 @@ export async function searchComponents(
  * 只走线上 URL 通道并复用 validateRegistryItem 校验，不用 fetchItem 的 npm 回退——
  * MCP 是只读查询面，npm 本地回退会让查询结果取决于安装缓存，语义混乱。
  * 返回项附加 installHint，引导 AI 用 CLI 安装而不是复制源码。
+ * @param fetcher - URL 通道实现（HTTP 拉取 JSON）
+ * @param registryUrl - registry 基础 URL
+ * @param name - 组件名（仅小写字母、数字与连字符）
+ * @returns 校验通过的 registry item，附 installHint 安装提示
  */
 export async function getComponent(
   fetcher: RegistryFetcher,

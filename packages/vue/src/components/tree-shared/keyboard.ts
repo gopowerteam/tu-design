@@ -10,6 +10,11 @@ export type MoveKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
  * 计算键盘移动后的活动节点 key。
  * - 仅在非 disabled 节点间移动；loop 默认 true（末尾循环回首行）。
  * - activeKey 为 null 或不在候选序列时，ArrowDown 从首行开始、ArrowUp 从末行开始。
+ * @param flattened - 已展开的扁平节点列表
+ * @param activeKey - 当前活动节点 key；null 表示尚无活动节点
+ * @param key - 本次键盘操作（ArrowDown/ArrowUp/Home/End）
+ * @param options - 选项；loop 控制到端点后是否循环绕回（默认 true）
+ * @returns 移动后的活动节点 key；无可用候选节点时返回 null
  */
 export function nextActiveKey<R = RawNode, G = R, I = R>(
   flattened: Array<TreeNode<R, G, I>>,

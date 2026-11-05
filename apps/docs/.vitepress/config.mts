@@ -15,7 +15,11 @@ const docsDir = fileURLToPath(new URL("../", import.meta.url)).replace(/\/$/, ""
 /** GitHub Pages 项目页部署在仓库子路径下，本地 dev 同样挂在该前缀。 */
 const BASE = "/tu-design/";
 
-/** configureServer 先于 Vite 内部 base 剥离执行，各中间件需手动去掉子路径前缀。 */
+/**
+ * configureServer 先于 Vite 内部 base 剥离执行，各中间件需手动去掉子路径前缀。
+ * @param url - 原始请求路径（携带部署子路径前缀）
+ * @returns 去掉前缀后的站内路径
+ */
 function stripBasePrefix(url: string): string {
   return url.startsWith(BASE) ? url.slice(BASE.length - 1) : url;
 }
@@ -23,6 +27,7 @@ function stripBasePrefix(url: string): string {
 /**
  * dev 期以中间件伺服 /r/vue/*.json（CLI `npx @tu-design/cli add` 的数据源）。
  * build 期由下方 buildEnd 钩子复制进 outDir/r/vue。
+ * @returns Vite 插件（configureServer 内注册 registry JSON 中间件）
  */
 function registryPlugin(): Plugin {
   return {
@@ -60,6 +65,7 @@ const DOC_PAGE_RE = /^\/(guide|components)\/([A-Za-z0-9._-]+)\.md$/;
  * dev 期伺服 LLM 文档入口：/llms.txt、/llms-full.txt 动态生成，
  * /guide/*.md、/components/*.md 返回仓库源 Markdown。
  * build 期由 buildEnd 写入静态产物。
+ * @returns Vite 插件（configureServer 内注册 llms 与 Markdown 中间件）
  */
 function llmsPlugin(): Plugin {
   return {

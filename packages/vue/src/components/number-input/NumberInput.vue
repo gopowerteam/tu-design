@@ -34,7 +34,10 @@ const arkValue = computed(() =>
   current.value == null || Number.isNaN(current.value) ? "" : String(current.value),
 );
 
-/** Ark details（value: string / valueAsNumber: number）→ number|null（空串/NaN 归一 null） */
+/**
+ * Ark details（value: string / valueAsNumber: number）→ number|null（空串/NaN 归一 null）
+ * @param details - Ark NumberInput 的 ValueChangeDetails
+ */
 function handleValueChange(details: { value: string; valueAsNumber: number }) {
   const next = numberOrNull(details);
   internalValue.value = next;

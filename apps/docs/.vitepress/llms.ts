@@ -43,7 +43,10 @@ interface RegistryIndex {
   items: Array<{ name: string; title: string; type: string; description: string }>;
 }
 
-/** 从 registry.json 取对外组件清单：只收录 registry:ui 且排除内部共享项。 */
+/**
+ * 从 registry.json 取对外组件清单：只收录 registry:ui 且排除内部共享项。
+ * @returns 对外组件列表（name/title/description），按 registry 顺序排列
+ */
 export function listComponents(): Array<{ name: string; title: string; description: string }> {
   const registry = JSON.parse(readFileSync(registryIndexPath, "utf-8")) as RegistryIndex;
   return registry.items
@@ -51,7 +54,12 @@ export function listComponents(): Array<{ name: string; title: string; descripti
     .map(({ name, title, description }) => ({ name, title, description }));
 }
 
-/** 把 <DemoPreview file="…" /> 展开为 demos 源码的 ```vue 围栏块；文件缺失时保留原标签并告警。 */
+/**
+ * 把 <DemoPreview file="…" /> 展开为 demos 源码的 vue 围栏代码块；文件缺失时保留原标签并告警。
+ * @param md - 含 DemoPreview 标签的 Markdown 文本
+ * @param onWarn - 示例源文件缺失时的告警回调（可选）
+ * @returns 展开示例源码后的 Markdown 文本
+ */
 export function expandDemoPreviews(md: string, onWarn?: (msg: string) => void): string {
   return md.replace(DEMO_PREVIEW_RE, (tag, file: string) => {
     const demoFile = join(demosDir, file);
@@ -65,12 +73,19 @@ export function expandDemoPreviews(md: string, onWarn?: (msg: string) => void): 
   });
 }
 
-/** 去掉文档开头的 YAML frontmatter。 */
+/**
+ * 去掉文档开头的 YAML frontmatter。
+ * @param md - 原始 Markdown 文本
+ * @returns 剥离 frontmatter 后的正文
+ */
 export function stripFrontmatter(md: string): string {
   return md.replace(FRONTMATTER_RE, "");
 }
 
-/** 生成 llmstxt.org 格式的 llms.txt（索引版）。 */
+/**
+ * 生成 llmstxt.org 格式的 llms.txt（索引版）。
+ * @returns 站点标题 + 简介 + Guide/Components 链接索引的全文文本
+ */
 export function buildLlmsTxt(): string {
   const lines = [
     "# tu-design",
@@ -92,6 +107,12 @@ export function buildLlmsTxt(): string {
   return `${lines.join("\n")}\n`;
 }
 
+/**
+ * 读取 docs 下的单页 Markdown 源文（路径约束在 docsDir 对应目录内，防越界访问）。
+ * @param dir - 文档目录（guide 或 components）
+ * @param name - 页面名（不含扩展名）
+ * @returns 文件全文；越界或不存在时返回 null
+ */
 function readDocPage(dir: "guide" | "components", name: string): string | null {
   const file = join(docsDir, dir, `${name}.md`);
   if (!file.startsWith(`${docsDir}/${dir}/`) || !existsSync(file)) {
@@ -100,13 +121,22 @@ function readDocPage(dir: "guide" | "components", name: string): string | null {
   return readFileSync(file, "utf-8");
 }
 
-/** 页首保留已有的一级标题；缺失时用 fallback 生成。 */
+/**
+ * 页首保留已有的一级标题；缺失时用 fallback 生成。
+ * @param md - 页面 Markdown 正文
+ * @param fallbackTitle - 正文无一级标题时使用的页面标题
+ * @returns 保证以一级标题开头的 Markdown 文本
+ */
 function withH1(md: string, fallbackTitle: string): string {
   const body = md.trim();
   return body.startsWith("# ") ? body : `# ${fallbackTitle}\n\n${body}`;
 }
 
-/** 生成 llms-full.txt：指南五页 + 全部组件文档全文（frontmatter 剥离、DemoPreview 展开）。 */
+/**
+ * 生成 llms-full.txt：指南五页 + 全部组件文档全文（frontmatter 剥离、DemoPreview 展开）。
+ * @param onWarn - 指南/组件文档或示例源文件缺失时的告警回调（可选）
+ * @returns 全部章节按分隔符拼接的完整文本
+ */
 export function buildLlmsFullTxt(onWarn?: (msg: string) => void): string {
   const sections: string[] = [];
 

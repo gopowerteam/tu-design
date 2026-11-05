@@ -15,7 +15,11 @@ import { resolveRegistryUrl } from "./lib/registry";
 import { parsePkgVersion } from "./lib/version";
 import type { RegistryFetcher } from "./lib/registry";
 
-/** 唯一的子进程执行实现：init / add 都走它，失败原因由 stdio 直接透传给用户。 */
+/**
+ * 唯一的子进程执行实现：init / add 都走它，失败原因由 stdio 直接透传给用户。
+ * @param cwd - 子进程工作目录（项目根）
+ * @returns 执行命令数组（argv）的闭包；非零退出码时抛错
+ */
 function execIn(cwd: string): (cmd: string[]) => void {
   return (cmd) => {
     const result = spawnSync(cmd[0]!, cmd.slice(1), { cwd, stdio: "inherit" });
@@ -25,6 +29,11 @@ function execIn(cwd: string): (cmd: string[]) => void {
   };
 }
 
+/**
+ * 组装带 exec 能力的 IO 通道：文件操作复用 nodeIo，exec 绑定到指定工作目录。
+ * @param cwd - 子进程工作目录（项目根）
+ * @returns 含 exec 的 IO 通道
+ */
 function makeExecIo(cwd: string): ExecIo {
   return { ...nodeIo, exec: execIn(cwd) };
 }
@@ -312,7 +321,11 @@ program
     }
   });
 
-/** MCP 错误统一转 isError 结果（stdout 只承载 JSON-RPC，消息文本放 content）。 */
+/**
+ * MCP 错误统一转 isError 结果（stdout 只承载 JSON-RPC，消息文本放 content）。
+ * @param error - catch 捕获的任意值
+ * @returns JSON-RPC 响应的 isError 内容块
+ */
 function mcpError(error: unknown) {
   return {
     isError: true as const,
@@ -322,6 +335,10 @@ function mcpError(error: unknown) {
   };
 }
 
+/**
+ * 线上 URL 通道实现：fetch 拉取 JSON，非 2xx 抛含状态码与 URL 的错误。
+ * @returns RegistryFetcher（fetchJson 拉取并解析 JSON）
+ */
 function registryHttpFetcher(): RegistryFetcher {
   return {
     async fetchJson(url) {

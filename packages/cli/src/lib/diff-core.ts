@@ -44,6 +44,14 @@ export interface ComponentDiff {
  * 3. 本地 === 上次安装 → updatable（本地干净，可安全覆盖）
  * 4. 线上 === 上次安装 → modified（远端没动，本地改的）
  * 5. 三方互不相同 → conflict
+ * @param io - IO 通道（读 lockfile 与本地组件文件）
+ * @param fetcher - URL 通道实现（HTTP 拉取 JSON）
+ * @param registryUrl - registry 基础 URL
+ * @param npm - npm 回退通道
+ * @param root - 项目根目录
+ * @param config - 项目配置（target 解析用）
+ * @param names - 指定比对的组件名；缺省比对 lockfile 全部记录
+ * @returns 逐组件的比对结果；单组件拉取失败不中断，记入 error 字段
  */
 export async function diffComponents(
   io: Io,

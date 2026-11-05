@@ -1,4 +1,8 @@
-/** 从 package.json 原始文本解析版本号（纯函数，便于测试）。 */
+/**
+ * 从 package.json 原始文本解析版本号（纯函数，便于测试）。
+ * @param raw - package.json 文件的原始文本
+ * @returns 解析出的 version 字段字符串
+ */
 export function parsePkgVersion(raw: string): string {
   const parsed = JSON.parse(raw) as { version?: unknown };
   if (typeof parsed.version !== "string" || parsed.version.length === 0) {

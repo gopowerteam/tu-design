@@ -29,6 +29,8 @@ export interface DefineFormOptions<T extends object> {
  * - `actions` 按钮预设（searchable 等七项直传）：存在时 `<FormRender>` 组件按钮 props 全量忽略（A1 块级互斥）。
  *
  * 须在组件 setup 中调用（TanStack useForm 约束）。
+ * @param config - 表单配置：字段定义、校验 schema、提交回调、按钮预设七项与 TanStack 透传项
+ * @returns 表单渲染 definition（items + form + resetToDefaults + submit + actions?），直接传给 <FormRender>
  */
 export function defineForm<T extends object>(
   config: DefineFormOptions<T>,

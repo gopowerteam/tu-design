@@ -24,6 +24,8 @@ export interface UseFormRenderOptions<T extends object> {
  * - `defaultValues` 从 `items[].default` 派生（值或同步工厂，缺省 null）——单一真相源；
  * - 显式泛型 `useForm<T>`，保住 onSubmit `{ value: T }` 全链路推断；
  * - 须在组件 setup 中调用（TanStack useForm 内部 `onMounted(formApi.mount)`）。
+ * @param options - 表单选项：字段定义、校验 schema、提交回调、按钮预设七项与 TanStack 透传项
+ * @returns 表单渲染 definition（items + form + resetToDefaults + submit + actions?）
  */
 export function useFormRender<T extends object>(
   options: UseFormRenderOptions<T>,

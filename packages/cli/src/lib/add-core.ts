@@ -8,6 +8,13 @@ import { readLockfile, writeLockfile } from "./lockfile";
 import { hashNormalizedContent, rewriteContent } from "./rewrite";
 import type { Io } from "./io";
 
+/**
+ * 按依赖拓扑序展开 registry item：registryDependencies 先于自身解析，已解析项去重，
+ * 循环引用抛错并给出完整环路。
+ * @param names - 入口组件名列表
+ * @param fetchOne - 单组件拉取函数（调用方注入 URL/npm 双通道实现）
+ * @returns 拓扑序（依赖在前）的 registry item 列表
+ */
 export async function resolveTopo(
   names: string[],
   fetchOne: (name: string) => Promise<RegistryItem>,
@@ -40,6 +47,12 @@ export async function resolveTopo(
   return out;
 }
 
+/**
+ * 汇总 item 列表的 dependencies / devDependencies：registry 数组形式为 name@version
+ * 完整 spec，按完整 spec 去重并保持出现顺序。
+ * @param items - registry item 列表
+ * @returns 去重后的运行时与开发依赖 spec 列表
+ */
 export function collectDeps(items: RegistryItem[]): {
   dependencies: string[];
   devDependencies: string[];
@@ -76,7 +89,11 @@ export interface AddSummary {
 
 export const DEFAULT_ALIAS_ROOT = "src";
 
-/** add / diff 共用：由项目根推出组件源码落点根（aliasRoot）。 */
+/**
+ * add / diff 共用：由项目根推出组件源码落点根（aliasRoot）。
+ * @param root - 项目根目录
+ * @returns 项目根下的默认源码根目录（src）
+ */
 export function aliasRootOf(root: string): string {
   return `${root}/${DEFAULT_ALIAS_ROOT}`;
 }
@@ -101,7 +118,7 @@ export interface AddOptions {
  * @param io IO 通道（读 lockfile）
  * @param root 项目根
  * @param names 显式组件名（可为空数组）
- * @param opts.all 是否全量展开
+ * @param all 是否全量展开
  * @returns 参与组件名
  */
 function resolveNames(io: Io, root: string, names: string[], all?: boolean): string[] {

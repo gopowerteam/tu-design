@@ -202,7 +202,10 @@ watch(
   { immediate: true },
 );
 
-/** 当前搜索表单值快照（浅拷贝；无 search 时为空对象） */
+/**
+ * 当前搜索表单值快照（浅拷贝；无 search 时为空对象）
+ * @returns 表单值快照
+ */
 function searchValues(): DataRecord {
   return search ? { ...search.form.state.values } : {};
 }
@@ -260,7 +263,11 @@ function isColumnVisible(key: string): boolean {
   return visibleKeySet.value.has(key);
 }
 
-/** 最少一列（R20）：唯一可见列不可隐藏 */
+/**
+ * 最少一列（R20）：唯一可见列不可隐藏
+ * @param key - 列 key
+ * @returns 是否允许隐藏该列
+ */
 function canHideColumn(key: string): boolean {
   return !(instance.visibleKeys.value.length <= 1 && visibleKeySet.value.has(key));
 }
@@ -368,7 +375,10 @@ const tableMinWidth = computed(() => {
 });
 
 /** 列宽 inline style 值（R33）：数字补 px 单位——Vue :style 不自动加单位，
- * 裸数字会被浏览器当非法 CSS 值丢弃，列宽即失效；字符串视为已带单位原样输出。 */
+ * 裸数字会被浏览器当非法 CSS 值丢弃，列宽即失效；字符串视为已带单位原样输出。
+ * @param width - 列宽配置
+ * @returns 可直接用于 :style 的 CSS 宽度值；未配置返回 undefined
+ */
 function widthOf(width?: number | string) {
   return typeof width === "number" ? `${width}px` : width;
 }
@@ -395,7 +405,11 @@ function onHeaderSelect(checked: boolean) {
   instance.table.toggleAllPageRowsSelected(checked);
 }
 
-/** 行选择控件切换；radio 不可取消由引擎 S4 守卫，不选中态点击传 checked=true */
+/**
+ * 行选择控件切换；radio 不可取消由引擎 S4 守卫，不选中态点击传 checked=true
+ * @param line - 行数据（含行 key）
+ * @param checked - 目标选中态
+ */
 function onRowSelect(line: { key: string }, checked: boolean) {
   instance.toggleRowSelected(line.key, checked);
 }
@@ -437,7 +451,12 @@ const treeIndent = tree?.indentSize ?? 16;
 
 let missingRowKeyWarned = false;
 
-/** 行主键：rowKey 字段缺失时以行索引兜底（R3） */
+/**
+ * 行主键：rowKey 字段缺失时以行索引兜底（R3）
+ * @param record - 行记录
+ * @param index - 行索引（兜底来源）
+ * @returns 稳定的行主键字符串
+ */
 function rowKeyOf(record: DataRecord, index: number): string {
   const value = record[props.rowKey];
   if (value === undefined || value === null) {
@@ -514,13 +533,19 @@ const padBottom = computed(() => {
 });
 
 /** 行高动态测量：measureElement 读 data-index 把实测高度写回（行内容高度可变，不假设固定行高）。
- * 行组件为函数 ref，拿到的是组件实例，需经 $el 取真实 tr。 */
+ * 行组件为函数 ref，拿到的是组件实例，需经 $el 取真实 tr。
+ * @param node - 函数 ref 收到的行元素或组件实例
+ */
 function measureRow(node: Element | ComponentPublicInstance | null) {
   const el = node instanceof Element ? node : (node?.$el as Element | undefined);
   if (el instanceof Element) virtualizerRef?.value.measureElement(el);
 }
 
-/** aria-sort 仅在该列当前被排序时标注（R16） */
+/**
+ * aria-sort 仅在该列当前被排序时标注（R16）
+ * @param column - 列配置
+ * @returns 当前排序方向对应的 aria-sort 值；未排序返回 undefined
+ */
 function ariaSort(column: TableColumnOptions): "ascending" | "descending" | undefined {
   if (instance.sort.value?.key !== column.key) return undefined;
   return instance.sort.value.direction === "asc" ? "ascending" : "descending";
@@ -733,7 +758,7 @@ defineExpose({
             <th
               v-if="hasSelection"
               scope="col"
-              class="h-10 w-12 px-2 align-middle font-medium text-muted-foreground"
+              class="h-10 w-12 px-2 text-center align-middle font-medium text-muted-foreground"
               :class="[stickyClass(stickyOf, SELECTION_CELL), theadThClass]"
               :style="[
                 { width: `${selection.width}px` },
@@ -754,7 +779,7 @@ defineExpose({
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
               :class="[stickyClass(stickyOf, column.key), theadThClass]"
               :style="[
-                { width: widthOf(column.width), textAlign: column.align },
+                { width: widthOf(column.width), textAlign: column.align ?? 'center' },
                 stickyStyle(stickyOf, column.key, true),
               ]"
               :aria-sort="ariaSort(column)"
@@ -779,7 +804,7 @@ defineExpose({
             <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>
               <td
                 v-if="hasSelection"
-                class="p-2 align-middle"
+                class="p-2 text-center align-middle"
                 :class="stickyClass(stickyOf, SELECTION_CELL)"
                 :style="stickyStyle(stickyOf, SELECTION_CELL, false)"
               >
@@ -790,7 +815,10 @@ defineExpose({
                 :key="column.key"
                 class="p-2 align-middle"
                 :class="stickyClass(stickyOf, column.key)"
-                :style="[{ textAlign: column.align }, stickyStyle(stickyOf, column.key, false)]"
+                :style="[
+                  { textAlign: column.align ?? 'center' },
+                  stickyStyle(stickyOf, column.key, false),
+                ]"
               >
                 <Skeleton class="h-4 w-full" />
               </td>

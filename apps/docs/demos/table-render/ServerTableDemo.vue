@@ -19,7 +19,10 @@ const ALL: Order[] = Array.from({ length: 137 }, (_, i) => ({
 // 演示手动搜索区的写法；search 接 FormRender 的内置搜索区见 SearchTableDemo
 const keyword = ref("");
 
-/** 模拟服务端：延迟返回 + 按关键词/分页/排序切片 */
+/**
+ * 模拟服务端：延迟返回 + 按关键词/分页/排序切片
+ * @param params - 查询参数：page 分页信息、sort 排序方向（可选）、update 回传切片结果与总数的回调
+ */
 function query(params: {
   page: { pageIndex: number; pageSize: number };
   sort?: { key: string; direction: "asc" | "desc" };

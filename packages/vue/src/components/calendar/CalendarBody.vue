@@ -53,12 +53,22 @@ type TableCtx = {
   getOffset(duration: { months: number }): { visibleRange: { start: DateValue } };
 };
 
-/** 表 i 的锚点月起点（zag getOffset({months: i-1}).visibleRange.start） */
+/**
+ * 表 i 的锚点月起点（zag getOffset({months: i-1}).visibleRange.start）
+ * @param context - zag Table 上下文
+ * @param i - 表序号（1-based，相对当前锚点月偏移 i-1 个月）
+ * @returns 该表锚点月的起始日期
+ */
 function tableAnchor(context: TableCtx, i: number): DateValue | undefined {
   return context.getOffset({ months: i - 1 })?.visibleRange?.start;
 }
 
-/** 格子日期不属于锚点月（年或月不一致）即为补位格 */
+/**
+ * 格子日期不属于锚点月（年或月不一致）即为补位格
+ * @param day - 格子日期
+ * @param anchor - 所在表的锚点月起点
+ * @returns 是否为补位格
+ */
 function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
   return !!anchor && (day.year !== anchor.year || day.month !== anchor.month);
 }
@@ -68,6 +78,9 @@ function isOutsideView(day: DateValue, anchor: DateValue | undefined): boolean {
  * 与 data-week-selected（视觉标记，驱动 trigger 整行条带与 dot 层反色变体）；
  * 非 week 形态返回空对象，完全不下发属性，选中视觉交回 zag 原生绑定，避免 fallthrough 覆盖。
  * 走显式函数而非模板内联，避免与日视图 v-for 的 `week` 循环变量同名遮蔽。
+ * @param day - 格子日期
+ * @param selected - 当前选中日期集合（单选语义，取首个）
+ * @returns 需下发的 data 属性对象（无命中时为空对象）
  */
 function weekSelectedAttrs(
   day: DateValue,

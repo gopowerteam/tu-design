@@ -29,6 +29,9 @@ export const SLIDER: BindingSpec = {
 /**
  * TanStack field → 控件 props 的统一绑定：
  * 值回显（field.state.value）+ 写回（handleChange）+ 失焦（handleBlur）。
+ * @param field - TanStack 表单字段实例，提供值读取与变更/失焦句柄
+ * @param spec - 绑定形态描述，决定值 prop 名、事件名与可选的双向转换
+ * @returns 可展开到组件 props 上的对象（值 prop、onUpdate:<event>、onBlur）
  */
 export function bindField(field: AnyFieldApi, spec: BindingSpec) {
   return {

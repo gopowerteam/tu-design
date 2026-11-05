@@ -28,11 +28,20 @@ export interface Lockfile {
   packages: Record<string, LockfilePackage>;
 }
 
+/**
+ * 计算文本内容的 sha256 十六进制摘要（逐字节精确口径）。
+ * @param content - 文本内容
+ * @returns sha256 摘要（hex 字符串）
+ */
 export function hashContent(content: string): string {
   return createHash("sha256").update(content, "utf8").digest("hex");
 }
 
-/** 刻意不含 installedAt 之类时间戳字段：跨机器安装会产生 VCS diff 噪音。 */
+/**
+ * 刻意不含 installedAt 之类时间戳字段：跨机器安装会产生 VCS diff 噪音。
+ * @param raw - lockfile JSON 反序列化结果（任意形态）
+ * @returns 校验并规整后的 Lockfile
+ */
 function validateLockfile(raw: unknown): Lockfile {
   if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
     throw new Error(`${LOCKFILE_NAME} 内容不是 JSON 对象`);
@@ -84,7 +93,12 @@ function validateLockfile(raw: unknown): Lockfile {
   return { lockfileVersion: 1, packages: out };
 }
 
-/** 文件缺失 → 空 lockfile；存在但 JSON/结构非法 → throw（损坏的 lockfile 不能静默当空处理）。 */
+/**
+ * 文件缺失 → 空 lockfile；存在但 JSON/结构非法 → throw（损坏的 lockfile 不能静默当空处理）。
+ * @param io - IO 通道
+ * @param root - 项目根目录
+ * @returns 当前项目的组件 lockfile（无记录时 packages 为空对象）
+ */
 export function readLockfile(io: Io, root: string): Lockfile {
   const path = `${root}/${LOCKFILE_NAME}`;
   if (!io.exists(path)) {
@@ -93,6 +107,12 @@ export function readLockfile(io: Io, root: string): Lockfile {
   return validateLockfile(parseJson(io.readFile(path), LOCKFILE_NAME));
 }
 
+/**
+ * 将 lockfile 以两空格缩进 JSON 写入项目根（components.lock.json），末尾补换行。
+ * @param io - IO 通道
+ * @param root - 项目根目录
+ * @param lockfile - 要写入的 lockfile 数据
+ */
 export function writeLockfile(io: Io, root: string, lockfile: Lockfile): void {
   io.writeFile(`${root}/${LOCKFILE_NAME}`, `${JSON.stringify(lockfile, null, 2)}\n`);
 }

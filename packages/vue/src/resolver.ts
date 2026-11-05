@@ -71,6 +71,12 @@ export interface ComponentResolveResult {
 
 export type ComponentResolver = (name: string) => ComponentResolveResult | undefined;
 
+/**
+ * 创建 unplugin-vue-components 的自动导入 Resolver：T 前缀（PascalCase）且命中
+ * 白名单的组件名（如 TButton）被解析为对应库导出；其余名称返回 undefined
+ * 交由后续 Resolver 或默认流程处理。
+ * @returns Resolver 函数（组件名到导入描述的映射）
+ */
 export function TuDesignResolver(): ComponentResolver {
   return (name) => {
     if (!/^T[A-Z]/.test(name)) return;

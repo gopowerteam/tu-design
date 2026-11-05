@@ -22,7 +22,11 @@ const viewTriggerCls =
   "hover:bg-accent inline-flex items-center gap-1 rounded-[3px] px-3 py-1.5 text-sm font-semibold text-foreground outline-none transition-colors disabled:pointer-events-none";
 const viewTitleCls = "text-sm font-semibold text-foreground";
 
-/** 年代范围文本（zag 无现成 part，由 focusedValue.year 推算）：2026 → "2020 - 2029" */
+/**
+ * 年代范围文本（zag 无现成 part，由 focusedValue.year 推算）：2026 → "2020 - 2029"
+ * @param year - 聚焦年份
+ * @returns "起 - 止" 形式的年代范围文本
+ */
 function decadeRange(year: number | undefined): string {
   const start = Math.floor((year ?? 0) / 10) * 10;
   return `${start} - ${start + 9}`;
