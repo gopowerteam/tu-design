@@ -313,3 +313,72 @@ describe("tokens 项依赖来自 tokens.css 的 @import", () => {
     expect(tokensItem(io).dependencies).toBeUndefined();
   });
 });
+
+/** fixtureInput 基础上追加 @ark-ui/vue 的 catalog 版本。 */
+const arkInput = {
+  ...fixtureInput,
+  workspaceYaml: `${fixtureInput.workspaceYaml}  "@ark-ui/vue": ^5.39.2\n`,
+};
+
+// 真实事故：date-shared 的 positioning.ts 直引 @zag-js/popper，registry 项却没声明 npm
+// 依赖，下游 add 后源码在 pnpm 严格 node_modules 下 typecheck 解析失败。依赖由分发源码
+// 反推，与 tokens 的 cssImportDependencies 同哲学：人不需记忆。
+describe("generateRegistry npm 依赖完整性校验", () => {
+  it("源码 import 了未声明的 npm 包 → 抛错并点名包名", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import type { PositioningOptions } from "@zag-js/popper";`,
+    });
+    expect(() => generateRegistry(io, fixtureInput)).toThrow(/button.*@zag-js\/popper/);
+  });
+
+  it("scoped 包不受 @/ 别名豁免影响（前缀精确匹配两字符）", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import { cva } from "class-variance-authority";`,
+    });
+    expect(() => generateRegistry(io, fixtureInput)).toThrow(/class-variance-authority/);
+  });
+
+  it("子路径说明符归一到裸包名：声明 @ark-ui/vue 即覆盖 @ark-ui/vue/*", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import { DatePicker } from "@ark-ui/vue/date-picker";`,
+      "components/button/registry.meta.json": JSON.stringify({
+        description: "按钮。",
+        registryDependencies: ["utils"],
+        dependencies: { "@ark-ui/vue": "catalog:" },
+      }),
+    });
+    const { items } = generateRegistry(io, arkInput);
+    expect(items.find((i) => i.name === "button")!.dependencies).toEqual(["@ark-ui/vue@^5.39.2"]);
+  });
+
+  it("vue 豁免（peerDependencies，meta 按惯例不声明）", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import { ref, computed } from "vue";`,
+    });
+    const { items } = generateRegistry(io, fixtureInput);
+    expect(items.find((i) => i.name === "button")!.dependencies).toBeUndefined();
+  });
+
+  it("devDependencies 声明同样计入声明集", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import { twMerge } from "tailwind-merge";`,
+      "components/button/registry.meta.json": JSON.stringify({
+        description: "按钮。",
+        registryDependencies: ["utils"],
+        devDependencies: { "tailwind-merge": "catalog:" },
+      }),
+    });
+    const { items } = generateRegistry(io, fixtureInput);
+    expect(items.find((i) => i.name === "button")!.devDependencies).toEqual([
+      "tailwind-merge@^3.7.0",
+    ]);
+  });
+
+  it("相对引用与 @/ 别名不当作 npm 依赖", () => {
+    const io = fixtureIo({
+      "components/button/index.ts": `import { cn } from "@/lib/utils";\nimport X from "./Button.vue";`,
+    });
+    const { items } = generateRegistry(io, fixtureInput);
+    expect(items.find((i) => i.name === "button")!.dependencies).toBeUndefined();
+  });
+});

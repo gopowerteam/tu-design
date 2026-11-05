@@ -1,10 +1,11 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "tabs",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "type": "registry:ui",
   "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。",
   "registryDependencies": ["utils"],
+  "dependencies": ["@ark-ui/vue@^5.39.2"],
   "files": [
     {
       "path": "tabs/Tabs.vue",

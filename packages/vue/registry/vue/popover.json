@@ -1,11 +1,11 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "popover",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "type": "registry:ui",
   "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。",
   "registryDependencies": ["utils", "overlay-shared"],
-  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "dependencies": ["@ark-ui/vue@^5.39.2", "clsx@^2.1.1"],
   "files": [
     {
       "path": "popover/Popover.vue",

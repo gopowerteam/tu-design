@@ -1,10 +1,11 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "slot",
-  "version": "0.5.6",
+  "version": "0.5.7",
   "type": "registry:ui",
   "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。",
   "registryDependencies": ["utils"],
+  "dependencies": ["clsx@^2.1.1"],
   "files": [
     {
       "path": "slot/Slot.ts",

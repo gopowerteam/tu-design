@@ -195,6 +195,25 @@ function cssImportDependencies(css: string, catalog: Record<string, string>): st
   });
 }
 
+/**
+ * 分发源码 import 的外部 npm 包集合（子路径归一到裸包名：`@scope/pkg/x` → `@scope/pkg`）。
+ * 相对引用与 `@/` 别名（跨组件/lib 引用，归 registryDependencies 校验管）豁免；
+ * `vue` 是 peerDependencies、meta 按惯例不声明，同样豁免。
+ * `@/` 豁免必须精确匹配两字符前缀，否则会误豁免 @scope 形式的 npm 包。
+ */
+function collectExternalImports(files: RegistryFile[]): Set<string> {
+  const names = new Set<string>();
+  for (const file of files) {
+    mapSpecifiers(file.content, (spec) => {
+      if (spec.startsWith(".") || spec.startsWith("@/")) return spec;
+      if (spec === "vue" || spec.startsWith("vue/")) return spec;
+      names.add(spec.startsWith("@") ? spec.split("/").slice(0, 2).join("/") : spec.split("/")[0]!);
+      return spec;
+    });
+  }
+  return names;
+}
+
 /** 官方 registry-item schema 的 dependencies 是字符串数组 —— 以 name@version 形式钉具体版本。 */
 function toNameAtVersion(deps: Record<string, string>): string[] {
   return Object.entries(deps).map(([name, version]) => `${name}@${version}`);
@@ -251,6 +270,21 @@ export function generateRegistry(
     refsByName.set(dir, collectCrossRefs(dir, files, componentsRel, aliasPrefix));
     const dependencies = translateDeps(meta.dependencies ?? {}, catalog);
     const devDependencies = translateDeps(meta.devDependencies ?? {}, catalog);
+    // npm 依赖完整性：meta 的 dependencies 是 CLI 安装的真相源，分发源码里真实出现的
+    // 外部包必须声明，否则 add 装出的代码在 pnpm 严格 node_modules 下 typecheck 解析失败
+    // （真实事故：date-shared 的 positioning.ts 直引 @zag-js/popper 却漏声明）。只查 missing，
+    // 不查 extra（声明了但源码未用的包不影响安装正确性）。
+    const imported = collectExternalImports(files);
+    const declaredDeps = new Set([
+      ...Object.keys(meta.dependencies ?? {}),
+      ...Object.keys(meta.devDependencies ?? {}),
+    ]);
+    const missingDeps = [...imported].filter((name) => !declaredDeps.has(name)).sort();
+    if (missingDeps.length > 0) {
+      throw new Error(
+        `${dir} 的分发源码 import 了 npm 包 ${missingDeps.join("、")}，但 registry.meta.json 的 dependencies 未声明（add ${dir} 会装出 typecheck 解析失败的 broken 代码）`,
+      );
+    }
     items.push({
       $schema: SCHEMA_ITEM,
       name: dir,

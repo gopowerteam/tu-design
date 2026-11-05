@@ -1,4 +1,5 @@
 {
   "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。",
-  "registryDependencies": ["utils"]
+  "registryDependencies": ["utils"],
+  "dependencies": { "@ark-ui/vue": "catalog:" }
 }
