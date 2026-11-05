@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, inject, onMounted, ref, watch } from "vue";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
@@ -11,7 +11,7 @@ import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
 import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/lib/utils";
-import { SELECTION_CELL } from "./constants";
+import { PAGE_TABLE_FILL_KEY, SELECTION_CELL } from "./constants";
 import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
 import TableBodyRow from "./TableBodyRow.vue";
 import TablePagination from "./TablePagination.vue";
@@ -76,7 +76,19 @@ const props = defineProps({
   showSearch: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   /** 分页条渲染开关（R28）：false 关闭内置分页条（组合式外置 TablePagination）；缺省模式 R13 不变 */
   showPagination: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 填充模式：根容器 h-full 纵向 flex，滚动区 flex-1 内滚；表头 sticky 钉住。
+   * 父链需有确定高度（如页面布局的 .table-body）；无确定高度时安全退化为自然高度。
+   * 显式 prop 优先于布局 provide（key: "tu-design:page-table-fill"）；显式传 false 可强制关闭。
+   * 纯布局属性，不进 defineTable/definition（virtual/height 例外），setup 期定版不支持运行时切换。 */
+  fillHeight: { type: Boolean as PropType<boolean | undefined>, default: undefined },
 });
+
+// ---- 填充模式（fillHeight）---------------------------------------------------
+// 布局上下文：页面布局容器 provide 同名 key，slot 内 TableRender 自动 fill。
+// 字符串 key 跨包约定（常量 PAGE_TABLE_FILL_KEY 已导出，消费方零依赖时按字符串值 provide），
+// setup 期定版，不支持运行时切换（与 virtual/search 同约定）。
+const pageTableFill = inject<boolean>(PAGE_TABLE_FILL_KEY, false);
+const fill = props.fillHeight ?? pageTableFill;
 
 const emit = defineEmits<{
   "update:page-index": [pageIndex: number];
@@ -410,15 +422,31 @@ function rowKeyOf(record: DataRecord, index: number): string {
   return String(value);
 }
 
-// ---- 虚拟滚动 ----------------------------------------------------------------
+// ---- 虚拟滚动 / 填充模式 ------------------------------------------------------
 // definition 优先于 prop（配置定版，不支持运行时切换）
 const virtualRaw = instance.virtual ?? props.virtual;
 const heightRaw = instance.height ?? props.height;
-if (virtualRaw === true && heightRaw === undefined) {
+// fill 模式自带真实滚动盒（flex-1 实测高度），virtual 无需显式 height
+if (virtualRaw === true && heightRaw === undefined && !fill) {
   console.warn("[tu-design] <TableRender> virtual 需要配置 height，已降级普通渲染。");
 }
-const virtualEnabled = virtualRaw === true && heightRaw !== undefined;
+const virtualEnabled = virtualRaw === true && (heightRaw !== undefined || fill);
 const scrollHeight = computed(() => (typeof heightRaw === "number" ? `${heightRaw}px` : heightRaw));
+/** 表头 sticky 仅在组件内存在真实纵向滚动盒时生效（fill / virtual），普通模式不挂载，行为不变 */
+const theadSticky = fill || virtualEnabled;
+/** 滚动区样式：virtual 用固定 height；fill 交给 flex 分配（二者同传以 fill 优先） */
+const scrollStyle = computed(() => {
+  if (fill || !virtualEnabled) return undefined;
+  return { height: scrollHeight.value, overflowY: "auto" as const };
+});
+/** sticky 表头普通列类：不透明底防行内容透出；分隔线归 th（thead 行级 border 会随行滚走）；
+ * z-20 高于表体 fixed 列（--z-sticky: 10），纵向滚动行滑过表头时不穿透；
+ * 表头 fixed 列的 z 由 stickyStyle inline style（var(--z-sticky-head)）提供，inline 优先级天然覆盖此处 class */
+const theadThClass = theadSticky ? "sticky top-0 z-20 border-b border-border bg-background" : "";
+/** sticky 态 table 改分离边框：preflight 为 border-collapse: collapse，
+ * 折叠边框几何归属 table，Chrome 下 sticky th 粘住后自身 border-b 渲染丢失；
+ * separate + spacing-0 恢复单元格边框。普通模式保持 collapse，零回归。 */
+const tableClass = theadSticky ? "border-separate border-spacing-0" : "";
 
 const scrollEl = ref<HTMLElement | null>(null);
 const theadEl = ref<HTMLElement | null>(null);
@@ -551,11 +579,11 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="cn('w-full', $attrs.class)">
+  <div :class="cn('w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)">
     <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方（R27：showSearch=false 关闭搜索区） -->
     <div
       v-if="showSearchArea || showColumnSettings"
-      class="mb-2 flex items-end justify-between gap-2"
+      :class="cn('mb-2 flex items-end justify-between gap-2', fill && 'shrink-0')"
     >
       <FormRender
         v-if="showSearchArea"
@@ -658,21 +686,21 @@ defineExpose({
       </template>
     </div>
 
-    <!-- 滚动容器：横向滚动时 fixed 列 sticky 生效；virtual 模式兼任纵向滚动（分页条不参与滚动） -->
+    <!-- 滚动容器：横向滚动时 fixed 列 sticky 生效；virtual/fill 模式兼任纵向滚动（分页条不参与滚动） -->
     <div
       ref="scrollEl"
-      class="overflow-x-auto"
-      :style="virtualEnabled ? { height: scrollHeight, overflowY: 'auto' } : undefined"
+      :class="cn('overflow-x-auto', fill && 'min-h-0 flex-1 overflow-y-auto')"
+      :style="scrollStyle"
     >
-      <table class="w-full caption-bottom text-sm">
-        <thead ref="theadEl" class="[&_tr]:border-b">
+      <table class="w-full caption-bottom text-sm" :class="tableClass">
+        <thead ref="theadEl" :class="theadSticky ? undefined : '[&_tr]:border-b'">
           <tr>
             <!-- 选择列：checkbox 型表头为本页全选三态（S3/S10）；radio 型占位；视作最左固定列 -->
             <th
               v-if="hasSelection"
               scope="col"
               class="h-10 w-12 px-2 align-middle font-medium text-muted-foreground"
-              :class="stickyClass(stickyOf, SELECTION_CELL)"
+              :class="[stickyClass(stickyOf, SELECTION_CELL), theadThClass]"
               :style="[
                 { width: `${selection.width}px` },
                 stickyStyle(stickyOf, SELECTION_CELL, true),
@@ -690,7 +718,7 @@ defineExpose({
               :key="column.key"
               scope="col"
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
-              :class="stickyClass(stickyOf, column.key)"
+              :class="[stickyClass(stickyOf, column.key), theadThClass]"
               :style="[
                 { width: column.width, textAlign: column.align },
                 stickyStyle(stickyOf, column.key, true),
@@ -813,7 +841,7 @@ defineExpose({
     <!-- R31：手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；显式补 border-t 与 size select 保持现状 -->
     <TablePagination
       v-if="showPaginationBar"
-      class="border-t"
+      :class="cn('border-t', fill && 'shrink-0')"
       :page-index="instance.page.pageIndex"
       :page-size="instance.page.pageSize"
       :page-size-opts="instance.page.pageSizeOpts"

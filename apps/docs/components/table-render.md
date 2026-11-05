@@ -464,11 +464,53 @@ const table = defineTable<LogEntry>({
 行为细则：
 
 - **height 必填**：`virtual: true` 但缺 `height` 时 DEV 警告「virtual 需要配置 height」并降级普通渲染；数字按 px，字符串（`"50vh"`）原样作为容器高度
-- **仅表体纵向滚动**：滚动容器由组件接管（`virtual` 模式下外层容器获得 `height` + `overflow-y: auto`，横向滚动能力保留，分页条不参与滚动）；表头普通渲染随内容滚动（纵向 sticky 表头不在本期范围）
+- **仅表体纵向滚动**：滚动容器由组件接管（`virtual` 模式下外层容器获得 `height` + `overflow-y: auto`，横向滚动能力保留，分页条不参与滚动）；表头 sticky 钉住滚动容器顶部（不随内容滚走），与 `fillHeight` 模式共用同一套表头钉住机制
 - **scrollMargin 前缀**：表头在滚动容器内占据的前缀高度会在挂载后测量并作为 `scrollMargin` 传入虚拟化，窗口计算以表体坐标系为准
 - **交互保持**：`row-click`、行选择（radio/checkbox）、`ellipsis`、`render` 列、固定列 sticky 在虚拟行下行为不变；行高动态测量，无需配置固定行高
 - **骨架与空态不虚拟化**：loading 骨架行与空态行保持普通渲染
 - **不做**：表头虚拟化、横向虚拟、树形行虚拟展开
+
+## 填充模式（fillHeight）
+
+`fill-height` 开启填充模式：组件根容器 `h-full` 纵向 flex 布局，滚动区 `flex-1` 内滚，表头 sticky 钉住——表格填满外部容器、内部滚动（搜索区/分页条不参与滚动）。适合「表格填充外部容器」的页面布局。
+
+**父链需有确定高度**（如页面布局的 `.table-body`）：`h-full` 依赖父链逐级传递高度；无确定高度时安全退化为自然高度（无危害）。
+
+```vue
+<template>
+  <div class="flex h-full flex-col">
+    <div class="table-body min-h-0 flex-1">
+      <TTableRender :definition="table" row-key="id" fill-height />
+    </div>
+  </div>
+</template>
+```
+
+行为细则：
+
+- **显式 prop 优先于布局 provide**：`fillHeight` 未传时读取布局上下文 provide（见下方协议）；显式传 `false` 可强制关闭 provide 效果
+- **表头 sticky**：th 获得不透明底 + 底部分隔线（钉住后行内容不透出）；表格切换分离边框模型（`border-separate`），规避 `border-collapse: collapse` 下 sticky 表头边框在 Chrome 中丢失的问题；普通模式保持 collapse，DOM 与现状一致
+- **setup 期定版**：不支持运行时切换（与 `virtual` / `search` 同约定）；纯布局属性，不进 `defineTable` 配置
+- **与 `virtual` 同传**：以 fill 优先——滚动区交给 flex 分配高度，`height` 不再生效；且 `virtual` 无需显式 `height`（fill 模式自带真实滚动盒）
+
+### 布局 provide 协议
+
+页面布局容器可 provide 布尔值，使 slot 内所有 TableRender 自动进入填充模式（字符串 key 跨包约定，tu-design 对消费方零依赖）：
+
+| 项      | 值                                                                                    |
+| ------- | ------------------------------------------------------------------------------------- |
+| key     | `tu-design:page-table-fill`（常量 `PAGE_TABLE_FILL_KEY`，可从 `@tu-design/vue` 导入） |
+| payload | `boolean`                                                                             |
+| 语义    | 此容器内的 TableRender 应填满容器、内部滚动、表头固定                                 |
+| 优先级  | 显式 `fillHeight` prop > provide > `false`                                            |
+
+```vue
+<script setup lang="ts">
+import { provide } from "vue";
+
+provide("tu-design:page-table-fill", true);
+</script>
+```
 
 ## 树形数据
 
@@ -913,21 +955,22 @@ const table = defineTable<Task>({
 
 ### Props
 
-| prop                                                                                                                                             | 类型                    | 默认       | 说明                                                                                                                                                     |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `definition`                                                                                                                                     | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                                                                                                           |
-| `rowKey`                                                                                                                                         | `string`                | **必填**   | 行主键字段名                                                                                                                                             |
-| `columns`                                                                                                                                        | `TableColumnOptions[]`  | —          | 拆分式列配置                                                                                                                                             |
-| `onLoad`                                                                                                                                         | 见上                    | —          | 拆分式数据源                                                                                                                                             |
-| `data`                                                                                                                                           | `T[]`                   | —          | 拆分式静态数据源                                                                                                                                         |
-| `autoLoad`                                                                                                                                       | `boolean`               | `true`     | 同 config                                                                                                                                                |
-| `pageSize` / `pageSizeOpts`                                                                                                                      | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                            |
-| `loading`                                                                                                                                        | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                      |
-| `emptyText`                                                                                                                                      | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                            |
-| `search`                                                                                                                                         | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                               |
-| `showSearch`                                                                                                                                     | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                  |
-| `showPagination`                                                                                                                                 | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                         |
-| `rowSelection` / `virtual` / `height` / `tree` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
+| prop                                                                                                                                             | 类型                    | 默认       | 说明                                                                                                                                                                 |
+| ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition`                                                                                                                                     | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                                                                                                                       |
+| `rowKey`                                                                                                                                         | `string`                | **必填**   | 行主键字段名                                                                                                                                                         |
+| `columns`                                                                                                                                        | `TableColumnOptions[]`  | —          | 拆分式列配置                                                                                                                                                         |
+| `onLoad`                                                                                                                                         | 见上                    | —          | 拆分式数据源                                                                                                                                                         |
+| `data`                                                                                                                                           | `T[]`                   | —          | 拆分式静态数据源                                                                                                                                                     |
+| `autoLoad`                                                                                                                                       | `boolean`               | `true`     | 同 config                                                                                                                                                            |
+| `pageSize` / `pageSizeOpts`                                                                                                                      | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                                        |
+| `loading`                                                                                                                                        | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                  |
+| `emptyText`                                                                                                                                      | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                        |
+| `search`                                                                                                                                         | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                           |
+| `showSearch`                                                                                                                                     | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                              |
+| `showPagination`                                                                                                                                 | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                                     |
+| `fillHeight`                                                                                                                                     | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节 |
+| `rowSelection` / `virtual` / `height` / `tree` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告             |
 
 ### Events
 
