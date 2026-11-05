@@ -1,10 +1,18 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed } from "vue";
+import { computed, useAttrs } from "vue";
 import { Dialog as ArkDialog } from "@ark-ui/vue/dialog";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "content",
+  parts: ["content", "title", "description", "trigger", "closeTrigger", "positioner", "backdrop"],
+});
 
 // 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，
 // 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。
@@ -57,6 +65,7 @@ const contentClass = computed(() =>
 
 <template>
   <ArkDialog.Root
+    :ids="rootIds"
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"

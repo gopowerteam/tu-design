@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { defineComponent, h, ref } from "vue";
+import { defineComponent, h, nextTick, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { Popover } from "./index";
 
@@ -278,6 +278,83 @@ describe("Popover", () => {
     expect(btn.attributes("aria-haspopup")).toBe("dialog");
     expect(btn.attributes("aria-expanded")).toBe("true");
     expect(btn.attributes("aria-controls")).toBe(content()!.id);
+    w.unmount();
+  });
+
+  // —— ids 全量覆盖（无冒号）：wujie patch document.getElementById → querySelector('#'+id)
+  // 对 zag 缺省的 popover:1:* 冒号 id 抛 SyntaxError 刷警告，须保证所有 ids 无冒号 ——
+  it("click 模式 ids 全量覆盖且无冒号，原生 trigger aria-controls 一致", async () => {
+    const w = mountPopover({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    // 面板 id 来自 wrapper ids.content（Vue useId 派生，格式 v-NN），非 popover:1:content 兜底
+    expect(content()!.id).toMatch(/^v-\d+$/);
+    expect(content()!.id).not.toContain(":");
+    // 内建 Trigger 的 aria 接线由 zag 按 ids 自动生成，与面板实际 id 一致
+    const btn = w.find("button[data-part='trigger']");
+    expect(btn.attributes("aria-controls")).toBe(content()!.id);
+    w.unmount();
+  });
+
+  it("用户显式 ids 以其为准（含 click 模式，修复不透传缺陷）", async () => {
+    const w = mountPopover({
+      defaultOpen: true,
+      ids: { content: "my-panel", title: "my-title" },
+    });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.id).toBe("my-panel");
+    w.unmount();
+  });
+
+  it("hover 模式 aria-controls 跟随用户覆盖的 ids.content", async () => {
+    const w = mountPopover({
+      trigger: "hover",
+      defaultOpen: true,
+      ids: { content: "hover-panel" },
+    });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    const btn = w.find("button");
+    expect(btn.attributes("aria-controls")).toBe("hover-panel");
+    expect(content()!.id).toBe("hover-panel");
+    w.unmount();
+  });
+
+  // —— disabled 动态切换：ids 恒为完整对象（不再随模式抖动），行为回归 ——
+  it("disabled 动态切换：禁用短路、恢复后 click 正常开关", async () => {
+    const disabled = ref(false);
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(
+            Popover,
+            { disabled: disabled.value },
+            {
+              default: () => [h("button", { type: "button" }, "点我")],
+              content: () => "气泡内容",
+            },
+          );
+      },
+    });
+    const w = mount(Host, { attachTo: document.body });
+    const btn = () => w.find("button");
+
+    await btn().trigger("click");
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    await btn().trigger("click");
+    await vi.waitFor(() => {
+      const el = content();
+      expect(el === null || el.dataset.state === "closed").toBe(true);
+    });
+
+    disabled.value = true;
+    await nextTick();
+    await btn().trigger("click");
+    await new Promise((r) => setTimeout(r, 20));
+    expect(content()?.dataset.state).not.toBe("open");
+
+    disabled.value = false;
+    await nextTick();
+    await btn().trigger("click");
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
     w.unmount();
   });
 

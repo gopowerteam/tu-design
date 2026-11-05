@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, getCurrentInstance } from "vue";
+import { computed, getCurrentInstance, useAttrs } from "vue";
 import { Dialog as ArkDialog } from "@ark-ui/vue/dialog";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/button";
 import { useConfirmPending } from "../overlay-shared/useConfirmPending";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）；复用 dialog machine，parts 同 Dialog
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "content",
+  parts: ["content", "title", "description", "trigger", "closeTrigger", "positioner", "backdrop"],
+});
 
 // 用运行时 props 显式 default: undefined：Boolean prop 缺省时 Vue 会 cast 成 false，
 // 导致无法区分「未传（非受控）」与「传了 false（受控关闭）」。与 Dialog.vue 同款约定。
@@ -68,6 +76,7 @@ const contentClass = computed(() =>
 
 <template>
   <ArkDialog.Root
+    :ids="rootIds"
     :open="isOpen"
     :close-on-escape="!loading"
     :close-on-interact-outside="!loading"

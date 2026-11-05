@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { DateValue } from "@ark-ui/vue/date-picker";
+import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
 import { computed, provide } from "vue";
 import { Calendar as TCalendar } from "../calendar";
@@ -31,6 +32,13 @@ const props = defineProps({
   closeOnSelect: { type: Boolean, default: true },
   /** 文案与周起点跟随 locale（zh-CN 默认周一起始） */
   locale: { type: String, default: "zh-CN" },
+  /** Ark DatePicker Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed
+      （absolute 包含块错位修正，机制详注见 useSandboxOverlay / sandbox.ts） */
+  positioning: {
+    type: Object as PropType<DatePickerRootProps["positioning"]>,
+    default: undefined,
+  },
   class: { type: String, default: undefined },
 });
 
@@ -76,6 +84,7 @@ const maxDate = computed(() => parseIsoDate(props.max ?? ""));
     :disabled="props.disabled"
     :invalid="props.invalid"
     :placeholder="props.placeholder"
+    :positioning="props.positioning"
     :class="props.class"
     :format="formatIsoDate"
     :parse="parseIsoDate"

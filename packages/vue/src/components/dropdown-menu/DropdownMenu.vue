@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { useAttrs } from "vue";
+import { computed, useAttrs } from "vue";
 import { Menu as ArkMenu } from "@ark-ui/vue/menu";
+import type { MenuRootProps } from "@ark-ui/vue/menu";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import MenuItems from "./MenuItems.vue";
 import type { MenuItemOption } from "./types";
 
@@ -21,6 +23,13 @@ const props = defineProps({
   triggerClass: { type: String, default: undefined },
   /** 追加到菜单面板上的 class */
   contentClass: { type: String, default: undefined },
+  /** Ark Menu Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed
+      （absolute 包含块错位修正，机制详注见 useSandboxOverlay / sandbox.ts） */
+  positioning: {
+    type: Object as PropType<MenuRootProps["positioning"]>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -39,6 +48,12 @@ const { isOpen, setOpen } = useControlledBoolean({
   onChange: (open) => emit("update:open", open),
 });
 
+// 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：面板无 Teleport 留原地，
+// iframe realm 下 strategy 默认 fixed 消除 absolute 包含块（最近 positioned 祖先）错位
+const rootPositioning = computed(() =>
+  withSandboxStrategy(props.positioning, { ...props.positioning }),
+);
+
 function handleSelect(details: { value: string }) {
   emit("select", details);
 }
@@ -53,6 +68,7 @@ const contentCls =
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
+    :positioning="rootPositioning"
     @update:open="setOpen"
     @select="handleSelect"
   >

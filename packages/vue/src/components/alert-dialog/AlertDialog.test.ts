@@ -211,3 +211,18 @@ describe("AlertDialog", () => {
     w.unmount();
   });
 });
+
+// —— ids 全量覆盖（无冒号）：wujie patch getElementById 对 zag 冒号缺省 id 的防御 ——
+describe("AlertDialog ids 无冒号覆盖", () => {
+  it("user ids.content 覆盖透传到 DOM（端到端），默认派生为 v-N 形态", async () => {
+    const { w } = mountOpen({ ids: { content: "my-alert-panel" } });
+    await waitOpen();
+    expect(content()!.id).toBe("my-alert-panel");
+    w.unmount();
+
+    const r = mountOpen({});
+    await waitOpen();
+    expect(content()!.id).toMatch(/^v-\d+$/);
+    r.w.unmount();
+  });
+});

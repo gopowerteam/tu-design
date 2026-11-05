@@ -197,3 +197,18 @@ describe("Dialog", () => {
     w2.unmount();
   });
 });
+
+// —— ids 全量覆盖（无冒号）：wujie patch getElementById 对 zag 冒号缺省 id 的防御 ——
+describe("Dialog ids 无冒号覆盖", () => {
+  it("user ids.content 覆盖透传到 DOM（端到端），默认派生为 v-N 形态", async () => {
+    const w = mountDialog({ defaultOpen: true, ids: { content: "my-dialog-panel" } });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.id).toBe("my-dialog-panel");
+    w.unmount();
+
+    const w2 = mountDialog({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.id).toMatch(/^v-\d+$/);
+    w2.unmount();
+  });
+});

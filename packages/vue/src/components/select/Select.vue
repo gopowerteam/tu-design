@@ -1,12 +1,32 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed, ref, useAttrs } from "vue";
 import { createListCollection } from "@ark-ui/vue/collection";
 import { Select as ArkSelect } from "@ark-ui/vue/select";
+import type { SelectRootProps } from "@ark-ui/vue/select";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import { normalizeSelectItem, type SelectItemOption } from "./types";
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。函数型 item/itemGroup/itemGroupLabel
+// 不覆盖（元素必渲染无炸点，user 经 attrs.ids 直传保留）
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "content",
+  parts: [
+    "content",
+    "root",
+    "trigger",
+    "control",
+    "clearTrigger",
+    "label",
+    "hiddenSelect",
+    "positioner",
+  ],
+});
 
 // modelValue 为 String 类型无 Boolean casting 问题；「未传」经 default: undefined 保持 undefined
 const props = defineProps({
@@ -24,6 +44,13 @@ const props = defineProps({
   triggerClass: { type: String, default: undefined },
   /** 透传合并到弹层（Content）的 class */
   contentClass: { type: String, default: undefined },
+  /** Ark Select Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed
+      （absolute 包含块错位修正，机制详注见 useSandboxOverlay / sandbox.ts） */
+  positioning: {
+    type: Object as PropType<SelectRootProps<string | SelectItemOption[]>["positioning"]>,
+    default: undefined,
+  },
 });
 
 const emit = defineEmits<{
@@ -61,13 +88,21 @@ const { isOpen, setOpen } = useControlledBoolean({
   defaultValue: () => props.defaultOpen,
   onChange: (open) => emit("update:open", open),
 });
+
+// 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：面板无 Teleport 留原地，
+// iframe realm 下 strategy 默认 fixed 消除 absolute 包含块（最近 positioned 祖先）错位
+const rootPositioning = computed(() =>
+  withSandboxStrategy(props.positioning, { ...props.positioning }),
+);
 </script>
 
 <template>
   <ArkSelect.Root
+    :ids="rootIds"
     :collection="collection"
     :model-value="toArray(modelValue)"
     :open="isOpen"
+    :positioning="rootPositioning"
     @update:model-value="handleModelUpdate"
     @update:open="setOpen"
   >

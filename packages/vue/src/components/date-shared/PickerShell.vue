@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import type { DateValue } from "@ark-ui/vue/date-picker";
+import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { provide } from "vue";
+import { computed, provide } from "vue";
 import { cn } from "@/lib/utils";
 import CalendarIcon from "../icon-shared/CalendarIcon.vue";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { CALENDAR_IN_PICKER, controlCls, iconBtnCls } from "./shared";
+import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 
 /** 单值日期族（Date/Month/Year/Week）共用外壳：触发器 + 清空/日历按钮 + 弹层容器。 */
 defineOptions({ inheritAttrs: false });
@@ -32,6 +34,12 @@ const props = defineProps({
   maxView: { type: String as PropType<"day" | "month" | "year" | undefined>, default: undefined },
   format: { type: Function as PropType<(date: DateValue) => string>, required: true },
   parse: { type: Function as PropType<(raw: string) => DateValue | undefined>, required: true },
+  /** Ark DatePicker Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed */
+  positioning: {
+    type: Object as PropType<DatePickerRootProps["positioning"]>,
+    default: undefined,
+  },
   class: { type: String, default: undefined },
 });
 
@@ -47,6 +55,15 @@ function openFromInput() {
   if (props.disabled || props.readOnly || props.open) return;
   emit("update:open", true);
 }
+
+// —— 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：Teleport 目标降级
+// （shadow DOM / wujie graft → 应用挂载容器，避免面板落入 iframe body）+
+// iframe realm 下 strategy 默认 fixed（absolute 包含块错位，fixed 唯一正确解）；
+// 覆盖 Date/Month/Year/Week 四个单值日期组件，无 to prop，面板恒传送 ——
+const teleportTarget = useSandboxTeleportTarget(() => undefined);
+const rootPositioning = computed(() =>
+  withSandboxStrategy(props.positioning, { ...props.positioning }),
+);
 </script>
 
 <template>
@@ -64,6 +81,7 @@ function openFromInput() {
     :disabled="disabled"
     :format="format"
     :parse="parse"
+    :positioning="rootPositioning"
     @update:model-value="emit('update:modelValue', $event)"
     @update:open="emit('update:open', $event)"
   >
@@ -87,9 +105,10 @@ function openFromInput() {
       </ArkDatePicker.Trigger>
     </ArkDatePicker.Control>
 
-    <!-- 弹层 Teleport 到 body：脱离表单 DOM——隔离外层 FormControl 的 group class
-       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患。 -->
-    <Teleport to="body">
+    <!-- 弹层 Teleport：脱离表单 DOM——隔离外层 FormControl 的 group class
+       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患；
+       目标经沙箱适配降级（shadow DOM / wujie graft → 应用挂载容器） -->
+    <Teleport :to="teleportTarget">
       <ArkDatePicker.Positioner class="z-[var(--z-overlay)]">
         <ArkDatePicker.Content
           :class="

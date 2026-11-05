@@ -1,15 +1,34 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, getCurrentInstance, nextTick, ref, watch } from "vue";
+import { computed, getCurrentInstance, nextTick, ref, useAttrs, watch } from "vue";
 import { Popover as ArkPopover } from "@ark-ui/vue/popover";
+import type { PopoverRootProps } from "@ark-ui/vue/popover";
 import { cn } from "@/lib/utils";
 import { controlCls } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
 import { createTreeMate, type Key, type TreeNode, type TreeOption } from "../tree-shared";
 import { nextActiveKey, type MoveKey } from "../tree-shared/keyboard";
+
+// ids 全量覆盖（无冒号）：ArkPopover 浮层载体，规避 wujie patch getElementById
+// 对 zag 缺省冒号 id 的 SyntaxError 刷屏（详注见 useOverlayIds）
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "content",
+  parts: [
+    "content",
+    "title",
+    "description",
+    "anchor",
+    "trigger",
+    "closeTrigger",
+    "positioner",
+    "arrow",
+  ],
+});
 import TreePanel from "./TreePanel.vue";
 import type { TreeSelectTag } from "./types";
 
@@ -51,6 +70,12 @@ const props = defineProps({
   defaultExpandedKeys: { type: Array as PropType<Key[]>, default: () => [] },
   /** 初始展开全部分支 */
   defaultExpandAll: { type: Boolean, default: false },
+  /** Ark Popover Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed */
+  positioning: {
+    type: Object as PropType<PopoverRootProps["positioning"]>,
+    default: undefined,
+  },
   class: { type: String, default: undefined },
 });
 
@@ -222,6 +247,15 @@ const { isOpen, setOpen } = useControlledBoolean({
   },
 });
 
+// —— 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：Teleport 目标降级
+// （shadow DOM / wujie graft → 应用挂载容器，避免面板落入 iframe body）+
+// iframe realm 下 strategy 默认 fixed（absolute 包含块错位，fixed 唯一正确解）；
+// 无 to prop，面板恒传送 ——
+const teleportTarget = useSandboxTeleportTarget(() => undefined);
+const rootPositioning = computed(() =>
+  withSandboxStrategy(props.positioning, { ...props.positioning }),
+);
+
 function openFromInput() {
   if (props.disabled || isOpen.value) return;
   syncPanelWidth();
@@ -328,7 +362,12 @@ watch(isOpen, (open) => {
 </script>
 
 <template>
-  <ArkPopover.Root :open="isOpen" @update:open="setOpen">
+  <ArkPopover.Root
+    :ids="rootIds"
+    :open="isOpen"
+    :positioning="rootPositioning"
+    @update:open="setOpen"
+  >
     <ArkPopover.Anchor as-child>
       <div
         ref="triggerEl"
@@ -409,8 +448,9 @@ watch(isOpen, (open) => {
       </div>
     </ArkPopover.Anchor>
 
-    <!-- 弹层 Teleport 到 body：脱离表单 DOM，消除 overflow 容器裁剪隐患（DatePicker 同款） -->
-    <Teleport to="body">
+    <!-- 弹层 Teleport：脱离表单 DOM，消除 overflow 容器裁剪隐患（DatePicker 同款）；
+         目标经沙箱适配降级（shadow DOM / wujie graft → 应用挂载容器） -->
+    <Teleport :to="teleportTarget">
       <ArkPopover.Positioner class="z-[var(--z-overlay)]">
         <ArkPopover.Content
           :class="

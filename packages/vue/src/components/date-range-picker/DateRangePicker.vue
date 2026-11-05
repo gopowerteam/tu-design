@@ -16,6 +16,8 @@ import {
   parseIsoRange,
 } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
 
 const props = defineProps({
   /** 受控值 [start, end]（"yyyy-MM-dd"，start ≤ end）；undefined 走内部非受控，null 表示空 */
@@ -49,6 +51,12 @@ const props = defineProps({
   numOfMonths: { type: Number, default: 2 },
   /** 文案与周起点跟随 locale（zh-CN 默认周一起始） */
   locale: { type: String, default: "zh-CN" },
+  /** Ark DatePicker Root 的 positioning 配置（placement/gutter 等）；
+      iframe realm（wujie graft / iframe 嵌入）下 strategy 未显式指定时默认 fixed */
+  positioning: {
+    type: Object as PropType<DatePickerRootProps["positioning"]>,
+    default: undefined,
+  },
   class: { type: String, default: undefined },
 });
 
@@ -110,6 +118,15 @@ const { isOpen, setOpen } = useControlledBoolean({
   onChange: (open) => emit("update:open", open),
 });
 
+// —— 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：Teleport 目标降级
+// （shadow DOM / wujie graft → 应用挂载容器，避免面板落入 iframe body）+
+// iframe realm 下 strategy 默认 fixed（absolute 包含块错位，fixed 唯一正确解）；
+// 无 to prop，面板恒传送 ——
+const teleportTarget = useSandboxTeleportTarget(() => undefined);
+const rootPositioning = computed(() =>
+  withSandboxStrategy(props.positioning, { ...props.positioning }),
+);
+
 // 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；
 // 显式驱动保证各环境行为一致并显式走受控 emit）
 function openFromInput() {
@@ -136,6 +153,7 @@ function openFromInput() {
     :disabled="props.disabled"
     :format="formatIsoDate"
     :parse="parseIsoDate"
+    :positioning="rootPositioning"
     @update:model-value="handleValueUpdate"
     @update:open="setOpen"
   >
@@ -181,9 +199,10 @@ function openFromInput() {
       </ArkDatePicker.Trigger>
     </ArkDatePicker.Control>
 
-    <!-- 弹层 Teleport 到 body：脱离表单 DOM——隔离外层 FormControl 的 group class
-       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患。 -->
-    <Teleport to="body">
+    <!-- 弹层 Teleport：脱离表单 DOM——隔离外层 FormControl 的 group class
+       （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患；
+       目标经沙箱适配降级（shadow DOM / wujie graft → 应用挂载容器） -->
+    <Teleport :to="teleportTarget">
       <ArkDatePicker.Positioner class="z-[var(--z-overlay)]">
         <ArkDatePicker.Content
           :class="

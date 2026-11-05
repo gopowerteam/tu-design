@@ -204,3 +204,18 @@ describe("Cascader", () => {
     w.unmount();
   });
 });
+
+// —— ids 全量覆盖（无冒号）：wujie patch getElementById 对 zag 冒号缺省 id 的防御 ——
+describe("Cascader ids 无冒号覆盖", () => {
+  it("user ids.content 覆盖透传到 DOM（端到端），默认派生为 v-N 形态", async () => {
+    const w = mountCascader({ attrs: { ids: { content: "my-cascader-panel" } } });
+    await openPanel(w);
+    expect(contentEl()!.id).toBe("my-cascader-panel");
+    w.unmount();
+
+    const w2 = mountCascader({});
+    await openPanel(w2);
+    expect(contentEl()!.id).toMatch(/^v-\d+$/);
+    w2.unmount();
+  });
+});

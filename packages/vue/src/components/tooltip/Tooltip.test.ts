@@ -155,3 +155,26 @@ describe("Tooltip", () => {
     w.unmount();
   });
 });
+
+// —— ids 全量覆盖（无冒号）：wujie patch getElementById 对 zag 冒号缺省 id 的防御 ——
+describe("Tooltip ids 无冒号覆盖", () => {
+  it("user ids.content 覆盖透传到 DOM（端到端），默认派生为 v-N 形态", async () => {
+    const open = (ids?: Record<string, unknown>) =>
+      mount(Tooltip, {
+        props: { delayDuration: 0, content: "提示文本", ...(ids ? { ids } : {}) },
+        slots: { default: () => h("button", "悬停我") },
+        attachTo: document.body,
+      });
+    const w = open({ content: "my-tip" });
+    await w.find('[data-part="trigger"]').trigger("pointermove");
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.id).toBe("my-tip");
+    w.unmount();
+
+    const w2 = open();
+    await w2.find('[data-part="trigger"]').trigger("pointermove");
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.id).toMatch(/^v-\d+$/);
+    w2.unmount();
+  });
+});
