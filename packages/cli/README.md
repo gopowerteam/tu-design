@@ -27,12 +27,26 @@ npx @tu-design/cli add button
 
 ### `add <components...>`
 
-按名字添加组件源码（支持一次多个），文件写入 `components.json` 声明的位置：
+按名字添加组件源码（支持一次多个），文件写入 `components.json` 声明的位置；安装成功后写入 `components.lock.json` 记录每个组件的版本与文件清单，供后续 `diff` / 升级比对。
+
+| 选项                 | 说明                                                           |
+| -------------------- | -------------------------------------------------------------- |
+| `--registry <url>`   | 覆盖 `components.json` 中的 registry URL                       |
+| `--overwrite`        | 覆盖已存在的文件而不询问                                       |
+| `--dry-run`          | 预览模式：报告将写入 / 覆盖 / 已最新的文件，不实际写入         |
+| `--all`              | 全量升级 `components.lock.json` 记录的全部组件（与组件名互斥） |
+| `--no-install`       | 跳过依赖安装，仅输出依赖清单（workspace:/catalog: 协议场景）   |
+| `--relative-imports` | 把写入源码中的 `@/` alias 导入改写为相对导入                   |
+
+非交互环境（CI）下遇到本地已改动的文件不会静默覆盖：给出警告并以退出码 1 结束，需显式 `--overwrite`。
+
+### `diff [components...]`
+
+比对本地组件与线上 registry（无参数时比对 `components.lock.json` 记录的全部组件），逐文件输出状态：`最新` / `可更新` / `本地已改` / `冲突`（本地、上次安装、线上三者互不相同）/ `缺失` / `不一致(未跟踪)`（legacy 项目无 lockfile），末尾汇总统计并给出 `add --overwrite` 更新命令提示。
 
 | 选项               | 说明                                     |
 | ------------------ | ---------------------------------------- |
 | `--registry <url>` | 覆盖 `components.json` 中的 registry URL |
-| `--overwrite`      | 覆盖已存在的文件而不询问                 |
 
 ### `mcp`
 
@@ -54,6 +68,8 @@ CLI 从 registry 服务拉取每个组件的 **registry JSON**（遵循 [shadcn 
 
 - `registryDependencies` —— 依赖的基础项（如 `utils`、`tokens`），CLI 会先行安装
 - `dependencies` —— 需要的 npm 依赖（如 Ark UI、TanStack 包），CLI 检测到后用当前包管理器安装
+
+安装过的组件记录在 `components.lock.json`（版本 + 文件内容指纹），`diff` 依赖它区分「可更新 / 本地已改 / 冲突 / 缺失」等状态。
 
 默认 registry 数据源是文档站 Pages 上发布的 `https://gopowerteam.github.io/tu-design/r/vue`，由 [`@tu-design/vue` 的 `generate:registry`](../vue) 生成并随 Pages 部署更新，可用 `--registry` 指向自建服务。
 
