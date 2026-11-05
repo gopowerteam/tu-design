@@ -4,364 +4,364 @@
   "items": [
     {
       "name": "alert",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Alert",
       "type": "registry:ui",
       "description": "语义化警示条，支持五种变体、内置图标与可关闭交互。"
     },
     {
       "name": "alert-dialog",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "AlertDialog",
       "type": "registry:ui",
       "description": "确认弹窗单组件：v-model:open 控制显隐，title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时按钮进入 loading 并锁定 ESC/遮罩关闭，resolve 自动关闭、reject 保持打开；内容节点为 role=alertdialog。"
     },
     {
       "name": "avatar",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Avatar",
       "type": "registry:ui",
       "description": "头像，支持尺寸/形状、加载占位与失败回退（Ark UI）。"
     },
     {
       "name": "avatar-group",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "AvatarGroup",
       "type": "registry:ui",
       "description": "头像组，数量折叠、悬停展开与垂直排列。"
     },
     {
       "name": "badge",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Badge",
       "type": "registry:ui",
       "description": "轻量状态徽标，支持四种变体。"
     },
     {
       "name": "button",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Button",
       "type": "registry:ui",
       "description": "带变体与尺寸的按钮，支持 as 标签切换与 asChild 组合。"
     },
     {
       "name": "calendar",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Calendar",
       "type": "registry:ui",
       "description": "日历（TCalendar）：紧凑日历卡。Picker 弹层内为 embedded 内嵌形态（TDatePicker/TDateRangePicker 自动挂靠，纯卡片内核）；独立使用即 standalone 独立形态（自带日历状态与 v-model，恒开展示）。"
     },
     {
       "name": "card",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Card",
       "type": "registry:ui",
       "description": "卡片容器：单组件 API，title/description 头部 + 命名插槽（cover/action/footer/header），支持尺寸、视觉变体、分段分隔与可关闭。"
     },
     {
       "name": "cascader",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Cascader",
       "type": "registry:ui",
       "description": "级联选择：一站式 props 驱动，多列联动、勾选级联、路径回显与多标签。"
     },
     {
       "name": "checkbox",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Checkbox",
       "type": "registry:ui",
       "description": "复选框：基于 Ark UI Checkbox 原语，支持标签插槽、受控/非受控与禁用。"
     },
     {
       "name": "context-menu",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "ContextMenu",
       "type": "registry:ui",
       "description": "右键菜单：单组件模式，items 描述菜单项（与 dropdown-menu 同构，含分组/标题/分隔线，支持嵌套），默认插槽为触发元素（ContextTrigger as-child，右键唤出并定位到指针处），内置键盘导航与选中回调。"
     },
     {
       "name": "currency-input",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "CurrencyInput",
       "type": "registry:ui",
       "description": "金额输入框：内置万/元/角/分单位后缀，labelUnit 输入单位与 valueUnit 存储单位自动换算（整数分最小精度），值以 number|null 受控。"
     },
     {
       "name": "date-picker",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "DatePicker",
       "type": "registry:ui",
       "description": "日期选择器：输入框 + 日历弹层（月/年视图切换），支持手动键入/清空/min-max 边界/不可选谓词，值以 \"yyyy-MM-dd\" 字符串受控。"
     },
     {
       "name": "date-range-picker",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "DateRangePicker",
       "type": "registry:ui",
       "description": "日期范围选择器：双月日历弹层（月/年视图切换），点选起点与终点，值以 [\"yyyy-MM-dd\", \"yyyy-MM-dd\"] 有序元组受控，空值归一 null。"
     },
     {
       "name": "date-shared",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "DateShared",
       "type": "registry:ui",
       "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）、日历样式常量与单值选择器外壳（PickerShell/usePickerBridge）。"
     },
     {
       "name": "dialog",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Dialog",
       "type": "registry:ui",
       "description": "模态对话框单组件：#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Dialog 原语，含焦点圈定、Escape/遮罩关闭与进出场动画，支持 v-model:open。"
     },
     {
       "name": "drawer",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Drawer",
       "type": "registry:ui",
       "description": "抽屉单组件：从四方向滑出的侧边/顶底面板，#trigger 放触发元素，title/description 传文案，#footer 注入 close 关闭；基于 Ark UI Drawer 原语，进出场动画随 placement 方向自适应，含焦点圈定、Escape/遮罩关闭，支持 v-model:open。"
     },
     {
       "name": "dropdown-menu",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "DropdownMenu",
       "type": "registry:ui",
       "description": "下拉菜单：单组件模式，items 描述菜单项（含分组/标题/分隔线，支持嵌套），内置键盘导航与选中回调，默认插槽为触发元素（asChild 透传）。"
     },
     {
       "name": "empty",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Empty",
       "type": "registry:ui",
       "description": "空状态占位，含默认插画与描述文案。"
     },
     {
       "name": "form",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Form",
       "type": "registry:ui",
       "description": "表单状态与校验：基于 TanStack Form，配合 Valibot（Standard Schema）声明式校验，aria 自动接线。"
     },
     {
       "name": "form-render",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "FormRender",
       "type": "registry:ui",
       "description": "配置驱动表单渲染器：defineForm 聚合 TanStack Form 实例与字段配置，柯里化 widget DSL 声明控件，Tailwind 栅格自适应布局，复用 Form 家族 aria 接线。"
     },
     {
       "name": "icon-shared",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "IconShared",
       "type": "registry:ui",
       "description": "内置功能性图标（CloseIcon/ChevronIcon/CalendarIcon），内部共享，非公共 API。图标组件零默认类：尺寸/旋转/过渡类由使用处显式传入，避免 fallthrough 拼接时同名工具类排序冲突。"
     },
     {
       "name": "input",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Input",
       "type": "registry:ui",
       "description": "文本输入框，支持 v-model、attrs 透传与 invalid 校验态。"
     },
     {
       "name": "label",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Label",
       "type": "registry:ui",
       "description": "表单标签。"
     },
     {
       "name": "month-picker",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "MonthPicker",
       "type": "registry:ui",
       "description": "月份选择器：输入框 + 锁定月视图的日历弹层，值以 \"yyyy-MM\" 字符串受控，min/max 为月粒度闭区间（内部换算到当月末日）。"
     },
     {
       "name": "number-input",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "NumberInput",
       "type": "registry:ui",
       "description": "数字输入框：内置加减步进按钮与数值边界，值以 number|null 受控（空值归一 null），支持 Intl 数字格式化。"
     },
     {
       "name": "overlay-shared",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "OverlayShared",
       "type": "registry:ui",
       "description": "弹层家族共享逻辑：受控开合桥接（useControlledBoolean）与确认 pending 语义（useConfirmPending）。"
     },
     {
       "name": "password-input",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "PasswordInput",
       "type": "registry:ui",
       "description": "密码输入框：内置明文/掩码切换按钮（Eye/EyeOff，带 aria 语义），值与可见性均支持 v-model 受控。"
     },
     {
       "name": "pin-input",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "PinInput",
       "type": "registry:ui",
       "description": "多格验证码输入：length 指定格数，支持 otp/mask/字符类型、焦点自动跳格与填满回调，可选分隔符插槽。"
     },
     {
       "name": "popconfirm",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Popconfirm",
       "type": "registry:ui",
       "description": "气泡确认：Popover 薄壳变体单组件，默认插槽为触发元素本体（asChild），title/description 传文案，@confirm/@cancel 处理确认与取消；确认处理器返回 Promise 时确认钮 loading 并锁定关闭通道，resolve 自动关闭、reject 保持打开。"
     },
     {
       "name": "popover",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Popover",
       "type": "registry:ui",
       "description": "气泡弹层：基于 Ark UI Popover 原语的单组件，默认插槽为触发元素本体（asChild 语义），面板内容放 #content 插槽，受控/非受控开关。"
     },
     {
       "name": "progress",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Progress",
       "type": "registry:ui",
       "description": "进度条：基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。"
     },
     {
       "name": "radio-group",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "RadioGroup",
       "type": "registry:ui",
       "description": "单选组：基于 Ark UI Radio Group 原语，键盘导航与受控/非受控双模式。"
     },
     {
       "name": "select",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Select",
       "type": "registry:ui",
       "description": "下拉选择框：单组件 API，传入 items 数据驱动渲染，内置触发器回显、键盘导航与勾选指示，支持 #item 插槽自定义选项。"
     },
     {
       "name": "separator",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Separator",
       "type": "registry:ui",
       "description": "分隔线，支持水平与垂直方向。"
     },
     {
       "name": "skeleton",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Skeleton",
       "type": "registry:ui",
       "description": "加载占位骨架屏。"
     },
     {
       "name": "slider",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Slider",
       "type": "registry:ui",
       "description": "滑块：基于 Ark UI Slider 原语，支持单值/区间、步进与键盘微调。"
     },
     {
       "name": "slot",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Slot",
       "type": "registry:ui",
       "description": "asChild 组合原语：将组件的 class 与 attrs 合并到子元素上，而不渲染额外 DOM。"
     },
     {
       "name": "spin",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Spin",
       "type": "registry:ui",
       "description": "加载中旋转指示器，支持独立 spinner 与包裹内容（半透明遮罩）两种形态。"
     },
     {
       "name": "switch",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Switch",
       "type": "registry:ui",
       "description": "开关：基于 Ark UI Switch 原语，支持标签插槽、受控/非受控与禁用。"
     },
     {
       "name": "table-render",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "TableRender",
       "type": "registry:ui",
       "description": "配置驱动表格渲染器：defineTable 聚合 TanStack Table 实例与列配置，静态/服务端双模式（onLoad 回写分页排序），搜索表单联动（search 接 FormRender），左右固定列 sticky 横向滚动，表体虚拟滚动（virtual + height，TanStack Virtual 动态测量行高），树形数据（tree：子行展开/收起、depth 缩进、caret 位于首列），列显隐（columnSettings 面板 + visibleKeys 受控），错误态占位与重试（#error 插槽 + load-error），ellipsis 支持 tooltip 形态，v-model 受控（pageIndex/pageSize/sort/selectedKeys），Ark Pagination 分页条 + 原生 select 每页条数，排序表头 aria-sort、加载骨架与空态插槽，语义化 table + Tailwind tokens。"
     },
     {
       "name": "tabs",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Tabs",
       "type": "registry:ui",
       "description": "选项卡：基于 Ark UI Tabs 原语，键盘导航与受控/非受控双模式。"
     },
     {
       "name": "textarea",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Textarea",
       "type": "registry:ui",
       "description": "多行文本输入：纯样式封装，支持 invalid 校验态。"
     },
     {
       "name": "timeline",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Timeline",
       "type": "registry:ui",
       "description": "时间轴：数据驱动 items 渲染竖向事件流，支持单列/左右交替、五种语义节点色与空心节点、#item 作用域插槽自定义内容。"
     },
     {
       "name": "toast",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Toast",
       "type": "registry:ui",
       "description": "全局轻提示：ToastProvider 在应用根部挂载一次，useToast() 提供命令式 API（success/error/info/warning/loading/promise/dismiss）；基于 Ark UI Toast 原语，语义 type 映射主题 token 配色。"
     },
     {
       "name": "tokens",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Tokens",
       "type": "registry:style",
       "description": "Tailwind CSS v4 语义 tokens（shadcn 官方 v4 集合）。"
     },
     {
       "name": "tooltip",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Tooltip",
       "type": "registry:ui",
       "description": "文字提示气泡：悬停触发，基于 Ark UI Tooltip 原语，支持 asChild 与延迟配置。"
     },
     {
       "name": "tree-select",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "TreeSelect",
       "type": "registry:ui",
       "description": "树形下拉选择：一站式 props 驱动，支持单/多选、勾选级联、过滤与多标签折叠。"
     },
     {
       "name": "tree-shared",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "TreeShared",
       "type": "registry:ui",
       "description": "树形数据层与共享类型（移植自 treemate v0.3.11，MIT）。"
     },
     {
       "name": "utils",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "Utils",
       "type": "registry:lib",
       "description": "cn 类名合并工具（clsx + tailwind-merge）。"
     },
     {
       "name": "week-picker",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "WeekPicker",
       "type": "registry:ui",
       "description": "周选择器：输入框 + 日历弹层，点任意可选日归一到所在周并整周高亮，值以 \"yyyy-MM-dd\"（所在周起始日）字符串受控；周起点跟随 locale（zh-CN 周一起始），输入框回显 \"start ~ end\"。"
     },
     {
       "name": "year-picker",
-      "version": "0.5.3",
+      "version": "0.5.4",
       "title": "YearPicker",
       "type": "registry:ui",
       "description": "年份选择器：输入框 + 锁定年视图的日历弹层（decade 网格），值以 \"yyyy\" 字符串受控，min/max 为年粒度闭区间。"

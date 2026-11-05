@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "avatar-group",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "type": "registry:ui",
   "description": "头像组，数量折叠、悬停展开与垂直排列。",
   "registryDependencies": ["utils", "avatar"],

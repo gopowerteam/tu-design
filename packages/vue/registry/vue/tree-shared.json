@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "tree-shared",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "type": "registry:ui",
   "description": "树形数据层与共享类型（移植自 treemate v0.3.11，MIT）。",
   "registryDependencies": ["icon-shared", "utils"],
