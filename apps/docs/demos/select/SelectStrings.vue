@@ -7,7 +7,7 @@ const cities = ["杭州", "上海", { label: "深圳", value: "sz", disabled: tr
 
 <template>
   <div class="flex flex-col items-center gap-2">
-    <TSelect v-model="city" :items="cities" placeholder="选择城市" trigger-class="w-64" />
+    <TSelect v-model="city" :items="cities" placeholder="选择城市" />
     <p class="text-sm text-muted-foreground">当前值：{{ city ?? "（未选）" }}</p>
   </div>
 </template>

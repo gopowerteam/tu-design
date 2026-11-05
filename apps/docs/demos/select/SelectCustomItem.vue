@@ -11,7 +11,7 @@ const langs = [
 
 <template>
   <div class="flex justify-center">
-    <TSelect v-model="lang" :items="langs" placeholder="选择语言" trigger-class="w-64">
+    <TSelect v-model="lang" :items="langs" placeholder="选择语言">
       <template #item="{ label, selected }">
         <span class="flex w-full items-center justify-between font-mono text-xs">
           {{ label }}

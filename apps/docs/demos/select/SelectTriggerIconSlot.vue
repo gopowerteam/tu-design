@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col items-center gap-3">
-    <TSelect v-model="a" :items="frameworks" placeholder="内置下拉箭头" trigger-class="w-64" />
-    <TSelect v-model="b" :items="frameworks" placeholder="自定义下拉箭头" trigger-class="w-64">
+    <TSelect v-model="a" :items="frameworks" placeholder="内置下拉箭头" />
+    <TSelect v-model="b" :items="frameworks" placeholder="自定义下拉箭头">
       <template #trigger-icon>
         <svg
           aria-hidden="true"

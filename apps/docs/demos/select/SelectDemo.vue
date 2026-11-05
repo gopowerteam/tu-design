@@ -1,6 +1,6 @@
 <template>
   <div class="flex justify-center">
-    <TSelect v-model="framework" :items="frameworks" placeholder="选择框架" trigger-class="w-64" />
+    <TSelect v-model="framework" :items="frameworks" placeholder="选择框架" />
   </div>
 </template>
 

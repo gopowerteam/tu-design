@@ -107,17 +107,20 @@ const rootPositioning = computed(() =>
     @update:open="setOpen"
   >
     <!-- 触发器（收编自 SelectTrigger：内置选中回显与 chevron） -->
-    <ArkSelect.Control class="w-fit">
+    <ArkSelect.Control class="w-full">
       <ArkSelect.Trigger
         :class="
           cn(
-            'border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-fit items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs focus-visible:outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
+            'border-input data-[placeholder]:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex h-9 w-full items-center justify-between gap-2 rounded-md border bg-transparent px-3 py-2 text-sm whitespace-nowrap shadow-xs focus-visible:outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:shrink-0 [&_svg:not([class*=size-])]:size-4',
             props.triggerClass,
           )
         "
       >
-        <!-- 注意：不能向 ValueText 传插槽内容，其内部会对默认插槽做字符串化渲染 -->
-        <ArkSelect.ValueText :placeholder="props.placeholder" />
+        <!-- 截断层：触发器 w-full 定宽后，超长选中值/placeholder 走 ellipsis（flex 子项 overflow 非 visible 时自动最小尺寸归零，min-w-0 双保险）。
+             注意：不能向 ValueText 传插槽内容，其内部会对默认插槽做字符串化渲染 -->
+        <span class="min-w-0 flex-1 truncate">
+          <ArkSelect.ValueText :placeholder="props.placeholder" />
+        </span>
         <slot name="trigger-icon"><ChevronIcon class="size-4 rotate-90 opacity-50" /></slot>
       </ArkSelect.Trigger>
     </ArkSelect.Control>

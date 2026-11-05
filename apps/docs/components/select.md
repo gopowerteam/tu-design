@@ -39,20 +39,26 @@ npx @tu-design/cli add select
 
 使用 Iconify 时可放 `<Icon icon="lucide:chevron-down" />`（@iconify/vue）或 `<span class="icon-[lucide--chevron-down] size-4 opacity-50" />`（@iconify/tailwind4）。选项勾选指示的定制由 [`#item`](#自定义选项渲染) 插槽整体接管。
 
+## 宽度
+
+触发器默认撑满父容器（`w-full`），与 Input、DatePicker、Cascader 等表单类控件在 [Form](/components/form) 的 `FormItem` 中自动对齐，不会出现组件长短不一；超长选中值与占位文案自动省略号截断。需要自定义宽度或恢复收缩包裹内容时，经 `trigger-class` 覆盖（`cn` 走 tailwind-merge，宽度类可覆盖默认）：
+
+<DemoPreview file="select/SelectWidth.vue" />
+
 ## API
 
 ### Props
 
-| Prop            | 类型                                        | 默认值     | 说明                       |
-| --------------- | ------------------------------------------- | ---------- | -------------------------- |
-| `items`         | `(string \| { label, value, disabled? })[]` | 必填       | 选项列表                   |
-| `v-model`       | `string`                                    | —          | 当前值；不传为非受控       |
-| `default-value` | `string`                                    | —          | 非受控时的初始值           |
-| `open`          | `boolean`                                   | —          | 弹层开合受控；不传为非受控 |
-| `default-open`  | `boolean`                                   | `false`    | 非受控时的初始开合         |
-| `placeholder`   | `string`                                    | `"请选择"` | 未选中时触发器的占位文案   |
-| `trigger-class` | `string`                                    | —          | 透传合并到触发器的 class   |
-| `content-class` | `string`                                    | —          | 透传合并到弹层的 class     |
+| Prop            | 类型                                        | 默认值     | 说明                                                                               |
+| --------------- | ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------- |
+| `items`         | `(string \| { label, value, disabled? })[]` | 必填       | 选项列表                                                                           |
+| `v-model`       | `string`                                    | —          | 当前值；不传为非受控                                                               |
+| `default-value` | `string`                                    | —          | 非受控时的初始值                                                                   |
+| `open`          | `boolean`                                   | —          | 弹层开合受控；不传为非受控                                                         |
+| `default-open`  | `boolean`                                   | `false`    | 非受控时的初始开合                                                                 |
+| `placeholder`   | `string`                                    | `"请选择"` | 未选中时触发器的占位文案                                                           |
+| `trigger-class` | `string`                                    | —          | 透传合并到触发器的 class；宽度类（如 `w-64`、`w-fit`）可覆盖默认的撑满（`w-full`） |
+| `content-class` | `string`                                    | —          | 透传合并到弹层的 class                                                             |
 
 ### Events
 
