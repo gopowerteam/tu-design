@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "form",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "registry:ui",
   "description": "表单状态与校验：基于 TanStack Form，配合 Valibot（Standard Schema）声明式校验，aria 自动接线。",
   "registryDependencies": ["utils", "input", "button", "label"],

@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "input",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "registry:ui",
   "description": "文本输入框，支持 v-model、attrs 透传与 invalid 校验态。",
   "registryDependencies": ["utils"],

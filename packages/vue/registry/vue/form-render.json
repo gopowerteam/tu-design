@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "form-render",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "registry:ui",
   "description": "配置驱动表单渲染器：defineForm 聚合 TanStack Form 实例与字段配置，柯里化 widget DSL 声明控件，Tailwind 栅格自适应布局，复用 Form 家族 aria 接线。",
   "registryDependencies": [

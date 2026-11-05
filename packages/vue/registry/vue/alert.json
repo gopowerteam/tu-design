@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "alert",
-  "version": "0.5.7",
+  "version": "0.5.8",
   "type": "registry:ui",
   "description": "语义化警示条，支持五种变体、内置图标与可关闭交互。",
   "registryDependencies": ["icon-shared", "utils"],
