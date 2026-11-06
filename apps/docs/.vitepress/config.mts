@@ -62,6 +62,19 @@ function registryPlugin(): Plugin {
 const DOC_PAGE_RE = /^\/(guide|components)\/([A-Za-z0-9._-]+)\.md$/;
 
 /**
+ * 该请求是否可能在 VitePress 中命中同名页面模块。
+ *
+ * VitePress 把页面 Markdown 作为模块动态 import（`x.md?import&t=<时间戳>`），期望得到 JS。
+ * 带查询串的请求一律交还 VitePress，否则会被原始 Markdown 端点截获并返回
+ * `text/markdown`，触发浏览器严格 MIME 校验报错（拒绝执行模块脚本）。
+ * @param url - 原始请求 URL（含路径与查询串）
+ * @returns true 表示应跳过原始 Markdown 端点、交由 VitePress 处理
+ */
+function isPageModuleRequest(url: string): boolean {
+  return url.includes("?");
+}
+
+/**
  * dev 期伺服 LLM 文档入口：/llms.txt、/llms-full.txt 动态生成，
  * /guide/*.md、/components/*.md 返回仓库源 Markdown。
  * build 期由 buildEnd 写入静态产物。
@@ -72,7 +85,12 @@ function llmsPlugin(): Plugin {
     name: "tu-design-llms",
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const url = stripBasePrefix((req.url ?? "").split("?")[0]!);
+        const rawUrl = req.url ?? "";
+        if (isPageModuleRequest(rawUrl)) {
+          next();
+          return;
+        }
+        const url = stripBasePrefix(rawUrl.split("?")[0]!);
         if (url === "/llms.txt" || url === "/llms-full.txt") {
           res.setHeader("content-type", "text/plain; charset=utf-8");
           res.end(url === "/llms.txt" ? buildLlmsTxt() : buildLlmsFullTxt());
