@@ -1,3 +1,4 @@
+/** vp check 的 typeAware lint 用此兜底解析 .ts 中的 .vue 导入（vue-tsc 走原生解析，不受影响） */
 declare module "*.vue" {
   import type { DefineComponent } from "vue";
   const component: DefineComponent<Record<string, unknown>, Record<string, unknown>, unknown>;

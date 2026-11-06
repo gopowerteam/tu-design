@@ -1,7 +1,15 @@
 <script setup lang="ts">
 import { cn } from "@/lib/utils";
 
-const modelValue = defineModel<string | number>();
+// 原生 <textarea> 的 v-model 回写恒为 string：跟随绑定类型归一（Input.vue 同款）。
+const looseToNumber = (val: string | number): string | number => {
+  const n = Number.parseFloat(String(val));
+  return Number.isNaN(n) ? val : n;
+};
+
+const modelValue = defineModel<string | number>({
+  set: (v) => (typeof modelValue.value === "number" ? looseToNumber(v) : v),
+});
 const props = defineProps<{ class?: string; invalid?: boolean }>();
 </script>
 

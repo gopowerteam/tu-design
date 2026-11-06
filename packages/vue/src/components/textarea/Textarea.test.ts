@@ -64,4 +64,30 @@ describe("Textarea", () => {
     expect(value.value).toBe("受控值");
     w.unmount();
   });
+
+  it("number 绑定跟随归一：回写 string 转 number", async () => {
+    const value = ref<number | string>(5);
+    const Host = defineComponent({
+      setup() {
+        return () =>
+          h(Textarea, {
+            modelValue: value.value,
+            "onUpdate:modelValue": (v: string | number) => (value.value = v),
+          });
+      },
+    });
+    const w = mount(Host, { attachTo: document.body });
+
+    await w.find("textarea").setValue("42");
+    expect(value.value).toBe(42);
+    w.unmount();
+  });
+
+  it("文本绑定不归一：非数字串保持 string", async () => {
+    const onUpdate = vi.fn();
+    const w = mountTextarea({ modelValue: "hi", "onUpdate:modelValue": onUpdate });
+    await w.find("textarea").setValue("hi2");
+    expect(onUpdate).toHaveBeenCalledWith("hi2");
+    w.unmount();
+  });
 });
