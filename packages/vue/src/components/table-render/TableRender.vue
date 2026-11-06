@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { computed, inject, onMounted, ref, watch } from "vue";
+import { computed, inject, nextTick, onMounted, ref, watch } from "vue";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
 import { FormRender, type FormRenderDefinition } from "@/components/form-render";
@@ -11,6 +11,7 @@ import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
 import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/lib/utils";
+import { isColumnGroup } from "./columns";
 import { PAGE_TABLE_FILL_KEY, SELECTION_CELL } from "./constants";
 import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
 import TableBodyRow from "./TableBodyRow.vue";
@@ -20,6 +21,8 @@ import type {
   DataRecord,
   SortableOptions,
   TableBodyLine,
+  TableColumnGroupOptions,
+  TableColumnNode,
   TableColumnOptions,
   TableLoadParams,
   TableRenderDefinition,
@@ -35,8 +38,8 @@ const props = defineProps({
   definition: { type: Object as PropType<TableRenderDefinition<any>> },
   /** 数据主键（记录缺字段时以行索引兜底） */
   rowKey: { type: String, required: true },
-  /** 拆分式：与 definition 二选一，definition 优先 */
-  columns: { type: Array as PropType<TableColumnOptions[]> },
+  /** 拆分式：与 definition 二选一，definition 优先（支持分组列节点，R34） */
+  columns: { type: Array as PropType<TableColumnNode[]> },
   onLoad: {
     type: Function as PropType<(params: TableLoadParams) => void | Promise<unknown>>,
   },
@@ -256,6 +259,110 @@ const visibleKeySet = computed(() => new Set(instance.visibleKeys.value));
 const visibleColumns = computed(() =>
   columns.value.filter((column) => visibleKeySet.value.has(column.key)),
 );
+
+// ---- 表头分组（多级表头，R34–R39） -------------------------------------------
+// 原始列节点树（definition.columnTree 缺省时回退扁平列 = 单级表头，I4 兜底）
+const columnsTree = computed<TableColumnNode<DataRecord>[]>(
+  () => (instance.columnTree as TableColumnNode<DataRecord>[]) ?? columns.value,
+);
+
+/** 可见表头树节点：按 visibleKeySet 剪枝后的结构（空分组已被剔除） */
+interface HeaderNodeView {
+  node: TableColumnNode<DataRecord>;
+  isGroup: boolean;
+  /** DFS 索引路径（如 "0-1"）：分组单元格 key 的唯一来源，与 title 解耦（I1） */
+  path: string;
+  children: HeaderNodeView[];
+}
+
+/**
+ * 按可见集递归构建表头树：分组子树可见叶子为 0 时整支剔除（R23 口径）。
+ * @param nodes - 列节点树（或其子树）
+ * @param parentPath - 父级 DFS 索引路径（根为 ""）
+ * @returns 剪枝后的可见表头树
+ */
+function buildVisibleHeaderTree(
+  nodes: TableColumnNode<DataRecord>[],
+  parentPath: string,
+): HeaderNodeView[] {
+  const views: HeaderNodeView[] = [];
+  nodes.forEach((node, index) => {
+    const path = parentPath === "" ? `${index}` : `${parentPath}-${index}`;
+    if (isColumnGroup(node)) {
+      const children = buildVisibleHeaderTree(node.children, path);
+      if (children.length > 0) views.push({ node, isGroup: true, path, children });
+    } else if (visibleKeySet.value.has(node.key)) {
+      views.push({ node, isGroup: false, path, children: [] });
+    }
+  });
+  return views;
+}
+
+/** 唯一派生源：可见表头树（maxDepth 与表头矩阵同源于此，杜绝口径漂移，I2） */
+const visibleHeaderTree = computed(() => buildVisibleHeaderTree(columnsTree.value, ""));
+
+/** 表头深度（可见树）：无分组时为 1 */
+const maxDepth = computed(() => {
+  const depthOf = (view: HeaderNodeView): number =>
+    view.children.length > 0 ? 1 + Math.max(...view.children.map(depthOf)) : 1;
+  return visibleHeaderTree.value.length > 0 ? Math.max(...visibleHeaderTree.value.map(depthOf)) : 1;
+});
+
+/** 表头单元格：分组跨列、叶子下沉贴底 */
+interface HeaderCell {
+  node: TableColumnNode<DataRecord>;
+  /** Vue 列表 key：叶子用列 key，分组用 DFS 路径（唯一稳定） */
+  key: string;
+  path: string;
+  depth: number;
+  colSpan: number;
+  rowSpan: number;
+  isGroup: boolean;
+  /** 该单元格覆盖的可见叶子列 key（分组为子树全部，叶子为自身） */
+  leafKeys: string[];
+}
+
+/** 表头矩阵：行 × 单元格（叶子 rowSpan = maxDepth - depth，分组 colSpan = 子树可见叶子数） */
+const headerRows = computed<HeaderCell[][]>(() => {
+  const rows: HeaderCell[][] = Array.from({ length: maxDepth.value }, () => []);
+  const collectLeaves = (view: HeaderNodeView): string[] =>
+    view.isGroup
+      ? view.children.flatMap(collectLeaves)
+      : [(view.node as TableColumnOptions<DataRecord>).key];
+
+  const walk = (views: HeaderNodeView[], depth: number) => {
+    for (const view of views) {
+      const leafKeys = collectLeaves(view);
+      if (view.isGroup) {
+        rows[depth]!.push({
+          node: view.node,
+          key: `g:${view.path}`,
+          path: view.path,
+          depth,
+          colSpan: leafKeys.length,
+          rowSpan: 1,
+          isGroup: true,
+          leafKeys,
+        });
+      } else {
+        rows[depth]!.push({
+          node: view.node,
+          key: (view.node as TableColumnOptions<DataRecord>).key,
+          path: view.path,
+          depth,
+          colSpan: 1,
+          rowSpan: maxDepth.value - depth,
+          isGroup: false,
+          leafKeys,
+        });
+      }
+      walk(view.children, depth + 1);
+    }
+  };
+  walk(visibleHeaderTree.value, 0);
+  return rows;
+});
+
 /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
 const showColumnSettings = computed(() => props.columnSettings ?? true);
 
@@ -295,6 +402,89 @@ function resetColumns() {
   instance.setVisibleKeys(instance.defaultVisibleKeys ?? columns.value.map((column) => column.key));
 }
 
+// ---- 列设置面板：树形行（R37） ------------------------------------------------
+/** 面板行（全树扁平化，避免模板递归）：分组行为父级三态，叶子行为勾选项 */
+interface PanelRow {
+  node: TableColumnNode<DataRecord>;
+  depth: number;
+  isGroup: boolean;
+  /** 该节点覆盖的叶子 key（分组为子树全部） */
+  leafKeys: string[];
+  path: string;
+  key: string;
+}
+
+/** 面板行派生：以原始列节点树（非可见剪枝）为准，保证隐藏后仍可恢复 */
+const panelRows = computed<PanelRow[]>(() => {
+  const rows: PanelRow[] = [];
+  const collectLeaves = (node: TableColumnNode<DataRecord>): string[] =>
+    isColumnGroup(node) ? node.children.flatMap(collectLeaves) : [node.key];
+  const walk = (nodes: TableColumnNode<DataRecord>[], depth: number, parentPath: string) => {
+    nodes.forEach((node, index) => {
+      const path = parentPath === "" ? `${index}` : `${parentPath}-${index}`;
+      const isGroup = isColumnGroup(node);
+      rows.push({
+        node,
+        depth,
+        isGroup,
+        leafKeys: collectLeaves(node),
+        path,
+        key: isGroup ? `g:${path}` : node.key,
+      });
+      if (isGroup) walk(node.children, depth + 1, path);
+    });
+  };
+  walk(columnsTree.value, 0, "");
+  return rows;
+});
+
+/**
+ * 分组勾选三态（R37）：全部可见 = true，部分可见 = "indeterminate"，全隐 = false
+ * @param row - 面板分组行
+ * @returns 该分组的三态勾选值
+ */
+function groupCheckedState(row: PanelRow): boolean | "indeterminate" {
+  const visibleCount = row.leafKeys.filter((key) => visibleKeySet.value.has(key)).length;
+  if (visibleCount === 0) return false;
+  if (visibleCount === row.leafKeys.length) return true;
+  return "indeterminate";
+}
+
+/**
+ * 分组批量显隐（R20 最少一列恒按叶子口径，A5）：
+ * 隐藏整组会导致 0 列可见时，保留该组最后一枚可见叶子（父级呈 indeterminate）。
+ * @param row - 面板分组行
+ */
+function toggleGroupVisible(row: PanelRow) {
+  const leafSet = new Set(row.leafKeys);
+  const allVisible = row.leafKeys.every((key) => visibleKeySet.value.has(key));
+  if (!allVisible) {
+    // 显示整组：与当前可见集按 columns 原序合并（normalize 会纠正顺序）
+    instance.setVisibleKeys(
+      columns.value
+        .map((column) => column.key)
+        .filter((key) => visibleKeySet.value.has(key) || leafSet.has(key)),
+    );
+    return;
+  }
+  const remaining = instance.visibleKeys.value.filter((key) => !leafSet.has(key));
+  if (remaining.length === 0) {
+    // R20 钳制：不得清空可见集，保留最后一枚叶子
+    instance.setVisibleKeys([row.leafKeys[row.leafKeys.length - 1]!]);
+    return;
+  }
+  instance.setVisibleKeys(remaining);
+}
+
+/**
+ * 面板行点击（分组批量显隐 / 叶子单列切换）
+ * @param row - 面板行（分组或叶子）
+ */
+function onPanelRowClick(row: PanelRow) {
+  if (row.isGroup) toggleGroupVisible(row);
+  else toggleColumnVisible(row.key);
+}
+
 // 受控/非受控均通知：统一投影变化 → 双事件（载荷 = columns 原序可见 key）
 watch(instance.visibleKeys, (keys) => {
   emit("update:visible-keys", [...keys]);
@@ -313,6 +503,40 @@ for (const column of columns.value) {
       `[tu-design] <TableRender> fixed 列 "${column.key}" 需要数字 width，已忽略 fixed。`,
     );
   }
+}
+
+// DEV 校验（R39，一次性）：分组节点误配 key/sortable/fixed/width、空 children（列节点树定版）
+if (import.meta.env.DEV) {
+  const validateNodes = (nodes: TableColumnNode<DataRecord>[], depth: number) => {
+    for (const node of nodes) {
+      if (isColumnGroup(node)) {
+        if ("key" in node && (node as { key?: unknown }).key !== undefined) {
+          console.warn(
+            "[tu-design] <TableRender> 分组节点不应配置 key（分组不是数据列），已忽略。",
+          );
+        }
+        if ((node as { sortable?: unknown }).sortable !== undefined) {
+          console.warn(
+            `[tu-design] <TableRender> 分组「${node.title}」不支持 sortable（仅叶子列可排序），已忽略。`,
+          );
+        }
+        if ((node as { fixed?: unknown }).fixed !== undefined) {
+          console.warn(
+            `[tu-design] <TableRender> 分组「${node.title}」不支持 fixed（请配置到叶子列），已忽略。`,
+          );
+        }
+        if (node.children.length === 0) {
+          console.warn(`[tu-design] <TableRender> 分组「${node.title}」children 为空，将被忽略。`);
+        }
+        validateNodes(node.children, depth + 1);
+      } else if ("children" in node && (node as { children?: unknown }).children !== undefined) {
+        console.warn(
+          `[tu-design] <TableRender> 叶子列 "${node.key}" 不应配置 children，已按叶子渲染。`,
+        );
+      }
+    }
+  };
+  validateNodes(columnsTree.value, 0);
 }
 
 // DEV 提示（一次性，columns setup 期定版，R32）：多列宽表全列无数字 width 时，
@@ -382,6 +606,90 @@ const tableMinWidth = computed(() => {
 function widthOf(width?: number | string) {
   return typeof width === "number" ? `${width}px` : width;
 }
+
+// ---- 分组表头单元格（R34–R39） ------------------------------------------------
+
+/** 混合固定组警告去重（同名分组仅警告一次） */
+const warnedMixedFixedGroups = new Set<string>();
+
+/**
+ * 分组单元格的 sticky 样式（R36）：子树可见叶子同侧且连续固定时整格 sticky，
+ * 偏移取首个可见叶子；混合侧 → 返回 undefined（降级普通格）并 DEV 警告一次。
+ * @param cell - 表头单元格（分组）
+ * @returns 分组单元格的 sticky inline style；不适用时返回 undefined
+ */
+function groupStickyStyle(cell: HeaderCell) {
+  const sides = new Set(
+    cell.leafKeys
+      .map((key) => columns.value.find((column) => column.key === key)?.fixed)
+      .filter((side): side is "left" | "right" => side !== undefined),
+  );
+  // 混合侧（同时含 left 与 right）：单元格无法部分固定 → 降级普通格（R36）
+  if (sides.size > 1) {
+    if (!warnedMixedFixedGroups.has(cell.key)) {
+      warnedMixedFixedGroups.add(cell.key);
+      if (import.meta.env.DEV) {
+        console.warn(
+          `[tu-design] <TableRender> 分组「${(cell.node as TableColumnGroupOptions).title}」内固定方向混合，已降级为普通表头格。`,
+        );
+      }
+    }
+    return undefined;
+  }
+  if (sides.size === 0) return undefined;
+  // 组内固定列不连续（中间夹普通列）时，分组格跨过非固定列会遮挡滚动内容 → 同样降级
+  const fixedLeaves = cell.leafKeys.filter((key) => {
+    const column = columns.value.find((c) => c.key === key);
+    return column?.fixed !== undefined && typeof column.width === "number";
+  });
+  if (fixedLeaves.length !== cell.leafKeys.length) return undefined;
+  const side = [...sides][0]!;
+  const first = stickyOf.value.get(cell.leafKeys[0]!);
+  if (!first) return undefined;
+  return {
+    position: "sticky" as const,
+    [side]: `${first.offset}px`,
+    zIndex: "var(--z-sticky-head)",
+  };
+}
+
+/**
+ * 表头行的行级样式：sticky 模式下逐行累积 top 偏移（多行表头 R38），避免顶边重叠。
+ * @param rowIndex - 表头行下标
+ * @returns 行级 inline style；非 sticky 模式返回 undefined
+ */
+function headerRowStyle(rowIndex: number) {
+  if (!theadSticky) return undefined;
+  return { top: `${rowTop.value[rowIndex] ?? rowIndex * HEADER_ROW_FALLBACK}px` };
+}
+
+/**
+ * 表头单元格的视觉规约（R39）：分组格与其后单元格之间加竖向分隔线。
+ *
+ * 横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`；
+ * sticky 走 `theadThClass` 的 `border-b`），此处**不重复绘制**；
+ * 单级表头（无分组）直接返回空，保证扁平列 DOM 零变化。
+ * @param cell - 表头单元格
+ * @param isLastInRow - 是否为本行最后一个单元格
+ * @returns class 列表
+ */
+function headerCellClass(cell: HeaderCell, isLastInRow: boolean) {
+  if (maxDepth.value === 1) return [];
+  return cell.isGroup && !isLastInRow ? ["border-r border-border"] : [];
+}
+
+/**
+ * 分组单元格水平对齐（分组无 align 以外的能力）
+ * @param cell - 表头单元格
+ * @returns 对齐值，默认居中
+ */
+function headerCellAlign(cell: HeaderCell) {
+  return cell.isGroup
+    ? ((cell.node as TableColumnGroupOptions).align ?? "center")
+    : ((cell.node as TableColumnOptions).align ?? "center");
+}
+
+/** 分组无需排序能力标记（sortable 仅叶子生效，P8 对分组 sortable 警告） */
 
 /** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
 const selectableKeys = computed(() =>
@@ -502,6 +810,29 @@ const theadEl = ref<HTMLElement | null>(null);
 /** 滚动容器内 thead 占据的前缀高度（scrollMargin）；表头内容静态，挂载后测量一次 */
 const theadOffset = ref(0);
 
+// ---- 多行表头测量（P5 / A4） --------------------------------------------------
+/** 表头行元素（模板 ref 收集，逐行求高度） */
+const headerRowEls = ref<(HTMLElement | null)[]>([]);
+/** 各行顶部偏移（前缀和）：多行 sticky 表头逐行钉住，避免顶边重叠 */
+const rowTop = ref<number[]>([]);
+/** 行高兜底：表头行 class 为 h-10（2.5rem = 40px）；happy-dom 下 offsetHeight 恒 0 */
+const HEADER_ROW_FALLBACK = 40;
+
+/**
+ * 测量所有表头行高度并派生行顶偏移与 thead 总高（唯一测量源，A4）。
+ *
+ * 两处口径有意区分：
+ * - `rowTop`（多行 sticky 逐行 top）用兜底 h-10（40px）——测量不可用时避免表头行重叠；
+ * - `theadOffset`（virtual 的 scrollMargin）用**实测原值**，与既有行为一致
+ *   （happy-dom 无布局 → 0；真实浏览器 → 真实高度）。
+ */
+function measureHeaderRows() {
+  const raw = headerRowEls.value.map((el) => el?.offsetHeight ?? 0);
+  const heights = raw.map((height) => height || HEADER_ROW_FALLBACK);
+  rowTop.value = heights.map((_, index) => heights.slice(0, index).reduce((a, h) => a + h, 0));
+  if (virtualEnabled) theadOffset.value = raw.reduce((a, h) => a + h, 0);
+}
+
 // 仅 virtual: true 且 height 就绪时创建（配置 setup 期定版，顶层条件分支可安全注册生命周期）
 const virtualizerRef = virtualEnabled
   ? useVirtualizer(
@@ -516,9 +847,9 @@ const virtualizerRef = virtualEnabled
     )
   : null;
 
-onMounted(() => {
-  if (virtualEnabled) theadOffset.value = theadEl.value?.offsetHeight ?? 0;
-});
+onMounted(measureHeaderRows);
+// 可见表头树变化（列显隐）→ 行数/单元格可能变化，DOM 更新后重测（I3）
+watch(headerRows, () => void nextTick(measureHeaderRows), { flush: "post" });
 
 const virtualRows = computed(() => (virtualizerRef ? virtualizerRef.value.getVirtualItems() : []));
 const virtualTotal = computed(() => (virtualizerRef ? virtualizerRef.value.getTotalSize() : 0));
@@ -700,23 +1031,29 @@ defineExpose({
             <Separator />
             <div class="max-h-64 overflow-y-auto py-1">
               <div
-                v-for="column in columns"
-                :key="column.key"
+                v-for="row in panelRows"
+                :key="row.key"
                 data-column-item
-                :data-column-key="column.key"
+                :data-column-key="row.isGroup ? undefined : row.key"
+                :data-column-group="row.isGroup ? row.path : undefined"
                 class="hover:bg-accent/50 flex h-8 cursor-pointer items-center gap-2 px-3"
-                @click="toggleColumnVisible(column.key)"
+                :style="{ paddingLeft: `${12 + row.depth * 12}px` }"
+                @click="onPanelRowClick(row)"
               >
                 <Checkbox
-                  :checked="isColumnVisible(column.key)"
-                  :disabled="!canHideColumn(column.key)"
-                  @update:checked="toggleColumnVisible(column.key)"
+                  :checked="row.isGroup ? groupCheckedState(row) : isColumnVisible(row.key)"
+                  :disabled="row.isGroup ? false : !canHideColumn(row.key)"
+                  @update:checked="onPanelRowClick(row)"
                   @click.stop
                 />
-                <span class="min-w-0 flex-1 truncate">{{ column.title }}</span>
-                <!-- 有效 fixed 列（数字 width）标识 -->
+                <span class="min-w-0 flex-1 truncate">{{ row.node.title }}</span>
+                <!-- 有效 fixed 列（数字 width）标识：仅叶子 -->
                 <svg
-                  v-if="column.fixed !== undefined && typeof column.width === 'number'"
+                  v-if="
+                    !row.isGroup &&
+                    (row.node as TableColumnOptions).fixed !== undefined &&
+                    typeof (row.node as TableColumnOptions).width === 'number'
+                  "
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="none"
@@ -753,11 +1090,17 @@ defineExpose({
         :style="tableMinWidth > 0 ? { minWidth: `${tableMinWidth}px` } : undefined"
       >
         <thead ref="theadEl" :class="theadSticky ? undefined : '[&_tr]:border-b'">
-          <tr>
+          <tr
+            v-for="(cells, rowIndex) in headerRows"
+            :key="rowIndex"
+            :ref="(el) => (headerRowEls[rowIndex] = el as HTMLElement | null)"
+            :style="headerRowStyle(rowIndex)"
+          >
             <!-- 选择列：checkbox 型表头为本页全选三态（S3/S10）；radio 型占位；视作最左固定列 -->
             <th
-              v-if="hasSelection"
+              v-if="hasSelection && rowIndex === 0"
               scope="col"
+              :rowspan="headerRows.length"
               class="h-10 w-12 px-2 text-center align-middle font-medium text-muted-foreground"
               :class="[stickyClass(stickyOf, SELECTION_CELL), theadThClass]"
               :style="[
@@ -773,27 +1116,40 @@ defineExpose({
               />
             </th>
             <th
-              v-for="column in visibleColumns"
-              :key="column.key"
-              scope="col"
+              v-for="(cell, cellIndex) in cells"
+              :key="cell.key"
+              :scope="cell.isGroup ? 'colgroup' : 'col'"
+              :colspan="cell.colSpan > 1 ? cell.colSpan : undefined"
+              :rowspan="cell.rowSpan > 1 ? cell.rowSpan : undefined"
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
-              :class="[stickyClass(stickyOf, column.key), theadThClass]"
-              :style="[
-                { width: widthOf(column.width), textAlign: column.align ?? 'center' },
-                stickyStyle(stickyOf, column.key, true),
+              :class="[
+                cell.isGroup ? undefined : stickyClass(stickyOf, cell.key),
+                theadThClass,
+                headerCellClass(cell, cellIndex === cells.length - 1),
               ]"
-              :aria-sort="ariaSort(column)"
+              :style="[
+                cell.isGroup
+                  ? { textAlign: headerCellAlign(cell) }
+                  : {
+                      width: widthOf((cell.node as TableColumnOptions).width),
+                      textAlign: headerCellAlign(cell),
+                    },
+                cell.isGroup ? groupStickyStyle(cell) : stickyStyle(stickyOf, cell.key, true),
+              ]"
+              :aria-sort="cell.isGroup ? undefined : ariaSort(cell.node as TableColumnOptions)"
             >
               <button
-                v-if="column.sortable"
+                v-if="!cell.isGroup && (cell.node as TableColumnOptions).sortable"
                 type="button"
                 class="inline-flex items-center gap-1 hover:text-foreground"
-                @click="onSort(column.key)"
+                @click="onSort((cell.node as TableColumnOptions).key)"
               >
-                {{ column.title }}
-                <span aria-hidden="true" class="text-xs">{{ sortMark(column) }}</span>
+                {{ (cell.node as TableColumnOptions).title }}
+                <span aria-hidden="true" class="text-xs">{{
+                  sortMark(cell.node as TableColumnOptions)
+                }}</span>
               </button>
-              <template v-else>{{ column.title }}</template>
+              <template v-else>{{ cell.node.title }}</template>
             </th>
           </tr>
         </thead>

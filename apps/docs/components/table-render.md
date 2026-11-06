@@ -663,7 +663,45 @@ const visibleKeys = ref(["name", "lead"]);
 - **展开控件跟随可见首列**：树形 caret 在首个可见业务列内（首列隐藏时顺延），选择列/展开控件恒可见不进清单（R22）
 - **受控空数组**：钳制为首列可见 + DEV 警告一次（R24）；未知 key 静默忽略
 - **面板 a11y**：Tab 遍历 + Space 切换（Checkbox 原生语义）；Esc 关闭（Ark 内建）后焦点归还触发器
-- **不做**：列顺序拖拽调整、显隐持久化（业务用 `column-visibility-change` 自存）、列宽调整、分组子列
+- **不做**：列顺序拖拽调整、显隐持久化（业务用 `column-visibility-change` 自存）、列宽调整
+
+## 表头分组
+
+多级表头（R34–R39）：`columns` 支持**任意层级**的列节点树——**叶子列**（原本的 `TableColumnOptions`）或**分组**（`{ title, align?, children }`）。分组节点只承载展示语义（标题、对齐），排序/宽度/固定等能力全部下沉到叶子列；`defineTable` 的扁平数组写法天然合法（即单级表头），**完全向后兼容**。
+
+<DemoPreview file="table-render/HeaderGroupDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { defineTable, type TableColumnNode } from "@tu-design/vue";
+
+const columns: TableColumnNode<Metric>[] = [
+  { key: "region", title: "区域", width: 100, fixed: "left" },
+  {
+    title: "上半年", // 分组：无 key、无 width
+    children: [
+      { key: "q1", title: "Q1", width: 90, sortable: true },
+      { key: "q2", title: "Q2", width: 90, sortable: true },
+    ],
+  },
+  { key: "ops", title: "操作", width: 100, fixed: "right" },
+];
+
+// 任意层级同理：分组下再嵌套分组即可（3 级、4 级…）
+const table = defineTable<Metric>({ data: ROWS, columns });
+</script>
+```
+
+行为细则：
+
+- **表头矩阵（R35）**：表头深度 = 可见表头树的最大层级（无分组时为 1）；分组格 `colSpan` = 其子树下的**可见叶子数**、`rowSpan` = 1；叶子格贴底 `rowSpan` = 深度差。分组下可见叶子为 0 时**整支剔除**（与 R23 同口径），表头深度随之收缩，不产生空白行
+- **可见树驱动（R35）**：矩阵与深度均由「按 `visibleKeys` 剪枝后的可见表头树」单一派生源计算——最大深度取**可见树**而非原始树，故隐藏深层列后表头行数会收缩
+- **分组与固定列（R36）**：分组内可见叶子**同侧且连续固定**（均带数字 `width`）时，分组格整体 sticky 在该侧、偏移取首个可见叶子；**方向混合**（同时含 left/right）或组内夹非固定列时降级为普通格并 DEV 警告一次（单个 `<th>` 无法部分固定）
+- **列显隐（R37）**：列设置面板以**树形缩进**呈现（分组行带 `data-column-group`、叶子行带 `data-column-key`），分组行 Checkbox 为三态（全选/半选/未选），点击批量显隐其子树；`visibleKeys` 契约不变（**只含叶子 key**），R20「最少一列」恒按叶子口径——批量隐藏将清空可见集时保留该组最后一枚叶子
+- **多行 sticky 偏移（R38）**：`fillHeight` / `virtual` 下表头 sticky 时，逐表头行累积 `top` 偏移（行高实测，不可测时按 h-10=40px/行兜底），避免多行表头叠在顶边互相覆盖；虚拟滚动的 `scrollMargin` 取各行高之和，天然自适应
+- **视觉规约（R39）**：横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`、sticky 走表头单元格 `border-b`），单级表头 DOM 零变化；分组表头下，分组格与其后单元格之间加竖向分隔线（同级末块除外）
+- **DEV 校验（R39）**：分组节点误配 `key` / `sortable` / `fixed`、`children` 为空，或叶子列误配 `children`——各 DEV 警告一次并忽略
+- **不做**：分组的折叠/展开交互、分组级 `width`/`fixed` 配置、列顺序拖拽
 
 ## 加载失败与错误态
 
@@ -1004,7 +1042,7 @@ const table = defineTable<Task>({
 
 | config 字段           | 类型                                              | 默认             | 说明                                                                                                  |
 | --------------------- | ------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `columns`             | `TableColumnOptions<T>[]`                         | —                | 列配置；`key` 为取值字段                                                                              |
+| `columns`             | `TableColumnNode<T>[]`                            | —                | 列节点树：叶子列或分组（多级表头 R34），任意层级；`key` 为取值字段                                    |
 | `data?`               | `T[] \| Ref \| () => T[]`                         | —                | 静态模式数据源；ref/getter 自动跟随                                                                   |
 | `onLoad?`             | `(params: TableLoadParams<T>) => void \| Promise` | —                | 服务端模式数据源；与 `data` 冲突时以此为准                                                            |
 | `autoLoad?`           | `boolean`                                         | `true`           | 挂载后是否自动取数（仅服务端模式生效）                                                                |
@@ -1029,7 +1067,8 @@ const table = defineTable<Task>({
 
 | 字段                                      | 说明                                                                      |
 | ----------------------------------------- | ------------------------------------------------------------------------- |
-| `columns`                                 | 列配置                                                                    |
+| `columns`                                 | 扁平叶子列配置（下游消费口径）                                            |
+| `columnTree`                              | 原始列节点树（表头矩阵与面板树形结构来源；手工构造定义为可选）            |
 | `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                    |
 | `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`          |
 | `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                |
@@ -1043,7 +1082,7 @@ const table = defineTable<Task>({
 | `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束（S4）                              |
 | `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区  |
 
-辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
+辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），入参为列节点树（叶子或分组），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
 
 ### 对齐规则
 
@@ -1070,6 +1109,16 @@ const table = defineTable<Task>({
 | `fixed?`       | `"left" \| "right"`                                | 固定列方向；须同时提供数字 `width`（见[固定列](#固定列)）                                            |
 
 取值优先级：`render` > `formatter` > `record[key]`（`null`/`undefined` 显示为空）。
+
+#### `TableColumnGroupOptions<T>` / `TableColumnNode<T>`
+
+| 字段       | 类型                            | 说明                                 |
+| ---------- | ------------------------------- | ------------------------------------ |
+| `title`    | `string`                        | 分组标题（表头单元格文本）           |
+| `align?`   | `"left" \| "center" \| "right"` | 分组单元格对齐；默认居中             |
+| `children` | `TableColumnNode<T>[]`          | 子列节点（叶子或更深分组），任意层级 |
+
+`TableColumnNode<T> = TableColumnOptions<T> | TableColumnGroupOptions<T>`——`columns` 的元素类型（见[表头分组](#表头分组)）。
 
 #### `TableLoadParams<T>`
 

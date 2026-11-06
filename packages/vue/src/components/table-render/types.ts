@@ -50,6 +50,26 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   fixed?: "left" | "right";
 }
 
+/**
+ * 表头分组成员（多级表头，R34）。
+ *
+ * 仅承载展示语义（title/align）；排序、宽度、固定等能力全部下沉到叶子列，
+ * 分组不参与 sortable/fixed/width（配置时 DEV 警告并忽略）。
+ */
+export interface TableColumnGroupOptions<T extends DataRecord = DataRecord> {
+  /** 分组标题（表头单元格文本） */
+  title: string;
+  /** 分组单元格水平对齐；未配置默认居中 */
+  align?: "left" | "center" | "right";
+  /** 子列节点（叶子列或更深分组），任意层级 */
+  children: TableColumnNode<T>[];
+}
+
+/** 列节点：叶子列或分组（递归），defineTable/defineColumns 的入参元素类型 */
+export type TableColumnNode<T extends DataRecord = DataRecord> =
+  | TableColumnOptions<T>
+  | TableColumnGroupOptions<T>;
+
 export interface PageableOptions {
   /** 1-based 页码（对外 API 唯一口径） */
   pageIndex: number;
@@ -77,7 +97,8 @@ export interface TableLoadParams<T extends DataRecord = DataRecord> {
 
 /** defineTable 的声明式配置 */
 export interface DefineTableOptions<T extends DataRecord = DataRecord> {
-  columns: TableColumnOptions<T>[];
+  /** 列节点树：叶子列或分组（多级表头，R34），任意层级；扁平数组天然合法 */
+  columns: TableColumnNode<T>[];
   /** 服务端模式数据源；与 data 二选一，onLoad 优先 */
   onLoad?: (params: TableLoadParams<T>) => void | Promise<unknown>;
   /** 静态模式数据源（本地分页/排序） */
@@ -174,6 +195,11 @@ export interface UseTableRenderOptions<T extends DataRecord = DataRecord> extend
 /** defineTable / useTableRender 的返回物：列配置 + 引擎实例 + 只读状态 + 实例动作 */
 export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   columns: TableColumnOptions<T>[];
+  /**
+   * 原始列节点树（表头矩阵与列设置面板的树形结构来源）。
+   * 可选：手工构造定义对象时缺省，组件侧回退为扁平的 `columns`（单级表头）。
+   */
+  columnTree?: TableColumnNode<T>[];
   /** TanStack 表格实例（逃逸舱口） */
   table: TanstackTable<T>;
   page: Readonly<PageableOptions>;

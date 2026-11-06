@@ -1,6 +1,7 @@
 import type { ColumnDef, RowSelectionState } from "@tanstack/vue-table";
 import { computed, onMounted, reactive, readonly, ref, shallowRef, toValue, watch } from "vue";
 import type { Ref } from "vue";
+import { flattenColumns } from "./columns";
 import {
   getCoreRowModel,
   getExpandedRowModel,
@@ -49,7 +50,8 @@ function warn(message: string) {
 export function useTableRender<T extends DataRecord>(
   options: UseTableRenderOptions<T>,
 ): TableRenderDefinition<T> {
-  const columns = options.columns;
+  const columnTree = options.columns;
+  const columns = flattenColumns(options.columns);
   // 传入 onLoad 即服务端模式：分页/排序交由数据源，引擎不做本地加工
   const serverMode = typeof options.onLoad === "function";
 
@@ -577,6 +579,7 @@ export function useTableRender<T extends DataRecord>(
 
   return {
     columns,
+    columnTree,
     table,
     page: readonly(page),
     sort: readonly(sort),

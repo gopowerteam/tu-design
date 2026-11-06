@@ -12,12 +12,15 @@ export type {
 } from "./column-renders";
 export { defineColumns } from "./define-columns";
 export { defineTable } from "./define-table";
+export { flattenColumns, isColumnGroup } from "./columns";
 export { useTableRender } from "./useTableRender";
 export type {
   DataRecord,
   DefineTableOptions,
   PageableOptions,
   SortableOptions,
+  TableColumnGroupOptions,
+  TableColumnNode,
   TableColumnOptions,
   TableLoadParams,
   TableRenderDefinition,
