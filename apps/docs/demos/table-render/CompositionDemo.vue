@@ -63,7 +63,7 @@ const table = defineTable<Order>({
   onLoad: query,
 });
 
-// 查询/重置链路（R30）：submit() 返回校验是否通过；reload(true) 归位第 1 页重载
+// 查询/重置链路：submit() 返回校验是否通过；reload(true) 归位第 1 页重载
 async function onSearch() {
   if (await table.search?.submit()) table.reload(true);
 }

@@ -14,8 +14,8 @@ import { cn } from "@/lib/utils";
 // boolean props 用运行时声明 + default: undefined 禁用 Vue 的 Boolean casting
 // （casting 会让未传的 prop 变 false；TableRender/FormRender 同款约定）
 const props = defineProps({
-  /** 组合式：传 defineTable 返回值，自动接线 page/动作并按 R13 单页自隐藏；
-   * 与手动分页 props 同传时以 definition 为准（DEV 警告，R29/R4 对齐） */
+  /** 组合式：传 defineTable 返回值，自动接线 page/动作并单页自隐藏；
+   * 与手动分页 props 同传时以 definition 为准（DEV 警告） */
   definition: { type: Object as PropType<TableRenderDefinition<any>> },
   /** 1-based 当前页码（手动模式） */
   pageIndex: { type: Number, default: undefined },
@@ -35,7 +35,7 @@ const emit = defineEmits<{
   "update:pageSize": [pageSize: number];
 }>();
 
-// R29 输入解析在 setup 期定版（definition/手动模式不支持运行时切换，同 TableRender 约定）：
+// 输入解析在 setup 期定版（definition/手动模式不支持运行时切换，同 TableRender 约定）：
 // ① definition 与手动分页 props 同传 → 以 definition 为准（DEV 警告）；
 // ② 仅手动且缺 pageIndex/pageSize/total 任一 → DEV 警告 + 不渲染
 if (import.meta.env.DEV) {
@@ -60,7 +60,7 @@ if (import.meta.env.DEV) {
   }
 }
 
-// R29：definition 优先投影；手动模式直读 props（缺省 undefined 走 visible 兜底）
+// definition 优先投影；手动模式直读 props（缺省 undefined 走 visible 兜底）
 const pageIndex = computed(() => props.definition?.page.pageIndex ?? props.pageIndex);
 const pageSize = computed(() => props.definition?.page.pageSize ?? props.pageSize);
 const pageSizeOpts = computed(() => props.definition?.page.pageSizeOpts ?? props.pageSizeOpts);
@@ -69,7 +69,7 @@ const totalPages = computed(() =>
   Math.max(1, Math.ceil((total.value ?? 0) / (pageSize.value ?? 1))),
 );
 
-/** 可见性：definition 模式按 R13 单页自隐藏；手动模式须 pageIndex/pageSize/total 齐备（缺项 DEV 警告 + 不渲染） */
+/** 可见性：definition 模式单页自隐藏；手动模式须 pageIndex/pageSize/total 齐备（缺项 DEV 警告 + 不渲染） */
 const visible = computed(() => {
   if (props.definition !== undefined) {
     return Math.ceil((total.value ?? 0) / (pageSize.value ?? 1)) > 1;
@@ -82,7 +82,7 @@ const showSelect = computed(() => props.showSizeSelect ?? false);
 const iconMode = computed(() => props.navMode === "icon");
 const hasLeft = computed(() => showTotalBar.value || showSelect.value);
 
-// definition 模式经实例动作接线（R29）；事件恒 emit（幂等：同值重复设置无害），便于本地联动
+// definition 模式经实例动作接线；事件恒 emit（幂等：同值重复设置无害），便于本地联动
 function onPageIndex(value: number) {
   props.definition?.setPageIndex(value);
   emit("update:pageIndex", value);
@@ -93,7 +93,7 @@ function onPageSize(value: number) {
   emit("update:pageSize", value);
 }
 
-/** 页码窗口：首页/尾页 + 当前页 ±1，跳过段用省略号（D12） */
+/** 页码窗口：首页/尾页 + 当前页 ±1，跳过段用省略号 */
 const pages = computed<(number | string)[]>(() => {
   const count = totalPages.value;
   const current = pageIndex.value ?? 1;
@@ -113,7 +113,7 @@ const pages = computed<(number | string)[]>(() => {
 </script>
 
 <template>
-  <!-- R31：不带 border-t（布局归使用方，TableRender 内置使用处显式补）；左区缺省时页码靠右 -->
+  <!-- 不带 border-t（布局归使用方，TableRender 内置使用处显式补）；左区缺省时页码靠右 -->
   <div
     v-if="visible"
     :class="

@@ -23,7 +23,7 @@ export default defineComponent({
     item: { type: Object as PropType<FormRenderItem<any>>, required: true },
     /** 已柯里化的 widget 渲染函数：r.input({...}) 的返回值 */
     widget: { type: Function as PropType<WidgetRenderReturn<any>>, required: true },
-    /** 响应式全量表单值（FormRender 经 useSelector 建立，S1） */
+    /** 响应式全量表单值（FormRender 经 useSelector 建立） */
     values: { type: Object as PropType<Record<string, unknown>>, required: true },
   },
   setup(props) {

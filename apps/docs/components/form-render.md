@@ -151,18 +151,18 @@ const search = defineForm({
 });
 ```
 
-- **块级互斥（A1）**：`definition.actions` 存在时，组件按钮 props（`searchable` / `resetable` 等七项）全量忽略（同传 DEV 警告）；`actions` 未配置时组件 props 行为不变。
+- **块级互斥**：`definition.actions` 存在时，组件按钮 props（`searchable` / `resetable` 等七项）全量忽略（同传 DEV 警告）；`actions` 未配置时组件 props 行为不变。
 - **语义与组件 props 完全一致**：`resetable` 缺省跟随 `searchable`、`cancelable` 缺省跟随 `submitable`，文案缺省「搜索 / 提交 / 重置」。
 - `#actions` 插槽与 `search.submit()` 不受影响（插槽覆盖默认按钮；`submit()` 与按钮汇入同一 `handleSubmit`）。
 
 ## 注意事项
 
 - **须在 setup 中调用 `defineForm`**：TanStack `useForm` 内部依赖 `onMounted` 注册挂载。
-- **`visible`（注意拼写，非 x-render 的 `visiable`）是响应式的**：FormRender 经 `useSelector` 订阅全量值，字段值变化即联动。
+- **`visible` 是响应式的**：FormRender 经 `useSelector` 订阅全量值，字段值变化即联动。
 - `definition` / `form` props 不支持运行时切换（与 `<TForm :form>` 同款静态约定）。
 - **widget 参数显式传 `placeholder: undefined` 会覆盖 `item.placeholder`**（展开语义：键存在即覆盖，组件收到 undefined）；需要 item 级缺省时请省略该键。
 - `r.select({ open })` / `r.datePicker({ open })` 等**弹层受控字段是半受控语义**：只传 `open` 而不配对 `onUpdate:open` 时弹层无法交互关闭；完整受控用法请两者一起传（组件原语义，非 FormRender 拦截范围）。
-- 二期规划：条件 Tag 回显、高级搜索弹窗、`collapsed` 折叠、`group` 分组、组件/文本双模式。
+- 暂不支持：条件 Tag 回显、高级搜索弹窗、`collapsed` 折叠、`group` 分组、组件/文本双模式。
 
 ## 主题定制
 

@@ -196,7 +196,7 @@ const search = defineForm({
 
 - **table**：`<TTableRender :definition>` 传 `show-search="false"` / `show-pagination="false"` 关闭对应内置区（数据链路不变，`onLoad` 的 `form` 仍自动携带表单值）；
 - **form**：`definition.search` 是标准 FormRender definition，任意位置渲染（窄容器 + 小 `min-width` 即单列面板）；
-- **pagination**：`<TTablePagination :definition>` 自动接线分页状态与动作，`show-total` / `show-size-select` / `nav-mode` 裁剪形态；definition 模式下单页自隐藏（R13）。
+- **pagination**：`<TTablePagination :definition>` 自动接线分页状态与动作，`show-total` / `show-size-select` / `nav-mode` 裁剪形态；definition 模式下单页自隐藏。
 
 <DemoPreview file="table-render/CompositionDemo.vue" />
 
@@ -214,7 +214,7 @@ const table = defineTable<Order>({
   onLoad: query, // params.form 自动携带 search 表单当前值
 });
 
-// 查询/重置链路（R30）：submit() 返回校验是否通过，通过才归位第 1 页重载
+// 查询/重置链路：submit() 返回校验是否通过，通过才归位第 1 页重载
 async function onSearch() {
   if (await table.search?.submit()) table.reload(true);
 }
@@ -256,16 +256,16 @@ function onReset() {
 
 `TablePagination` 已随 TableRender 一并公开，可在组合式布局中独立使用：
 
-| prop             | 类型                    | 默认     | 说明                                                                                                      |
-| ---------------- | ----------------------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| `definition`     | `TableRenderDefinition` | —        | 组合式自动接线：状态取 `definition.page`、动作接 `setPageIndex` / `setPageSize`（R29）；单页自隐藏（R13） |
-| `pageIndex`      | `number`                | —        | 手动模式当前页（1-based）                                                                                 |
-| `pageSize`       | `number`                | —        | 手动模式每页条数                                                                                          |
-| `pageSizeOpts`   | `number[]`              | —        | 手动模式每页条数选项                                                                                      |
-| `total`          | `number`                | —        | 手动模式总条数                                                                                            |
-| `showTotal`      | `boolean`               | `true`   | 「共 N 条」                                                                                               |
-| `showSizeSelect` | `boolean`               | `false`  | 条/页 select                                                                                              |
-| `navMode`        | `"text" \| "icon"`      | `"text"` | 上一页/下一页形态：文字按钮或 chevron 图标                                                                |
+| prop             | 类型                    | 默认     | 说明                                                                                        |
+| ---------------- | ----------------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `definition`     | `TableRenderDefinition` | —        | 组合式自动接线：状态取 `definition.page`、动作接 `setPageIndex` / `setPageSize`；单页自隐藏 |
+| `pageIndex`      | `number`                | —        | 手动模式当前页（1-based）                                                                   |
+| `pageSize`       | `number`                | —        | 手动模式每页条数                                                                            |
+| `pageSizeOpts`   | `number[]`              | —        | 手动模式每页条数选项                                                                        |
+| `total`          | `number`                | —        | 手动模式总条数                                                                              |
+| `showTotal`      | `boolean`               | `true`   | 「共 N 条」                                                                                 |
+| `showSizeSelect` | `boolean`               | `false`  | 条/页 select                                                                                |
+| `navMode`        | `"text" \| "icon"`      | `"text"` | 上一页/下一页形态：文字按钮或 chevron 图标                                                  |
 
 事件：`update:page-index` / `update:page-size`——两种模式恒触发（动作幂等，重复回调无害）。组件根为 `flex justify-between p-2` 布局，**不带** `border-t`（位置样式归使用方，`TableRender` 内置使用处自行补边框）。
 
@@ -286,7 +286,7 @@ function onReset() {
 />
 ```
 
-半组合形态——只外置搜索表单，分页仍走内置（R13 单页隐藏、列设置等内置行为全部保留）：
+半组合形态——只外置搜索表单，分页仍走内置（单页隐藏、列设置等内置行为全部保留）：
 
 ```vue
 <TFormRender
@@ -335,13 +335,13 @@ function batchDelete() {
 
 ### `rowSelection` 配置
 
-| 字段                   | 类型                     | 默认   | 说明                                                 |
-| ---------------------- | ------------------------ | ------ | ---------------------------------------------------- |
-| `type`                 | `"radio" \| "checkbox"`  | —      | radio 单选互斥，checkbox 多选                        |
-| `width?`               | `number`                 | `48`   | 选择列宽                                             |
-| `selectable?`          | `(record: T) => boolean` | —      | 行级可选过滤；`false` 的行控件置灰且被全选跳过（S5） |
-| `cancelable?`          | `boolean`                | `true` | radio 再点已选行是否取消（S4）                       |
-| `reserveOnPageChange?` | `boolean`                | `true` | 翻页/数据重载后是否保留选中（S6）                    |
+| 字段                   | 类型                     | 默认   | 说明                                           |
+| ---------------------- | ------------------------ | ------ | ---------------------------------------------- |
+| `type`                 | `"radio" \| "checkbox"`  | —      | radio 单选互斥，checkbox 多选                  |
+| `width?`               | `number`                 | `48`   | 选择列宽                                       |
+| `selectable?`          | `(record: T) => boolean` | —      | 行级可选过滤；`false` 的行控件置灰且被全选跳过 |
+| `cancelable?`          | `boolean`                | `true` | radio 再点已选行是否取消                       |
+| `reserveOnPageChange?` | `boolean`                | `true` | 翻页/数据重载后是否保留选中                    |
 
 ### 设置默认选中值
 
@@ -387,17 +387,17 @@ const table = defineTable<User>({
 });
 ```
 
-- `setSelection` 允许传入当前数据中不存在的 key（进入待定集，数据出现后自动关联行对象，S12）；`selectable` 过滤范围内的不可选行会被直接忽略（对齐 S5）
-- radio 型预置多个 key 时只有最后一个生效（单选互斥，S4）
+- `setSelection` 允许传入当前数据中不存在的 key（进入待定集，数据出现后自动关联行对象）；`selectable` 过滤范围内的不可选行会被直接忽略
+- radio 型预置多个 key 时只有最后一个生效（单选互斥）
 
 行为细则（S 系列，编号对应设计文档 `docs/plans/table-selection-plan.md`）：
 
-- **rowKey 是硬依赖（S1）**：rowSelection 启用但 rowKey 无效时 DEV 警告并禁用选择——组件内部以 `String(row[rowKey])` 作为行 id，缺失会跨页串选，不做索引兜底
-- **全选是本页语义（S10）**：表头 checkbox 三态（全选/半选/未选）只作用于当前页的可选行，不选中未加载的行
-- **跨页保留（S6）**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 从内置快照返回完整行对象——**跨页行可能是过期数据**（数据源已更新时），行对象再次出现会以新数据覆盖快照
-- **radio 默认可取消（S4）**：再点已选行取消选中；`cancelable: false` 时该交互为空操作（程序化 `clearSelection` 不受限）
-- **选择不冒泡（S5）**：点击选择控件不会触发行 `row-click`；`selection-change` 只在选中集变化时发一次，排序/翻页不触发
-- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key、并过滤不可选行（S5/S12）
+- **rowKey 是硬依赖**：rowSelection 启用但 rowKey 无效时 DEV 警告并禁用选择——组件内部以 `String(row[rowKey])` 作为行 id，缺失会跨页串选，不做索引兜底
+- **全选是本页语义**：表头 checkbox 三态（全选/半选/未选）只作用于当前页的可选行，不选中未加载的行
+- **跨页保留**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 从内置快照返回完整行对象——**跨页行可能是过期数据**（数据源已更新时），行对象再次出现会以新数据覆盖快照
+- **radio 默认可取消**：再点已选行取消选中；`cancelable: false` 时该交互为空操作（程序化 `clearSelection` 不受限）
+- **选择不冒泡**：点击选择控件不会触发行 `row-click`；`selection-change` 只在选中集变化时发一次，排序/翻页不触发
+- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key、并过滤不可选行
 
 ## 固定列
 
@@ -434,7 +434,7 @@ const table = defineTable<Order>({
 - **offset 累计**：`fixed: "left"` 列偏移 = 之前所有 fixed-left 列宽之和（有选择列时先累加选择列宽 48）；`fixed: "right"` 从最右列反向累计。纯渲染层 computed，不写 TanStack pinning state
 - **呈现分层**：sticky 单元格统一 `bg-background`（防滚动透出）；表头 z-index（20）高于表体（10）；每个 sticky 组朝滚动方向的交界列加分隔边框（左组 `border-r`、右组 `border-l`）
 - **滚动容器**：`<table>` 外层的 `overflow-x-auto` 容器始终存在（分页条不参与横向滚动）；固定列只是 sticky 定位，不引入 `table-fixed`
-- **列宽硬约束（R32）**：可见列数字 `width` 之和（含选择列）作为 `<table>` 的 `min-width` 下限——容器不足时表格被顶到列宽之和，横滚出现且**列渲染宽度 == 指定值**、sticky 偏移精确成立；容器充足时表格仍 100% 铺满（有宽列可能被拉伸，sticky 偏移按指定值累计的漂移为既有限制）；字符串 `width` 仅渲染提示值，不参与求和与 sticky；全列无数字 width 时和为 0 不挂，行为不变（≥10 列此配置 DEV 提示一次）。自 v0.5.7（R33）起数字 `width` 以 `px` 单位渲染为真实 inline 硬约束——此前版本因缺单位列宽从未实际生效
+- **列宽硬约束**：可见列数字 `width` 之和（含选择列）作为 `<table>` 的 `min-width` 下限——容器不足时表格被顶到列宽之和，横滚出现且**列渲染宽度 == 指定值**、sticky 偏移精确成立；容器充足时表格仍 100% 铺满（有宽列可能被拉伸，sticky 偏移按指定值累计的漂移为既有限制）；字符串 `width` 仅渲染提示值，不参与求和与 sticky；全列无数字 width 时和为 0 不挂，行为不变（≥10 列此配置 DEV 提示一次）。数字 `width` 以 `px` 单位渲染为真实 inline 硬约束
 - **骨架同构**：加载骨架行的固定列同 sticky 同偏移；空态行是横跨全列的单单元格，不参与 sticky
 - **不做**：纵向 sticky 表头、滚动位置动态阴影、`table-fixed`/`<colgroup>` 确定性列布局、TanStack pinning 状态接入
 
@@ -551,11 +551,11 @@ const table = defineTable<Dept>({
 
 - **展开按钮在首列内**：`getCanExpand()` 的行渲染 caret（`aria-expanded` + 展开态旋转），叶子行无 caret；缩进对首列内容整体生效，叶子行也缩进（对齐父级行头）
 - **点击隔离**：caret 点击已阻断冒泡，不会误触发 `row-click`；展开/收起是纯客户端状态，不触发取数
-- **子行参与分页/选择**：展开后的子行是当前页行序列的独立行——`selection-change`/全选含展开子行；**不做父子级联勾选**（勾父带子/半选态），受控 `expanded` 与详情展开行为二期
+- **子行参与分页/选择**：展开后的子行是当前页行序列的独立行——`selection-change`/全选含展开子行；**不做父子级联勾选**（勾父带子/半选态），受控 `expanded` 与详情展开行暂不支持
 - **服务端模式**：children 随行数据返回、展开为纯客户端状态；翻页/排序重取后展开态会被 TanStack autoReset 重置（收起），**建议树形数据配合静态模式或整树返回**
 - **与其他能力叠加**：固定列（缩进在 sticky 首列内正常渲染）、虚拟滚动（展开后行数变化自动传导虚拟窗口）、行选择均可组合
 - **配置防御**：`tree` 非对象或 `childrenKey` 非字符串时 DEV 警告并按普通表格渲染
-- **不做**：父子级联勾选、受控 expanded（程序化展开/收起 API）、详情展开行（expandable detail row，独立二期）、懒加载子树
+- **不做**：父子级联勾选、受控 expanded（程序化展开/收起 API）、详情展开行（expandable detail row）、懒加载子树
 
 ## 行拖拽排序
 
@@ -617,9 +617,9 @@ function onDragSort(payload: TableDragSortPayload<App>) {
 - **排序互斥（动态守卫）**：列排序激活期间把手置灰（排序视图下手动序无意义），取消排序后恢复；与 `defaultSort` / 受控 `sort` 初值同传时 DEV 警告
 - **配置互斥**：与 `tree` / `virtual` 不能同时启用（DEV 警告并忽略 `draggable`）
 - **rowKey 记录级守卫**：当前页任一记录缺 `rowKey` 字段时禁用拖拽并 DEV 警告一次（索引兜底态下行身份不稳定）；空表不触发
-- **布局叠加**：把手列视作最左 sticky 列参与偏移累计（选择列 offset 0 → 把手列 → fixed-left 业务列），列宽计入表格 min-width（R32）；行选择、fill 模式、列显隐均可组合；加载骨架含把手列占位
-- **已知限制**：让位为即时重排（无 FLIP 过渡动画）；预览期间 index 派生渲染器（如 `r.serial()`）短暂显示原序号，落位提交后即正确；行级谓词 `false` 仅限制不可起拖，仍可被让位越过（pinned 定位语义二期）
-- **不做**：跨页拖拽、触屏支持、键盘拖拽（a11y 二期）、树形层级内拖拽
+- **布局叠加**：把手列视作最左 sticky 列参与偏移累计（选择列 offset 0 → 把手列 → fixed-left 业务列），列宽计入表格 min-width；行选择、fill 模式、列显隐均可组合；加载骨架含把手列占位
+- **已知限制**：让位为即时重排（无 FLIP 过渡动画）；预览期间 index 派生渲染器（如 `r.serial()`）短暂显示原序号，落位提交后即正确；行级谓词 `false` 仅限制不可起拖，仍可被让位越过（pinned 定位语义暂不支持）
+- **不做**：跨页拖拽、触屏支持、键盘拖拽（a11y）、树形层级内拖拽
 
 ## 受控模式（v-model）
 
@@ -662,21 +662,21 @@ const table = defineTable<User>({
 | 受控 prop      | 同步行为                                                                                      | 事件通知                                    |
 | -------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------- |
 | `pageIndex`    | 经受控 watch 同步 TanStack（1-based，最小归 1）                                               | `update:page-index`                         |
-| `pageSize`     | 同步容量；**R9 归位**：`pageIndex` 未受控时内部归位第 1 页并通知，两方都受控时由父层自行联动  | `update:page-size` / `update:page-index`    |
+| `pageSize`     | 同步容量；**页码归位**：`pageIndex` 未受控时内部归位第 1 页并通知，两方都受控时由父层自行联动 | `update:page-size` / `update:page-index`    |
 | `sort`         | 经排序管线应用（服务端模式归位第 1 页 + 触发重载，不漏取数）；指向不可排序列时 DEV 警告并忽略 | `sort-change`（内部交互时）                 |
-| `selectedKeys` | 经 `setSelection` 写入（S5 `selectable` 过滤、S12 待定 key 语义继承）                         | `selection-change` / `update:selected-keys` |
+| `selectedKeys` | 经 `setSelection` 写入（`selectable` 过滤、待定 key 语义继承）                                | `selection-change` / `update:selected-keys` |
 
 细则：
 
 - **传 prop 即受控**：非 `undefined` 才受控；四个 prop 可任意混用（如仅受控 `pageSize`，页码保持内部自治）
 - **等值守卫**：内部先行（动作已生效）或父层回写回弹时同步为空操作——不会死循环、不会重复 onLoad
-- **事件不重复**：受控模式下内部交互仍只发一次通知；受控 `pageSize` 触发的 R9 归位会额外发一次 `update:page-index`（页码归位需要让父层知道）
+- **事件不重复**：受控模式下内部交互仍只发一次通知；受控 `pageSize` 触发的页码归位会额外发一次 `update:page-index`（页码归位需要让父层知道）
 - **服务端模式**：受控翻页/排序按既有语义重载（每次状态变化回调 `onLoad`）；初始受控值直接决定首次取数参数，不会先取第 1 页再跳转
 - **`loading` / `virtual` / `tree` 等**其余 prop 不受受控模式影响，保持既有语义
 
 ## 列显隐
 
-`columnSettings`（默认开启）在表格右上角提供「列设置」触发器（Popover 面板）：勾选控制列的显隐、支持**最少一列**（R20）、「重置」恢复默认可见集（R21）。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框（R23）。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）。
+`columnSettings`（默认开启）在表格右上角提供「列设置」触发器（Popover 面板）：勾选控制列的显隐、支持**最少一列**、「重置」恢复默认可见集。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys。
 
 <DemoPreview file="table-render/ColumnVisibilityDemo.vue" />
 
@@ -686,7 +686,7 @@ import { ref } from "vue";
 import { defineTable } from "@tu-design/vue";
 
 const table = defineTable<Dept>({
-  columnVisibility: { defaultVisibleKeys: ["name", "lead"] }, // 聚合式默认可见集（R21 重置基准）
+  columnVisibility: { defaultVisibleKeys: ["name", "lead"] }, // 聚合式默认可见集（重置基准）
   columns: [
     { key: "name", title: "部门", fixed: "left" },
     { key: "lead", title: "负责人" },
@@ -712,26 +712,26 @@ const visibleKeys = ref(["name", "lead"]);
 
 ### 配置与受控
 
-| 入口                                               | 位置               | 说明                                                             |
-| -------------------------------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `columnVisibility.defaultVisibleKeys`              | `defineTable` 配置 | 聚合式默认可见集（R21 重置基准）；未知 key 静默忽略              |
-| `defaultVisibleKeys`（prop）                       | `<TTableRender>`   | 拆分式默认可见集；与聚合式同传时 DEV 警告 definition 优先（R26） |
-| `visibleKeys`（prop）                              | `<TTableRender>`   | 受控可见列（columns 原序子集）；传入即受控                       |
-| `columnSettings`（prop）                           | `<TTableRender>`   | 触发器/面板开关，默认 `true`                                     |
-| `update:visible-keys` / `column-visibility-change` | 事件               | 可见列 key 有序数组；后者受控/非受控均触发，供持久化             |
+| 入口                                               | 位置               | 说明                                                      |
+| -------------------------------------------------- | ------------------ | --------------------------------------------------------- |
+| `columnVisibility.defaultVisibleKeys`              | `defineTable` 配置 | 聚合式默认可见集（重置基准）；未知 key 静默忽略           |
+| `defaultVisibleKeys`（prop）                       | `<TTableRender>`   | 拆分式默认可见集；与聚合式同传时 DEV 警告 definition 优先 |
+| `visibleKeys`（prop）                              | `<TTableRender>`   | 受控可见列（columns 原序子集）；传入即受控                |
+| `columnSettings`（prop）                           | `<TTableRender>`   | 触发器/面板开关，默认 `true`                              |
+| `update:visible-keys` / `column-visibility-change` | 事件               | 可见列 key 有序数组；后者受控/非受控均触发，供持久化      |
 
 行为细则：
 
-- **面板**：清单 = 业务列（columns 原序，**排除选择列**，R22）；列 title 超长 truncate；有效 fixed 列（数字 width）带 Pin 标识；项高 h-8 整行可点
-- **最少一列（R20）**：最后一枚选中项 Checkbox disabled；「全选」已全选时 disabled；禁止 0 列
-- **展开控件跟随可见首列**：树形 caret 在首个可见业务列内（首列隐藏时顺延），选择列/展开控件恒可见不进清单（R22）
-- **受控空数组**：钳制为首列可见 + DEV 警告一次（R24）；未知 key 静默忽略
+- **面板**：清单 = 业务列（columns 原序，**排除选择列**）；列 title 超长 truncate；有效 fixed 列（数字 width）带 Pin 标识；项高 h-8 整行可点
+- **最少一列**：最后一枚选中项 Checkbox disabled；「全选」已全选时 disabled；禁止 0 列
+- **展开控件跟随可见首列**：树形 caret 在首个可见业务列内（首列隐藏时顺延），选择列/展开控件恒可见不进清单
+- **受控空数组**：钳制为首列可见 + DEV 警告一次；未知 key 静默忽略
 - **面板 a11y**：Tab 遍历 + Space 切换（Checkbox 原生语义）；Esc 关闭（Ark 内建）后焦点归还触发器
 - **不做**：列顺序拖拽调整、显隐持久化（业务用 `column-visibility-change` 自存）、列宽调整
 
 ## 表头分组
 
-多级表头（R34–R39）：`columns` 支持**任意层级**的列节点树——**叶子列**（原本的 `TableColumnOptions`）或**分组**（`{ title, align?, children }`）。分组节点只承载展示语义（标题、对齐），排序/宽度/固定等能力全部下沉到叶子列；`defineTable` 的扁平数组写法天然合法（即单级表头），**完全向后兼容**。
+多级表头：`columns` 支持**任意层级**的列节点树——**叶子列**（原本的 `TableColumnOptions`）或**分组**（`{ title, align?, children }`）。分组节点只承载展示语义（标题、对齐），排序/宽度/固定等能力全部下沉到叶子列；`defineTable` 的扁平数组写法天然合法（即单级表头），**完全向后兼容**。
 
 <DemoPreview file="table-render/HeaderGroupDemo.vue" />
 
@@ -758,13 +758,13 @@ const table = defineTable<Metric>({ data: ROWS, columns });
 
 行为细则：
 
-- **表头矩阵（R35）**：表头深度 = 可见表头树的最大层级（无分组时为 1）；分组格 `colSpan` = 其子树下的**可见叶子数**、`rowSpan` = 1；叶子格贴底 `rowSpan` = 深度差。分组下可见叶子为 0 时**整支剔除**（与 R23 同口径），表头深度随之收缩，不产生空白行
-- **可见树驱动（R35）**：矩阵与深度均由「按 `visibleKeys` 剪枝后的可见表头树」单一派生源计算——最大深度取**可见树**而非原始树，故隐藏深层列后表头行数会收缩
-- **分组与固定列（R36）**：分组内可见叶子**同侧且连续固定**（均带数字 `width`）时，分组格整体 sticky 在该侧、偏移取首个可见叶子；**方向混合**（同时含 left/right）或组内夹非固定列时降级为普通格并 DEV 警告一次（单个 `<th>` 无法部分固定）
-- **列显隐（R37）**：列设置面板以**树形缩进**呈现（分组行带 `data-column-group`、叶子行带 `data-column-key`），分组行 Checkbox 为三态（全选/半选/未选），点击批量显隐其子树；`visibleKeys` 契约不变（**只含叶子 key**），R20「最少一列」恒按叶子口径——批量隐藏将清空可见集时保留该组最后一枚叶子
-- **多行 sticky 偏移（R38）**：`fillHeight` / `virtual` 下表头 sticky 时，逐表头行累积 `top` 偏移（行高实测，不可测时按 h-10=40px/行兜底），避免多行表头叠在顶边互相覆盖；虚拟滚动的 `scrollMargin` 取各行高之和，天然自适应
-- **视觉规约（R39）**：横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`、sticky 走表头单元格 `border-b`），单级表头 DOM 零变化；分组表头下，分组格与其后单元格之间加竖向分隔线（同级末块除外）
-- **DEV 校验（R39）**：分组节点误配 `key` / `sortable` / `fixed`、`children` 为空，或叶子列误配 `children`——各 DEV 警告一次并忽略
+- **表头矩阵**：表头深度 = 可见表头树的最大层级（无分组时为 1）；分组格 `colSpan` = 其子树下的**可见叶子数**、`rowSpan` = 1；叶子格贴底 `rowSpan` = 深度差。分组下可见叶子为 0 时**整支剔除**（与列显隐同口径），表头深度随之收缩，不产生空白行
+- **可见树驱动**：矩阵与深度均由「按 `visibleKeys` 剪枝后的可见表头树」单一派生源计算——最大深度取**可见树**而非原始树，故隐藏深层列后表头行数会收缩
+- **分组与固定列**：分组内可见叶子**同侧且连续固定**（均带数字 `width`）时，分组格整体 sticky 在该侧、偏移取首个可见叶子；**方向混合**（同时含 left/right）或组内夹非固定列时降级为普通格并 DEV 警告一次（单个 `<th>` 无法部分固定）
+- **列显隐**：列设置面板以**树形缩进**呈现（分组行带 `data-column-group`、叶子行带 `data-column-key`），分组行 Checkbox 为三态（全选/半选/未选），点击批量显隐其子树；`visibleKeys` 契约不变（**只含叶子 key**），「最少一列」恒按叶子口径——批量隐藏将清空可见集时保留该组最后一枚叶子
+- **多行 sticky 偏移**：`fillHeight` / `virtual` 下表头 sticky 时，逐表头行累积 `top` 偏移（行高实测，不可测时按 h-10=40px/行兜底），避免多行表头叠在顶边互相覆盖；虚拟滚动的 `scrollMargin` 取各行高之和，天然自适应
+- **视觉规约**：横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`、sticky 走表头单元格 `border-b`），单级表头 DOM 零变化；分组表头下，分组格与其后单元格之间加竖向分隔线（同级末块除外）
+- **DEV 校验**：分组节点误配 `key` / `sortable` / `fixed`、`children` 为空，或叶子列误配 `children`——各 DEV 警告一次并忽略
 - **不做**：分组的折叠/展开交互、分组级 `width`/`fixed` 配置、列顺序拖拽
 
 ## 加载失败与错误态
@@ -842,7 +842,7 @@ const table = defineTable<Order>({
 | [`serial`](#r-serial-base-—-序号列)                    | `(base? = 1)`                            | 页内序号 `index + base`                          |
 | [`button`](#r-button-items-—-操作列)                   | `(items)`                                | 操作列按钮行，支持字符串简写                     |
 
-约定：所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。与 x-render 的差异：无 `TableColumnRenders` 集合与 `$type` 标记机制（我们无列模式/视图模式切换）；`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 二期再做。
+约定：所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 暂不支持。
 
 ### `r.dict(mapping, options?)` — 字典映射
 
@@ -859,7 +859,7 @@ const table = defineTable<Order>({
 
 行为细则：
 
-- **命中** → 显示映射文本（或 Badge）；**未命中** → 原始值原样显示（与 x-render `dict.get(value) \|\| value` 一致）；`null`/`undefined` → 空字符串
+- **命中** → 显示映射文本（或 Badge）；**未命中** → 原始值原样显示；`null`/`undefined` → 空字符串
 - 每行变体不同的状态列用对象条目；全部同款徽标时用 `options.badge` 省去逐条写 `variant`
 - 布尔键不受支持（`Record` 键约束），请以 `0`/`1` 或字符串承载
 
@@ -962,7 +962,7 @@ r.currency("USD", "en-US"); // $1,234.50
 
 行为细则：
 
-- 显示 `index + base`；**翻页后从 `base` 重新计数（页内序号）**——跨页连续序号需要总行数偏移，属二期
+- 显示 `index + base`；**翻页后从 `base` 重新计数（页内序号）**——跨页连续序号需要总行数偏移，暂不支持
 - 不读取字段值，`key` 可为任意占位（如 `"seq"`）
 
 ### `r.button(items)` — 操作列
@@ -1013,7 +1013,7 @@ interface Task {
 
 // 自定义工厂与内置渲染器同一签名：(record, index, column) => VNodeChild
 function progressColumn(warnBelow = 30): TableColumnOptions<Task>["render"] {
-  // r.render 是自定义渲染器逃逸口（对齐 x-render renderRenderColumn）
+  // r.render 是自定义渲染器逃逸口
   return (r) => r.render((record) => (
     <div class="flex items-center gap-2">
       <div class="h-1.5 w-24 overflow-hidden rounded-full bg-muted">
@@ -1070,8 +1070,8 @@ const table = defineTable<Task>({
 | `loading`                                                                                                                                                      | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                    |
 | `emptyText`                                                                                                                                                    | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                          |
 | `search`                                                                                                                                                       | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                             |
-| `showSearch`                                                                                                                                                   | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                |
-| `showPagination`                                                                                                                                               | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                                       |
+| `showSearch`                                                                                                                                                   | `boolean`               | —          | `false` 关闭内置搜索区；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                       |
+| `showPagination`                                                                                                                                               | `boolean`               | —          | `false` 关闭内置分页条；缺省时单页自动隐藏不变，见下方组合式布局节                                                                                                     |
 | `fillHeight`                                                                                                                                                   | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节   |
 | `rowSelection` / `virtual` / `height` / `tree` / `draggable` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` / `draggable` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
 
@@ -1107,22 +1107,22 @@ const table = defineTable<Task>({
 
 | config 字段           | 类型                                              | 默认             | 说明                                                                                                  |
 | --------------------- | ------------------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `columns`             | `TableColumnNode<T>[]`                            | —                | 列节点树：叶子列或分组（多级表头 R34），任意层级；`key` 为取值字段                                    |
+| `columns`             | `TableColumnNode<T>[]`                            | —                | 列节点树：叶子列或分组（多级表头），任意层级；`key` 为取值字段                                        |
 | `data?`               | `T[] \| Ref \| () => T[]`                         | —                | 静态模式数据源；ref/getter 自动跟随                                                                   |
 | `onLoad?`             | `(params: TableLoadParams<T>) => void \| Promise` | —                | 服务端模式数据源；与 `data` 冲突时以此为准                                                            |
 | `autoLoad?`           | `boolean`                                         | `true`           | 挂载后是否自动取数（仅服务端模式生效）                                                                |
 | `pageSize?`           | `number`                                          | `10`             | 每页条数                                                                                              |
 | `pageSizeOpts?`       | `number[]`                                        | `[10,20,50,100]` | 每页条数下拉选项                                                                                      |
-| `rowSelection?`       | `"radio" \| "checkbox" \| TableSelectionOptions`  | —                | 行选择；字符串为简写（S2）                                                                            |
-| `rowKey?`             | `string`                                          | —                | 行主键字段；rowSelection 依赖（S1）                                                                   |
+| `rowSelection?`       | `"radio" \| "checkbox" \| TableSelectionOptions`  | —                | 行选择；字符串为简写                                                                                  |
+| `rowKey?`             | `string`                                          | —                | 行主键字段；rowSelection 依赖                                                                         |
 | `search?`             | `FormRenderDefinition`                            | —                | 搜索表单（`defineForm` 返回值）；仅服务端模式生效，静态模式传入时 DEV 警告并忽略                      |
 | `virtual?`            | `boolean`                                         | —                | 表体行虚拟化渲染（当前页行窗口内，分页语义不变）；须同时配置 `height`，否则 DEV 警告并降级            |
 | `height?`             | `number \| string`                                | —                | 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 `virtual: true` 时生效                                    |
 | `tree?`               | `TreeOptions`                                     | —                | 树形数据（子行展开/收起）；配置无效时 DEV 警告并忽略，见[树形数据](#树形数据)                         |
 | `draggable?`          | `boolean \| TableDraggableOptions<T>`             | —                | 行拖拽排序（把手列页内 DnD + `drag-sort` 事件）；与 tree/virtual 互斥，见[行拖拽排序](#行拖拽排序)    |
-| `columnVisibility?`   | `ColumnVisibilityOptions`                         | —                | 聚合式列显隐：`{ defaultVisibleKeys?: string[] }`（R21 重置基准）；未知 key 静默忽略                  |
+| `columnVisibility?`   | `ColumnVisibilityOptions`                         | —                | 聚合式列显隐：`{ defaultVisibleKeys?: string[] }`（重置基准）；未知 key 静默忽略                      |
 | `pageIndex?`          | `number`                                          | —                | 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 `update:page-index` 通知                      |
-| `pageSize?`           | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时 R9 归位内部处理并通知                                  |
+| `pageSize?`           | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时页码归位内部处理并通知                                  |
 | `sort?`               | `SortableOptions`                                 | —                | 受控排序：传入即受控；内部/外部变化均经 `sort-change` 通知                                            |
 | `selectedKeys?`       | `(string \| number)[]`                            | —                | 受控选中集（数组，与 `update:selected-keys` 载荷同构）；传入即受控                                    |
 | `visibleKeys?`        | `string[]`                                        | —                | 受控可见列 key（columns 原序子集）：传入即受控；内部显隐经 `update:visible-keys` 通知                 |
@@ -1142,10 +1142,10 @@ const table = defineTable<Task>({
 | `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                            |
 | `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                              |
 | `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                           |
-| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行（S6）         |
-| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`（S7）                                         |
-| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集（S12）                                                      |
-| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束（S4）                                      |
+| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行               |
+| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`                                               |
+| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集                                                             |
+| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束                                            |
 | `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区          |
 | `draggable`                               | 解析后的行拖拽配置（冲突被忽略时为 `undefined`）                                  |
 | `reorderRows(from, to)`                   | 页内重排动作（0-based 页内索引）；返回 `drag-sort` 载荷，守卫不通过时 `undefined` |
@@ -1156,7 +1156,7 @@ const table = defineTable<Task>({
 
 - **默认居中**：未配置 `align` 时，业务列单元格与表头默认水平居中（表头/表体一致）；显式 `"left"` / `"right"` 覆盖默认。
 - **选择列恒居中**：checkbox/radio 窄列不随 `align` 配置，表头与表体控件始终居中。
-- **操作列按钮组**：`r.button()` 渲染的按钮组为行内级（inline-flex），随单元格 `align` 对齐——此前为块级布局恒左起（`align` 不生效）。
+- **操作列按钮组**：`r.button()` 渲染的按钮组为行内级（inline-flex），随单元格 `align` 对齐。
 - **树形首列**：展开 caret + 层级缩进随列对齐整体居中；若偏好贴左习惯，可显式 `align: "left"`。
 
 ### 类型速查
@@ -1203,7 +1203,7 @@ const table = defineTable<Task>({
 - **点了操作列按钮，行点击也触发了？** —— 行点击绑在 `<tr>` 上，按钮点击会冒泡；操作列与 `row-click` 并存时需在行点击处理器中区分来源（事件目标是否在操作列单元格内）。
 - **`onClick` 能拿到事件对象吗？** —— 不能，回调签名是 `(record, index)`。这是有意收敛：需要事件的特殊场景请用自定义 `render` 完全接管。
 - **`date` 的时区行为是什么？** —— 走浏览器本地时区解析与显示；服务端返回 UTC 字符串且需要固定时区展示时，请先在自己的数据层转换为目标时区的 `Date`。
-- **`serial` 翻页后重头计数正常吗？** —— 正常，这是页内序号的设计语义；跨页连续序号需要总行数偏移，属二期。
+- **`serial` 翻页后重头计数正常吗？** —— 正常，这是页内序号的设计语义；跨页连续序号需要总行数偏移，暂不支持。
 - **外置了查询按钮但点击没反应？** —— `show-search="false"` 后内置 `search` / `reset` 事件不再触发（二者由内置搜索区发出）；外层按钮请直接调 `table.reload(true)`（需校验时用 `await table.search.submit()`）。
 - **`TTablePagination` 的 `definition` 和手动 props 同时传了？** —— definition 优先并 DEV 警告；混传没有意义，二选一。
 - **金额带千分位但想要 `1,234.50`（无货币符号）？** —— `currency` 固定走货币格式；纯千分位请自定义 `render` 用 `Intl.NumberFormat({ style: "decimal" })`。
@@ -1215,16 +1215,16 @@ const table = defineTable<Task>({
 - **`onLoad` 抛错不会打断表格**：内部 `console.error` 并保持空态，请在自己的 `onLoad` 里做错误提示。
 - **竞态已内置**：同一表格的多次取数带序号守卫，先发后到的旧响应不会覆盖新结果，无需自行 debounce（但也不会替你做节流）。
 - **排序改的是页码**：服务端模式下切换排序会自动回到第 1 页；`setPageSize` 同样归位第 1 页。
-- **`rowKey` 字段缺失**时按行索引兜底，并在 DEV 下警告一次（仅一次，不会刷屏）；但**行选择场景例外**：rowKey 无效时禁用选择而非兜底（S1，索引作行 id 会跨页串选）。
+- **`rowKey` 字段缺失**时按行索引兜底，并在 DEV 下警告一次（仅一次，不会刷屏）；但**行选择场景例外**：rowKey 无效时禁用选择而非兜底（索引作行 id 会跨页串选）。
 - **固定列需要数字 `width`**：`fixed` 列缺数字宽度时 DEV 警告并按普通列渲染（sticky 偏移无法从字符串/百分比宽度推算）；固定列是纯渲染层 sticky，不写 TanStack pinning 状态。
 - **虚拟滚动需要 `height`**：`virtual: true` 缺容器高度时 DEV 警告并降级普通渲染；大分页（如 `pageSize: 10000`）配合虚拟化使用，避免窗口外行进入 DOM。
-- **树形数据的展开是纯客户端状态**：children 随行数据返回即可；`tree` 配置无效（非对象 / `childrenKey` 非字符串）时 DEV 警告并忽略。父子级联勾选、受控 expanded、详情展开行属二期。
-- **列显隐基于可见列集**：隐藏 fixed 列后 sticky 偏移自动重算（组空无残留边框）；`columnSettings: false` 只隐藏 UI，受控 `visibleKeys` 不受影响；显隐不触发 onLoad、不重置分页/排序/选择（R25）。
+- **树形数据的展开是纯客户端状态**：children 随行数据返回即可；`tree` 配置无效（非对象 / `childrenKey` 非字符串）时 DEV 警告并忽略。父子级联勾选、受控 expanded、详情展开行暂不支持。
+- **列显隐基于可见列集**：隐藏 fixed 列后 sticky 偏移自动重算（组空无残留边框）；`columnSettings: false` 只隐藏 UI，受控 `visibleKeys` 不受影响；显隐不触发 onLoad、不重置分页/排序/选择。
 - **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
-- **`TTablePagination` 两种模式的可见性语义不同**：`definition` 模式单页自隐藏（R13）；手动模式恒渲染（缺关键 props 时 DEV 警告并不渲染），可见性由使用方控制。
+- **`TTablePagination` 两种模式的可见性语义不同**：`definition` 模式单页自隐藏；手动模式恒渲染（缺关键 props 时 DEV 警告并不渲染），可见性由使用方控制。
 - **DEV 兜底提示**：`columns` 为空、`data` 非数组、`defaultSort` 未配 `sortable`、`search` 用于静态模式等都会在控制台提示并降级运行；生产构建静默。
-- 二期规划：列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
+- 暂不支持：列宽拖拽、导出、编辑态、`image`/`progress` 渲染器、跨页连续序号。
 
 ## 主题定制
 

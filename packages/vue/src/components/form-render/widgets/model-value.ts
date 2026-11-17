@@ -26,7 +26,7 @@ import { MODEL_VALUE, bindField } from "./bind";
 /**
  * modelValue 形态 widgets 统一展开模式（方案 C）：
  * item 级缺省 → options 整体展开（命名穿透，组件全 props）→ 受控绑定 → 逃逸口。
- * options.placeholder 为 undefined 时 Vue 视为未传，item 级缺省保留（I1 语义）。
+ * options.placeholder 为 undefined 时 Vue 视为未传，item 级缺省保留。
  */
 
 /**

@@ -160,7 +160,7 @@ async function beforeLeave(next: string, prev: string) {
 ## 说明
 
 - 根元素上的 `class` 落在根容器（如 `w-96` 控制整体宽度），item 的 `class` 追加到触发按钮
-- 面板与触发器统一使用 zag 语义的 `data-selected` 标记激活态（历史版本面板上的 `data-state` 已移除，此前依赖它定制面板样式的请改用 `data-selected`）
+- 面板与触发器统一使用 zag 语义的 `data-selected` 标记激活态
 - 受控（传入 `value`）时严格跟随该值：父组件未回写前 UI 不会切换，仅发出 `update:value`
 - 关闭按钮为 `role="button"` 的 span（避免 button 嵌套），键盘可达性有限；点击已阻断焦点转移与选中冒泡
 - 非受控下激活项被移除时自动选中前一个邻居，全删光则无选中；受控时请自行同步 `value`

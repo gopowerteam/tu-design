@@ -56,7 +56,7 @@ const ORG: Dept[] = [
 const table = defineTable<Dept>({
   data: ORG,
   pageSize: 100,
-  rowSelection: "checkbox", // 子行作为独立行参与本页选择；父子级联勾选属二期
+  rowSelection: "checkbox", // 子行作为独立行参与本页选择；父子级联勾选暂不支持
   tree: {
     childrenKey: "children",
     defaultExpandAll: true,
@@ -75,8 +75,7 @@ const table = defineTable<Dept>({
     <TTableRender :definition="table" row-key="id" />
     <p class="text-muted-foreground text-xs">
       展开按钮位于首个业务列单元格内，按层级缩进；
-      <code>row-click</code> 不会误触发（caret 已阻断冒泡）。 不做父子级联勾选与受控
-      expanded（二期）。
+      <code>row-click</code> 不会误触发（caret 已阻断冒泡）。 不做父子级联勾选与受控 expanded。
     </p>
   </div>
 </template>

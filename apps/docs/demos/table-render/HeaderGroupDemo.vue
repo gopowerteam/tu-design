@@ -23,7 +23,7 @@ const ROWS: Metric[] = Array.from({ length: 8 }, (_, i) => ({
   ops: "编辑",
 }));
 
-// 表头分组（多级表头，R34）：分组节点只提供 title，能力全部下沉到叶子列；
+// 表头分组（多级表头）：分组节点只提供 title，能力全部下沉到叶子列；
 // 固定列、排序、列显隐与扁平列完全一致（叶子口径不变）。
 const table = defineTable<Metric>({
   data: ROWS,

@@ -41,7 +41,7 @@ export interface TableActionButton<T extends DataRecord> {
 }
 
 export interface ColumnRenders<T extends DataRecord> {
-  /** 逃逸口：自定义渲染器与内置同一范式（对齐 x-render renderRenderColumn） */
+  /** 逃逸口：自定义渲染器与内置同一范式 */
   render: (fn: ColumnRender<T>) => ColumnRender<T>;
   dict: (mapping: DictColumnMapping, options?: DictColumnOptions) => ColumnRender<T>;
   date: (pattern?: DateColumnPattern) => ColumnRender<T>;
@@ -79,9 +79,9 @@ function formatDate(input: unknown, pattern: string): VNodeChild {
 }
 
 /**
- * 内置列渲染器工厂（对标 x-render table-columns，v1：dict/date/currency/serial/button）。
+ * 内置列渲染器工厂：dict/date/currency/serial/button。
  * 返回值直接填入 TableColumnOptions.render；column 参数用于读取字段值。
- * 与 FormRender widget 的 r.xxx() 范式共词根（D10）。
+ * 与 FormRender widget 的 r.xxx() 范式共词根。
  * @returns 各内置渲染器集合（render/dict/date/currency/serial/button）
  */
 export function columnRenders<T extends DataRecord>(): ColumnRenders<T> {

@@ -78,7 +78,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     @dragover="emit('drag-over', $event)"
     @drop="emit('drop', $event)"
   >
-    <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
+    <!-- 选择单元格：阻断冒泡避免触发行 row-click；radio 为原生控件 -->
     <td
       v-if="props.selection"
       class="w-12 p-2 text-center align-middle"

@@ -41,14 +41,14 @@ const props = defineProps({
   definition: { type: Object as PropType<TableRenderDefinition<any>> },
   /** 数据主键（记录缺字段时以行索引兜底） */
   rowKey: { type: String, required: true },
-  /** 拆分式：与 definition 二选一，definition 优先（支持分组列节点，R34） */
+  /** 拆分式：与 definition 二选一，definition 优先（支持分组列节点） */
   columns: { type: Array as PropType<TableColumnNode[]> },
   onLoad: {
     type: Function as PropType<(params: TableLoadParams) => void | Promise<unknown>>,
   },
   data: { type: Array as PropType<DataRecord[]> },
   autoLoad: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-  /** 每页条数 / 受控每页条数（D11）：传入即受控（pageIndex 未受控时 R9 归位内部处理并通知） */
+  /** 每页条数 / 受控每页条数：传入即受控（pageIndex 未受控时页码归位内部处理并通知） */
   pageSize: { type: Number },
   pageSizeOpts: { type: Array as PropType<number[]> },
   loading: { type: Boolean as PropType<boolean | undefined>, default: undefined },
@@ -79,13 +79,13 @@ const props = defineProps({
   selectedKeys: { type: Array as PropType<Array<string | number>> },
   /** 受控可见列 key（columns 原序子集）：传入即受控；内部显隐经 update:visible-keys 通知 */
   visibleKeys: { type: Array as PropType<string[]> },
-  /** 拆分式默认可见列集；与聚合式 columnVisibility.defaultVisibleKeys 同传时 DEV 警告（R26，definition 优先） */
+  /** 拆分式默认可见列集；与聚合式 columnVisibility.defaultVisibleKeys 同传时 DEV 警告（definition 优先） */
   defaultVisibleKeys: { type: Array as PropType<string[]> },
   /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
   columnSettings: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-  /** 搜索区渲染开关（R27）：false 关闭内置搜索区（组合式外置 FormRender）；数据链路不变 */
+  /** 搜索区渲染开关：false 关闭内置搜索区（组合式外置 FormRender）；数据链路不变 */
   showSearch: { type: Boolean as PropType<boolean | undefined>, default: undefined },
-  /** 分页条渲染开关（R28）：false 关闭内置分页条（组合式外置 TablePagination）；缺省模式 R13 不变 */
+  /** 分页条渲染开关：false 关闭内置分页条（组合式外置 TablePagination）；缺省模式单页自隐藏不变 */
   showPagination: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   /** 填充模式：根容器 h-full 纵向 flex，滚动区 flex-1 内滚；表头 sticky 钉住。
    * 父链需有确定高度（如页面布局的 .table-body）；无确定高度时安全退化为自然高度。
@@ -135,7 +135,7 @@ defineSlots<{
   error?: (props: { error: Error | undefined; retry: () => void }) => VNodeChild;
 }>();
 
-/** 加载态骨架行数（R14） */
+/** 加载态骨架行数 */
 const SKELETON_ROWS = [1, 2, 3, 4, 5];
 
 /** 内置渲染器单例：render 工厂按列求值时复用（工厂本身轻量，仅为整洁） */
@@ -179,7 +179,7 @@ const instance =
     defaultVisibleKeys: () => props.defaultVisibleKeys,
     visibleKeys: () => props.visibleKeys,
   });
-// 拆分式已传 rowKey；聚合式由组件回填（S1：选择引擎依赖 rowKey 就绪）
+// 拆分式已传 rowKey；聚合式由组件回填（选择引擎依赖 rowKey 就绪）
 instance.setRowKey(props.rowKey);
 
 // ---- 搜索表单（FormRender 联动） --------------------------------------------
@@ -200,8 +200,8 @@ const search = instance.search;
 // 列设置触发器的 Tooltip 受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故手动控制、不嵌套触发器）
 const settingsTipOpen = ref(false);
 
-// ---- 列显隐（column visibility，R20–R26） ------------------------------------
-// R26：聚合式（columnVisibility.defaultVisibleKeys 经引擎解析回传）与拆分式 prop 同传 → definition 优先。
+// ---- 列显隐（column visibility） ------------------------------------
+// 聚合式（columnVisibility.defaultVisibleKeys 经引擎解析回传）与拆分式 prop 同传 → definition 优先。
 // 引擎是唯一解析点；聚合式受控回填经 setVisibleKeys（normalize 等值守卫防回弹）；
 // 拆分式由引擎受控 watch 直接同步（源 = props getter）
 if (
@@ -244,12 +244,12 @@ function onReset() {
 
 const columns = computed(() => instance.columns);
 const rows = computed(() => instance.table.getRowModel().rows);
-/** 内部加载态 ∪ 外部受控加载态（R14） */
+/** 内部加载态 ∪ 外部受控加载态 */
 const loading = computed(() => props.loading === true || instance.loading.value);
 const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
-/** 内置分页条开关（R28）：showPagination=false 关闭；R13 仅作用于缺省模式 */
+/** 内置分页条开关：showPagination=false 关闭；单页自隐藏仅作用于缺省模式 */
 const showPaginationBar = computed(() => showPagination.value && props.showPagination !== false);
-/** 内置搜索区开关（R27）：配置了 search 且未被 showSearch=false 关闭；列设置触发器不受影响 */
+/** 内置搜索区开关：配置了 search 且未被 showSearch=false 关闭；列设置触发器不受影响 */
 const showSearchArea = computed(() => search !== undefined && props.showSearch !== false);
 
 // ---- 错误态（服务端模式 onLoad 失败） ----------------------------------------
@@ -270,15 +270,15 @@ const selection = computed(() => instance.selection);
 const selectedKeys = instance.selectedKeys;
 const hasSelection = computed(() => selection.value.enabled);
 
-// ---- 列显隐（column visibility，R20–R26） -------------------------------------
+// ---- 列显隐（column visibility） -------------------------------------
 const visibleKeySet = computed(() => new Set(instance.visibleKeys.value));
-/** 可见业务列（columns 原序子集）：header/body/骨架/colspan/sticky 全部基于此渲染（R23/R25） */
+/** 可见业务列（columns 原序子集）：header/body/骨架/colspan/sticky 全部基于此渲染 */
 const visibleColumns = computed(() =>
   columns.value.filter((column) => visibleKeySet.value.has(column.key)),
 );
 
-// ---- 表头分组（多级表头，R34–R39） -------------------------------------------
-// 原始列节点树（definition.columnTree 缺省时回退扁平列 = 单级表头，I4 兜底）
+// ---- 表头分组（多级表头） -------------------------------------------
+// 原始列节点树（definition.columnTree 缺省时回退扁平列 = 单级表头）
 const columnsTree = computed<TableColumnNode<DataRecord>[]>(
   () => (instance.columnTree as TableColumnNode<DataRecord>[]) ?? columns.value,
 );
@@ -287,13 +287,13 @@ const columnsTree = computed<TableColumnNode<DataRecord>[]>(
 interface HeaderNodeView {
   node: TableColumnNode<DataRecord>;
   isGroup: boolean;
-  /** DFS 索引路径（如 "0-1"）：分组单元格 key 的唯一来源，与 title 解耦（I1） */
+  /** DFS 索引路径（如 "0-1"）：分组单元格 key 的唯一来源，与 title 解耦 */
   path: string;
   children: HeaderNodeView[];
 }
 
 /**
- * 按可见集递归构建表头树：分组子树可见叶子为 0 时整支剔除（R23 口径）。
+ * 按可见集递归构建表头树：分组子树可见叶子为 0 时整支剔除（与列显隐同口径）。
  * @param nodes - 列节点树（或其子树）
  * @param parentPath - 父级 DFS 索引路径（根为 ""）
  * @returns 剪枝后的可见表头树
@@ -315,7 +315,7 @@ function buildVisibleHeaderTree(
   return views;
 }
 
-/** 唯一派生源：可见表头树（maxDepth 与表头矩阵同源于此，杜绝口径漂移，I2） */
+/** 唯一派生源：可见表头树（maxDepth 与表头矩阵同源于此，杜绝口径漂移） */
 const visibleHeaderTree = computed(() => buildVisibleHeaderTree(columnsTree.value, ""));
 
 /** 表头深度（可见树）：无分组时为 1 */
@@ -388,7 +388,7 @@ function isColumnVisible(key: string): boolean {
 }
 
 /**
- * 最少一列（R20）：唯一可见列不可隐藏
+ * 最少一列：唯一可见列不可隐藏
  * @param key - 列 key
  * @returns 是否允许隐藏该列
  */
@@ -415,11 +415,11 @@ function selectAllColumns() {
 }
 
 function resetColumns() {
-  // R21：恢复 defaultVisibleKeys；未配置 = 全部可见
+  // 恢复 defaultVisibleKeys；未配置 = 全部可见
   instance.setVisibleKeys(instance.defaultVisibleKeys ?? columns.value.map((column) => column.key));
 }
 
-// ---- 列设置面板：树形行（R37） ------------------------------------------------
+// ---- 列设置面板：树形行 ------------------------------------------------
 /** 面板行（全树扁平化，避免模板递归）：分组行为父级三态，叶子行为勾选项 */
 interface PanelRow {
   node: TableColumnNode<DataRecord>;
@@ -456,7 +456,7 @@ const panelRows = computed<PanelRow[]>(() => {
 });
 
 /**
- * 分组勾选三态（R37）：全部可见 = true，部分可见 = "indeterminate"，全隐 = false
+ * 分组勾选三态：全部可见 = true，部分可见 = "indeterminate"，全隐 = false
  * @param row - 面板分组行
  * @returns 该分组的三态勾选值
  */
@@ -468,7 +468,7 @@ function groupCheckedState(row: PanelRow): boolean | "indeterminate" {
 }
 
 /**
- * 分组批量显隐（R20 最少一列恒按叶子口径，A5）：
+ * 分组批量显隐（最少一列恒按叶子口径）：
  * 隐藏整组会导致 0 列可见时，保留该组最后一枚可见叶子（父级呈 indeterminate）。
  * @param row - 面板分组行
  */
@@ -486,7 +486,7 @@ function toggleGroupVisible(row: PanelRow) {
   }
   const remaining = instance.visibleKeys.value.filter((key) => !leafSet.has(key));
   if (remaining.length === 0) {
-    // R20 钳制：不得清空可见集，保留最后一枚叶子
+    // 钳制：不得清空可见集，保留最后一枚叶子
     instance.setVisibleKeys([row.leafKeys[row.leafKeys.length - 1]!]);
     return;
   }
@@ -508,7 +508,7 @@ watch(instance.visibleKeys, (keys) => {
   emit("column-visibility-change", [...keys]);
 });
 
-/** 总列数 = 可见业务列 + 选择列（空态 colspan 与骨架行，S8/R23） */
+/** 总列数 = 可见业务列 + 选择列（空态 colspan 与骨架行） */
 const columnCount = computed(
   () => visibleColumns.value.length + (hasSelection.value ? 1 : 0) + (dragEnabled.value ? 1 : 0),
 );
@@ -524,7 +524,7 @@ for (const column of columns.value) {
   }
 }
 
-// DEV 校验（R39，一次性）：分组节点误配 key/sortable/fixed/width、空 children（列节点树定版）
+// DEV 校验（一次性）：分组节点误配 key/sortable/fixed/width、空 children（列节点树定版）
 if (import.meta.env.DEV) {
   const validateNodes = (nodes: TableColumnNode<DataRecord>[], depth: number) => {
     for (const node of nodes) {
@@ -558,19 +558,19 @@ if (import.meta.env.DEV) {
   validateNodes(columnsTree.value, 0);
 }
 
-// DEV 提示（一次性，columns setup 期定版，R32）：多列宽表全列无数字 width 时，
+// DEV 提示（一次性，columns setup 期定版）：多列宽表全列无数字 width 时，
 // min-width 横滚不可达 —— 宽表请为列声明数字 width（px）。
 if (columns.value.length >= 10 && !columns.value.some((c) => typeof c.width === "number")) {
   console.warn(
     `[tu-design] <TableRender> ${columns.value.length} 列均无数字 width，` +
-      `窄容器下不会出现横向滚动（R32）；宽表请为列声明数字 width（px）。`,
+      `窄容器下不会出现横向滚动；宽表请为列声明数字 width（px）。`,
   );
 }
 
 /** sticky 单元格映射（纯渲染层 computed，不进 TanStack pinning state）：
  * 选择列视作最左 fixed 列参与累计（offset 0）；fixed-left 按列序累加，
  * fixed-right 从最右列反向累计。edge = 该 sticky 组朝滚动方向的交界列（加分隔边框）。
- * 全部基于**可见集**（R23）：sticky 组因隐藏变空则无该组输出（不输出边框）。
+ * 全部基于**可见集**：sticky 组因隐藏变空则无该组输出（不输出边框）。
  */
 const stickyOf = computed<StickyMap>(() => {
   const map: StickyMap = new Map();
@@ -611,11 +611,11 @@ const stickyOf = computed<StickyMap>(() => {
   return map;
 });
 
-// ---- 表格 min-width（列宽硬约束，R32） ----------------------------------------
+// ---- 表格 min-width（列宽硬约束） ----------------------------------------
 // 可见业务列数字 width 之和（含选择列）作为 <table> min-width 下限：
 // 容器不足 → 表格被顶到 Σwidth，auto 布局下列渲染宽度 == 指定宽度，stickyOf 偏移精确成立，
 // 滚动区 overflow-x-auto 横滚；容器充足 → 表格仍 100% 拉伸（有宽列可能被拉伸，
-// sticky 偏移按指定值累计的漂移为既有限制，非 R32 引入）。
+// sticky 偏移按指定值累计的漂移为既有限制）。
 // 字符串 width 仅渲染提示值，不参与求和（与 stickyOf 口径一致）；和为 0 不挂 style（零回归）。
 const tableMinWidth = computed(() => {
   let sum = 0;
@@ -627,7 +627,7 @@ const tableMinWidth = computed(() => {
   return sum;
 });
 
-/** 列宽 inline style 值（R33）：数字补 px 单位——Vue :style 不自动加单位，
+/** 列宽 inline style 值：数字补 px 单位——Vue :style 不自动加单位，
  * 裸数字会被浏览器当非法 CSS 值丢弃，列宽即失效；字符串视为已带单位原样输出。
  * @param width - 列宽配置
  * @returns 可直接用于 :style 的 CSS 宽度值；未配置返回 undefined
@@ -636,13 +636,13 @@ function widthOf(width?: number | string) {
   return typeof width === "number" ? `${width}px` : width;
 }
 
-// ---- 分组表头单元格（R34–R39） ------------------------------------------------
+// ---- 分组表头单元格 ------------------------------------------------
 
 /** 混合固定组警告去重（同名分组仅警告一次） */
 const warnedMixedFixedGroups = new Set<string>();
 
 /**
- * 分组单元格的 sticky 样式（R36）：子树可见叶子同侧且连续固定时整格 sticky，
+ * 分组单元格的 sticky 样式：子树可见叶子同侧且连续固定时整格 sticky，
  * 偏移取首个可见叶子；混合侧 → 返回 undefined（降级普通格）并 DEV 警告一次。
  * @param cell - 表头单元格（分组）
  * @returns 分组单元格的 sticky inline style；不适用时返回 undefined
@@ -653,7 +653,7 @@ function groupStickyStyle(cell: HeaderCell) {
       .map((key) => columns.value.find((column) => column.key === key)?.fixed)
       .filter((side): side is "left" | "right" => side !== undefined),
   );
-  // 混合侧（同时含 left 与 right）：单元格无法部分固定 → 降级普通格（R36）
+  // 混合侧（同时含 left 与 right）：单元格无法部分固定 → 降级普通格
   if (sides.size > 1) {
     if (!warnedMixedFixedGroups.has(cell.key)) {
       warnedMixedFixedGroups.add(cell.key);
@@ -683,7 +683,7 @@ function groupStickyStyle(cell: HeaderCell) {
 }
 
 /**
- * 表头行的行级样式：sticky 模式下逐行累积 top 偏移（多行表头 R38），避免顶边重叠。
+ * 表头行的行级样式：sticky 模式下逐行累积 top 偏移（多行表头），避免顶边重叠。
  * @param rowIndex - 表头行下标
  * @returns 行级 inline style；非 sticky 模式返回 undefined
  */
@@ -693,7 +693,7 @@ function headerRowStyle(rowIndex: number) {
 }
 
 /**
- * 表头单元格的视觉规约（R39）：分组格与其后单元格之间加竖向分隔线。
+ * 表头单元格的视觉规约：分组格与其后单元格之间加竖向分隔线。
  *
  * 横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`；
  * sticky 走 `theadThClass` 的 `border-b`），此处**不重复绘制**；
@@ -718,9 +718,9 @@ function headerCellAlign(cell: HeaderCell) {
     : ((cell.node as TableColumnOptions).align ?? "center");
 }
 
-/** 分组无需排序能力标记（sortable 仅叶子生效，P8 对分组 sortable 警告） */
+/** 分组无需排序能力标记（sortable 仅叶子生效，对分组 sortable 警告） */
 
-/** 表头全选三态（S10）：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
+/** 表头全选三态：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
 const selectableKeys = computed(() =>
   rows.value.filter((row) => row.getCanSelect()).map((row) => rowKeyOf(row.original, row.index)),
 );
@@ -743,7 +743,7 @@ function onHeaderSelect(checked: boolean) {
 }
 
 /**
- * 行选择控件切换；radio 不可取消由引擎 S4 守卫，不选中态点击传 checked=true
+ * 行选择控件切换；radio 不可取消由引擎守卫，不选中态点击传 checked=true
  * @param line - 行数据（含行 key）
  * @param checked - 目标选中态
  */
@@ -751,13 +751,13 @@ function onRowSelect(line: { key: string }, checked: boolean) {
   instance.toggleRowSelected(line.key, checked);
 }
 
-// 选中集变化 → 对外事件（S7）：排序/翻页不改变选中集，故不会误发
+// 选中集变化 → 对外事件：排序/翻页不改变选中集，故不会误发
 watch(instance.selectedKeys, (keys) => {
   emit("selection-change", [...selection.value.value]);
   emit("update:selected-keys", [...keys]);
 });
 
-/** 行 → 单元格值矩阵：render > formatter > record[key]（R17） */
+/** 行 → 单元格值矩阵：render > formatter > record[key] */
 const body = computed<TableBodyLine[]>(() => {
   // 渲染器工厂按列求值一次（而非每单元格），避免用户工厂内的重分配被放大
   const renderFns = new Map(
@@ -769,9 +769,9 @@ const body = computed<TableBodyLine[]>(() => {
     key: rowKeyOf(row.original, row.index),
     index: row.index,
     record: row.original,
-    /** 行级可选过滤（S5）：selectable 谓词交由引擎 enableRowSelection 判定 */
+    /** 行级可选过滤：selectable 谓词交由引擎 enableRowSelection 判定 */
     canSelect: row.getCanSelect(),
-    // 可见列的值矩阵（列显隐只裁剪列；R25 状态不受影响）
+    // 可见列的值矩阵（列显隐只裁剪列；状态不受影响）
     cells: visibleColumns.value.map((column): VNodeChild => {
       const render = renderFns.get(column);
       if (render) return render(row.original, row.index, column);
@@ -789,7 +789,7 @@ const treeIndent = tree?.indentSize ?? 16;
 let missingRowKeyWarned = false;
 
 /**
- * 行主键：rowKey 字段缺失时以行索引兜底（R3）
+ * 行主键：rowKey 字段缺失时以行索引兜底
  * @param record - 行记录
  * @param index - 行索引（兜底来源）
  * @returns 稳定的行主键字符串
@@ -826,7 +826,7 @@ const dragEnabled = computed(() => dragConfig !== undefined && !virtualEnabled);
 const dragWidth = dragConfig?.width ?? 32;
 const drag = useRowDrag();
 
-// rowKey 记录级守卫：当前页任一记录缺 rowKey 字段 → 禁用拖拽（R3 索引兜底态下行身份不稳定）
+// rowKey 记录级守卫：当前页任一记录缺 rowKey 字段 → 禁用拖拽（索引兜底态下行身份不稳定）
 const dragKeysValid = computed(
   () => !dragEnabled.value || body.value.every((line) => line.record[props.rowKey] != null),
 );
@@ -972,7 +972,7 @@ const theadEl = ref<HTMLElement | null>(null);
 /** 滚动容器内 thead 占据的前缀高度（scrollMargin）；表头内容静态，挂载后测量一次 */
 const theadOffset = ref(0);
 
-// ---- 多行表头测量（P5 / A4） --------------------------------------------------
+// ---- 多行表头测量 --------------------------------------------------
 /** 表头行元素（模板 ref 收集，逐行求高度） */
 const headerRowEls = ref<(HTMLElement | null)[]>([]);
 /** 各行顶部偏移（前缀和）：多行 sticky 表头逐行钉住，避免顶边重叠 */
@@ -981,7 +981,7 @@ const rowTop = ref<number[]>([]);
 const HEADER_ROW_FALLBACK = 40;
 
 /**
- * 测量所有表头行高度并派生行顶偏移与 thead 总高（唯一测量源，A4）。
+ * 测量所有表头行高度并派生行顶偏移与 thead 总高（唯一测量源）。
  *
  * 两处口径有意区分：
  * - `rowTop`（多行 sticky 逐行 top）用兜底 h-10（40px）——测量不可用时避免表头行重叠；
@@ -1010,7 +1010,7 @@ const virtualizerRef = virtualEnabled
   : null;
 
 onMounted(measureHeaderRows);
-// 可见表头树变化（列显隐）→ 行数/单元格可能变化，DOM 更新后重测（I3）
+// 可见表头树变化（列显隐）→ 行数/单元格可能变化，DOM 更新后重测
 watch(headerRows, () => void nextTick(measureHeaderRows), { flush: "post" });
 
 const virtualRows = computed(() => (virtualizerRef ? virtualizerRef.value.getVirtualItems() : []));
@@ -1035,7 +1035,7 @@ function measureRow(node: Element | ComponentPublicInstance | null) {
 }
 
 /**
- * aria-sort 仅在该列当前被排序时标注（R16）
+ * aria-sort 仅在该列当前被排序时标注
  * @param column - 列配置
  * @returns 当前排序方向对应的 aria-sort 值；未排序返回 undefined
  */
@@ -1128,7 +1128,7 @@ defineExpose({
 
 <template>
   <div :class="cn('w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)">
-    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方（R27：showSearch=false 关闭搜索区） -->
+    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方（showSearch=false 关闭搜索区） -->
     <div
       v-if="showSearchArea || showColumnSettings"
       :class="cn('mb-2 flex items-end justify-between gap-2', fill && 'shrink-0')"
@@ -1142,7 +1142,7 @@ defineExpose({
         @reset="onReset"
       />
 
-      <!-- 列设置：Popover 面板（R20 最少一列 / R21 重置 / R22 不含选择列）；
+      <!-- 列设置：Popover 面板（最少一列 / 重置 / 不含选择列）；
            触发钮 Tooltip 手动受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故并列渲染、不走 hover 自动触发） -->
       <template v-if="showColumnSettings">
         <Popover align="end" content-class="w-56 p-0">
@@ -1258,7 +1258,7 @@ defineExpose({
             :ref="(el) => (headerRowEls[rowIndex] = el as HTMLElement | null)"
             :style="headerRowStyle(rowIndex)"
           >
-            <!-- 选择列：checkbox 型表头为本页全选三态（S3/S10）；radio 型占位；视作最左固定列 -->
+            <!-- 选择列：checkbox 型表头为本页全选三态；radio 型占位；视作最左固定列 -->
             <th
               v-if="hasSelection && rowIndex === 0"
               scope="col"
@@ -1328,7 +1328,7 @@ defineExpose({
         </thead>
 
         <tbody class="[&_tr:last-child]:border-0">
-          <!-- 加载态：固定 5 行骨架（R14）；选择列一并占位（S8）；骨架不虚拟化；loading 判定优先 -->
+          <!-- 加载态：固定 5 行骨架；选择列一并占位；骨架不虚拟化；loading 判定优先 -->
           <template v-if="loading">
             <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>
               <td
@@ -1451,7 +1451,7 @@ defineExpose({
       </table>
     </div>
 
-    <!-- R31：手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；显式补 border-t 与 size select 保持现状 -->
+    <!-- 手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；显式补 border-t 与 size select 保持现状 -->
     <TablePagination
       v-if="showPaginationBar"
       :class="cn('border-t', fill && 'shrink-0')"

@@ -5,7 +5,7 @@ import { Checkbox as ArkCheckbox } from "@ark-ui/vue/checkbox";
 import { cn } from "@/lib/utils";
 
 // checked 用 default: undefined 禁用 Boolean casting（Dialog 同款约定）；
-// "indeterminate" 对齐 Ark UI CheckedState，用于表格全选等半选语义（S10）
+// "indeterminate" 对齐 Ark UI CheckedState，用于表格全选等半选语义
 const props = defineProps({
   checked: {
     type: [Boolean, String] as PropType<boolean | "indeterminate" | undefined>,

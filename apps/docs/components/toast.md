@@ -54,7 +54,7 @@ const toast = useToast();
 <DemoPreview file="toast/ToastPlacement.vue" />
 
 ::: warning 已知限制
-上游 Ark UI Toaster 为单 region 渲染，`placement` 是 **Provider 级配置**；单条 toast 覆盖位置暂不支持，计划在后续版本引入多 region 池支持。
+上游 Ark UI Toaster 为单 region 渲染，`placement` 是 **Provider 级配置**；单条 toast 覆盖位置暂不支持。
 :::
 
 ## Promise

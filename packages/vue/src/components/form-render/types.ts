@@ -88,7 +88,7 @@ export type TextareaWidgetOptions = SfcOptions<typeof Textarea> & {
 /**
  * v3 命名穿透：选项字段即组件 prop 名 `items`——显式必填（Partial 化会退化为可选，
  * 缺失时 Select.vue collection 计算在首渲染崩溃）；placeholder 已是 Select 单组件
- * 的正式 prop，不再 Omit，渲染时做 item 级缺省回退（I1）。
+ * 的正式 prop，不再 Omit，渲染时做 item 级缺省回退。
  */
 export type SelectWidgetOptions = Omit<SfcOptions<typeof Select>, "items"> & {
   items: WidgetItemOption[];
@@ -163,7 +163,7 @@ export interface FormRenderItem<T extends object> {
   placeholder?: string;
   /**
    * 默认值（值或同步工厂）；defineForm 据此派生 defaultValues。
-   * 类型为 T 值域联合 T[keyof T]（无 per-item 精确联动，强于 x-render 的 any）。
+   * 类型为 T 值域联合 T[keyof T]（无 per-item 精确联动）。
    */
   default?: T[keyof T] | (() => T[keyof T]);
   /** 栅格跨度：数字 = 占 n 列（须 ≤ 实际列数）；"full" = 整行 */
@@ -180,15 +180,15 @@ export interface FormRenderItem<T extends object> {
   componentProps?: Record<string, unknown>;
 }
 
-/** 按钮预设（A1 块级互斥：actions 存在时 <FormRender> 组件按钮 props 全量忽略） */
+/** 按钮预设（块级互斥：actions 存在时 <FormRender> 组件按钮 props 全量忽略） */
 export interface FormActionsConfig {
   /** 搜索按钮，缺省 false */
   searchable?: boolean;
   /** 提交按钮，缺省 false */
   submitable?: boolean;
-  /** 重置按钮；缺省跟随 searchable（A2，域内解析） */
+  /** 重置按钮；缺省跟随 searchable（域内解析） */
   resetable?: boolean;
-  /** 取消按钮；缺省跟随 submitable（A2，域内解析） */
+  /** 取消按钮；缺省跟随 submitable（域内解析） */
   cancelable?: boolean;
   searchText?: string;
   submitText?: string;
@@ -200,7 +200,7 @@ export interface FormRenderDefinition<T extends object> {
   form: FormRenderFormApi;
   /** 重置到 items.default（搜索表单"重置"语义） */
   resetToDefaults: () => void;
-  /** 全量校验并返回是否通过（R30）；不触发 FormRender 的 search/submit 事件。
+  /** 全量校验并返回是否通过；不触发 FormRender 的 search/submit 事件。
    * 组合式外部查询标准链路：`if (await table.search.submit()) table.reload(true)` */
   submit: () => Promise<boolean>;
   /** 按钮预设投影（引擎从 options 七项直传；未配置为 undefined——此时组件按钮 props 全量生效） */

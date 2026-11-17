@@ -50,10 +50,10 @@ if (import.meta.env.DEV && !instance) {
   );
 }
 
-// S2：FormField 依赖 inject(FORM_KEY)，本组件替代 <Form> 的 provide 职责
+// FormField 依赖 inject(FORM_KEY)，本组件替代 <Form> 的 provide 职责
 provide(FORM_KEY, instance as never);
 
-// S1：form.state 非响应式，响应式 values 只能经 useSelector 订阅建立；
+// form.state 非响应式，响应式 values 只能经 useSelector 订阅建立；
 // visible 过滤与 WidgetContext.values 一律消费它，渲染路径禁读 form.state.*
 const valuesRef = instance
   ? instance.useSelector((s: any) => s.values)
@@ -83,7 +83,7 @@ function spanStyle(span?: number | "full") {
   return undefined;
 }
 
-// ---- 按钮解析（A1 块级互斥）：definition.actions 存在 → 七项全量 actions 域解析，props 域不参与；
+// ---- 按钮解析（块级互斥）：definition.actions 存在 → 七项全量 actions 域解析，props 域不参与；
 // actions 未配置 → 现状 props 域解析（含缺省跟随），行为逐字节不变
 const actions = props.definition?.actions;
 const searchable = computed(() => (actions ? actions.searchable : props.searchable) ?? false);
@@ -105,7 +105,7 @@ const resolvedSubmitText = computed(
 );
 const resolvedResetText = computed(() => (actions ? actions.resetText : props.resetText) ?? "重置");
 
-// A6：actions 存在且显式传了任一按钮 prop → definition 优先，DEV 警告一次
+// actions 存在且显式传了任一按钮 prop → definition 优先，DEV 警告一次
 // （actions 存在 + props 全缺省是正常用法——如 TableRender 内置区经条件传递不传 searchable——不告警）
 if (import.meta.env.DEV && actions) {
   const provided =
@@ -124,8 +124,8 @@ if (import.meta.env.DEV && actions) {
 }
 
 /**
- * I4：校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受 S1 限制）。
- * 校验语义单点化（R30）：definition 存在时复用 definition.submit()；拆分式 :form + :items 走内联逻辑
+ * 校验失败时 isFieldsValid=false，不 emit；成功后才 emit（事件回调中一次性读取不受非响应式限制）。
+ * 校验语义单点化：definition 存在时复用 definition.submit()；拆分式 :form + :items 走内联逻辑
  * @param mode - 提交语义："search" 触发 search 事件（查询按钮），"submit" 触发 submit 事件
  */
 async function submit(mode: "search" | "submit") {

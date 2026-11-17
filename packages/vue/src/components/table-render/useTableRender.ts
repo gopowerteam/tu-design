@@ -33,7 +33,7 @@ function numericOption(value: unknown): number | undefined {
 }
 
 /**
- * DEV 兜底提示：生产构建静默，只留可读的降级行为（R1–R7）
+ * DEV 兜底提示：生产构建静默，只留可读的降级行为
  * @param message - 提示文本
  */
 function warn(message: string) {
@@ -62,7 +62,7 @@ export function useTableRender<T extends DataRecord>(
     warn("onLoad 与 data 不能同时传入，已按 onLoad（服务端模式）处理。");
   }
 
-  // ---- 受控模式（v-model，D11） ------------------------------------------------
+  // ---- 受控模式（v-model） ------------------------------------------------
   // 约定：options 字段传入（非 undefined）即受控；受控值经 watch 同步进 TanStack，
   // 内部交互仍走既有动作路径（emit 由组件负责）。等值守卫防「父回写 → 同步 → 回弹」循环。
   const controlledPageIndex = () => toValue(options.pageIndex);
@@ -173,7 +173,7 @@ export function useTableRender<T extends DataRecord>(
   }
 
   // ---- 行选择（S 系列） ------------------------------------------------------
-  // 字符串简写 → 对象（S2）
+  // 字符串简写 → 对象
   const rawSelection = options.rowSelection;
   const selectionConfig: TableSelectionOptions<T> | undefined =
     rawSelection === undefined
@@ -181,20 +181,20 @@ export function useTableRender<T extends DataRecord>(
       : typeof rawSelection === "string"
         ? { type: rawSelection }
         : rawSelection;
-  // rowKey 由 defineTable 配置或 TableRender setup 时回填（S1）；就绪前选择不可用
+  // rowKey 由 defineTable 配置或 TableRender setup 时回填；就绪前选择不可用
   const rowKey = ref(options.rowKey);
   const selectionEnabled = computed(() => selectionConfig !== undefined && !!rowKey.value);
   const selectedKeys = ref(new Set<string | number>()) as Ref<Set<string | number>>;
   const selectionRows = shallowRef<T[]>([]);
-  /** key → 最近一次出现的行对象；跨页选中行由此返回快照（S6） */
+  /** key → 最近一次出现的行对象；跨页选中行由此返回快照 */
   const selectionSnapshot = new Map<string, T>();
-  /** 选中但当前数据中不存在的 key（reserveOnPageChange 语义，S12） */
+  /** 选中但当前数据中不存在的 key（reserveOnPageChange 语义） */
   const dirtyKeys = new Set<string>();
   /** 受控选择状态：单一真相源，onRowSelectionChange 只通知不落盘（避免 setRowSelection 回环） */
   const rowSelectionState = ref<RowSelectionState>({});
 
   function selectionEmitSafe() {
-    // 选择集变化 → 替换新 Set 触发依赖（S7）；rows 从快照解析（含跨页）
+    // 选择集变化 → 替换新 Set 触发依赖；rows 从快照解析（含跨页）
     const keys = new Set<string | number>();
     for (const key of Object.keys(rowSelectionState.value))
       if (rowSelectionState.value[key]) keys.add(key);
@@ -214,7 +214,7 @@ export function useTableRender<T extends DataRecord>(
   }
 
   /**
-   * 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达，S1）
+   * 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达）
    * @param record - 行记录
    * @param index - 行索引（rowKey 缺失时的退化 id 来源）
    * @returns 稳定的行标识字符串
@@ -225,7 +225,7 @@ export function useTableRender<T extends DataRecord>(
     return value === undefined || value === null ? `index-${index}` : String(value);
   }
 
-  /** 数据窗口变化时刷新快照中已存在 key 的行对象（S6：后写覆盖） */
+  /** 数据窗口变化时刷新快照中已存在 key 的行对象（后写覆盖） */
   function refreshSnapshot() {
     const key = rowKey.value;
     if (!key) return;
@@ -235,7 +235,7 @@ export function useTableRender<T extends DataRecord>(
       if (value === undefined || value === null) continue;
       const id = String(value);
       if (selectionSnapshot.has(id) && !collisionWarned && import.meta.env.DEV) {
-        // S11：撞 key 属数据问题，只提示一次
+        // 撞 key 属数据问题，只提示一次
         if (selectionSnapshot.get(id) !== record) {
           collisionWarned = true;
           warn(`rowKey "${key}" 存在重复值，行选择快照以后出现的记录为准。`);
@@ -293,7 +293,7 @@ export function useTableRender<T extends DataRecord>(
     onRowSelectionChange: (updater) => {
       const prev = rowSelectionState.value;
       const next = typeof updater === "function" ? updater(prev) : updater;
-      // S4：radio 且 cancelable: false 时，解绑结果为空集则保持原状
+      // radio 且 cancelable: false 时，解绑结果为空集则保持原状
       if (
         selectionConfig?.type === "radio" &&
         selectionConfig.cancelable === false &&
@@ -348,16 +348,16 @@ export function useTableRender<T extends DataRecord>(
 
   function setPageSize(pageSize: number) {
     table.setPageSize(pageSize);
-    // TanStack 容量变更后停在最后一页（pageCount-1），R9 要求回到首页
+    // TanStack 容量变更后停在最后一页（pageCount-1），需回到首页
     table.setPageIndex(0);
   }
 
-  /** 排序应用的唯一管线：服务端模式归位第 1 页（R8）+ 投影落值 + TanStack setSorting。
+  /** 排序应用的唯一管线：服务端模式归位第 1 页+ 投影落值 + TanStack setSorting。
    * 受控 sort 的外部同步与此共用（直接 setSorting 会漏服务端重载）
    * @param next - 目标排序（key + direction），undefined 表示取消排序
    */
   function applySort(next: SortableOptions | undefined) {
-    // 服务端模式按新排序取数，必须先归位到首页（R8）
+    // 服务端模式按新排序取数，必须先归位到首页
     if (serverMode && page.pageIndex !== 1) setPageIndex(1);
     // 同步落值：对外投影不能等 watcher（emit 需要立即读到新排序）
     sort.value = next;
@@ -365,7 +365,7 @@ export function useTableRender<T extends DataRecord>(
   }
 
   /**
-   * 排序三态：无 → asc → desc → 取消；非 sortable 列为空操作（R8）
+   * 排序三态：无 → asc → desc → 取消；非 sortable 列为空操作
    * @param key - 目标列 key
    */
   function toggleSort(key: string) {
@@ -408,7 +408,7 @@ export function useTableRender<T extends DataRecord>(
     return { from, to, record, rows: next };
   }
 
-  // 服务端模式：请求序号守卫，乱序返回的旧响应直接丢弃（R6）
+  // 服务端模式：请求序号守卫，乱序返回的旧响应直接丢弃
   let requestId = 0;
 
   async function load() {
@@ -430,12 +430,12 @@ export function useTableRender<T extends DataRecord>(
         update: (data, total) => {
           if (id !== requestId) return;
           rows.value = Array.isArray(data) ? data : [];
-          // total 缺省时保留旧值（R10）
+          // total 缺省时保留旧值
           if (typeof total === "number") page.total = total;
         },
       });
     } catch (err) {
-      // 乱序旧请求的失败直接丢弃（R6 同款守卫）
+      // 乱序旧请求的失败直接丢弃（同款竞态守卫）
       if (id === requestId) {
         const normalized = err instanceof Error ? err : new Error(String(err));
         error.value = normalized;
@@ -454,7 +454,7 @@ export function useTableRender<T extends DataRecord>(
     },
   );
 
-  // ---- 受控同步（D11）：外部变更 → TanStack -------------------------------------
+  // ---- 受控同步：外部变更 → TanStack -------------------------------------
   // 各 watch 均带语义等值守卫：内部先行（动作已生效）或父回写回弹时跳过，
   // 严禁死循环与重复 onLoad（load watch 绑定投影，投影等值守卫兜底）。
   // pageIndex 受控（1-based；最小归 1）
@@ -463,7 +463,7 @@ export function useTableRender<T extends DataRecord>(
     table.setPageIndex(Math.max(0, next - 1));
   });
 
-  // pageSize 受控：同步容量；pageIndex 未受控时保持 R9 归位第 1 页（两方都受控由父层联动）
+  // pageSize 受控：同步容量；pageIndex 未受控时保持归位第 1 页（两方都受控由父层联动）
   watch(controlledPageSize, (next) => {
     if (next === undefined || page.pageSize === next) return;
     table.setPageSize(next);
@@ -488,7 +488,7 @@ export function useTableRender<T extends DataRecord>(
     applySort(next);
   });
 
-  // selectedKeys 受控：经 setSelection 写入（S5 selectable 过滤 / S12 待定 key 语义继承）
+  // selectedKeys 受控：经 setSelection 写入（selectable 过滤 / 待定 key 语义继承）
   watch(
     controlledSelectedKeys,
     (next) => {
@@ -501,13 +501,13 @@ export function useTableRender<T extends DataRecord>(
     { immediate: true },
   );
 
-  // ---- 列显隐（column visibility，R20–R24） -------------------------------------
-  // 统一投影：受控初值 > defaultVisibleKeys（拆分式/聚合式 R26） > 全部可见。
-  // 列显隐只动本 ref——不触发 onLoad、不重置 pageIndex/sort/selectedKeys（R25）。
+  // ---- 列显隐（column visibility） -------------------------------------
+  // 统一投影：受控初值 > defaultVisibleKeys（拆分式/聚合式） > 全部可见。
+  // 列显隐只动本 ref——不触发 onLoad、不重置 pageIndex/sort/selectedKeys。
   let emptyVisibleWarned = false;
 
   /**
-   * 规范化：未知 key 静默忽略、按 columns 原序、空数组钳制为首列（R24，warn 一次）
+   * 规范化：未知 key 静默忽略、按 columns 原序、空数组钳制为首列（warn 一次）
    * @param keys - 目标可见列 key 列表（任意顺序，可含未知 key）
    * @returns 规范化后的可见列 key 列表（columns 原序）
    */
@@ -557,7 +557,7 @@ export function useTableRender<T extends DataRecord>(
 
   onMounted(() => {
     if (serverMode && (options.autoLoad ?? true)) void load();
-    // S1：rowKey 在 defineTable 阶段可能尚未就绪（聚合式由 TableRender 回填），挂载时终审
+    // rowKey 在 defineTable 阶段可能尚未就绪（聚合式由 TableRender 回填），挂载时终审
     if (selectionConfig && !rowKey.value) {
       warn("rowSelection 需要有效的 rowKey 字段，已禁用行选择。");
     }
@@ -577,7 +577,7 @@ export function useTableRender<T extends DataRecord>(
   // ---- 行选择动作与联动（S 系列） -------------------------------------------
 
   /**
-   * 程序化设置选中集；不存在的 key 保留进入 dirtyKeys（S12）；不可选行被过滤（对齐 S5）
+   * 程序化设置选中集；不存在的 key 保留进入 dirtyKeys；不可选行被过滤
    * @param keys - 目标选中行的 key 列表（整体替换现有选中集）
    */
   function setSelection(keys: Array<string | number>) {
@@ -597,7 +597,7 @@ export function useTableRender<T extends DataRecord>(
   }
 
   function toggleRowSelected(key: string, checked: boolean) {
-    // S4：radio 且 cancelable: false 时，交互解绑最后一个选中为空操作
+    // radio 且 cancelable: false 时，交互解绑最后一个选中为空操作
     if (!checked && selectionConfig?.type === "radio" && selectionConfig.cancelable === false) {
       return;
     }
@@ -606,7 +606,7 @@ export function useTableRender<T extends DataRecord>(
       applyRowSelection(rest);
       return;
     }
-    // radio：单选互斥（S4）；checkbox：累加
+    // radio：单选互斥；checkbox：累加
     const next =
       selectionConfig?.type === "radio"
         ? { [key]: true }
@@ -615,7 +615,7 @@ export function useTableRender<T extends DataRecord>(
   }
 
   /**
-   * 拆分式装配口：TableRender setup 时回传组件 rowKey（S1）
+   * 拆分式装配口：TableRender setup 时回传组件 rowKey
    * @param key - 行主键字段名
    */
   function setRowKey(key: string | undefined) {
@@ -625,7 +625,7 @@ export function useTableRender<T extends DataRecord>(
     refreshSnapshot();
   }
 
-  // 数据窗口变化（翻页或数据替换）：刷新快照；reserveOnPageChange: false 时清空选中（S6）
+  // 数据窗口变化（翻页或数据替换）：刷新快照；reserveOnPageChange: false 时清空选中
   watch([rows, () => page.pageIndex], () => {
     refreshSnapshot();
     if (selectionConfig && selectionConfig.reserveOnPageChange === false) clearSelection();
@@ -672,7 +672,7 @@ export function useTableRender<T extends DataRecord>(
     tree,
     draggable: draggableConfig,
     reorderRows,
-    // 列显隐（R20–R24）：统一投影 + 动作 + 重置基准
+    // 列显隐：统一投影 + 动作 + 重置基准
     visibleKeys: readonly(visibleKeysInternal),
     setVisibleKeys,
     defaultVisibleKeys: parsedDefaultVisibleKeys,
