@@ -12,6 +12,8 @@ import {
 import type {
   DataRecord,
   SortableOptions,
+  TableDraggableOptions,
+  TableDragSortPayload,
   TableRenderDefinition,
   TableSelectionOptions,
   TreeOptions,
@@ -147,6 +149,28 @@ export function useTableRender<T extends DataRecord>(
   const loading = ref(false);
   const error = ref<Error | undefined>(undefined);
   const rows = shallowRef<T[]>([]);
+
+  // ---- 行拖拽排序（draggable） ------------------------------------------------
+  // 唯一解析点：与 tree/virtual 互斥（warn 并忽略）；解析结果回传供组件渲染把手列。
+  // 排序激活/rowKey 记录级缺失是动态守卫，由组件渲染层判定（把手置灰）。
+  let draggableConfig: TableDraggableOptions<T> | undefined;
+  if (options.draggable !== undefined && options.draggable !== false) {
+    if (tree) {
+      warn("draggable 与 tree 不能同时启用，已忽略 draggable。");
+    } else if (options.virtual === true) {
+      warn("draggable 与 virtual 不能同时启用，已忽略 draggable。");
+    } else {
+      const config = options.draggable === true ? {} : options.draggable;
+      if (config.width !== undefined && typeof config.width !== "number") {
+        warn("draggable.width 必须是数字，已按默认 32 处理。");
+        delete config.width;
+      }
+      draggableConfig = config;
+      if (sort.value !== undefined) {
+        warn("draggable 与初始排序（defaultSort/受控 sort）同时配置，排序激活期间拖拽不可用。");
+      }
+    }
+  }
 
   // ---- 行选择（S 系列） ------------------------------------------------------
   // 字符串简写 → 对象（S2）
@@ -352,6 +376,36 @@ export function useTableRender<T extends DataRecord>(
       current?.key !== key ? "asc" : current.direction === "asc" ? "desc" : undefined;
 
     applySort(direction ? { key, direction } : undefined);
+  }
+
+  /**
+   * 页内重排（drag-sort 唯一管线）：from/to 为页内 0-based 索引。
+   * 静态模式按对象身份定位全量位置后 splice（页内索引 → 全量映射不依赖裸索引 arithmetic，
+   * 行对象与 rows.value 同引用）；服务端模式 rows.value 即当前页数据，只算新序不落盘。
+   * @param from - 源行页内索引
+   * @param to - 目标行页内索引（拖拽落位行；源行移除后插入该原位）
+   * @returns drag-sort 载荷；守卫不通过或索引无效时 undefined
+   */
+  function reorderRows(from: number, to: number): TableDragSortPayload<T> | undefined {
+    if (!draggableConfig || sort.value !== undefined) return undefined;
+    const pageRows = table.getRowModel().rows.map((row) => row.original);
+    if (from === to || from < 0 || to < 0 || from >= pageRows.length || to >= pageRows.length) {
+      return undefined;
+    }
+    const record = pageRows[from]!;
+    const next = [...pageRows];
+    next.splice(from, 1);
+    next.splice(to, 0, record);
+    if (!serverMode) {
+      const all = [...rows.value];
+      const target = pageRows[to]!;
+      all.splice(all.indexOf(record), 1);
+      const targetIndex = all.indexOf(target);
+      // 下移插在目标之后、上移插在目标之前（与页内 splice 语义一致）
+      all.splice(from < to ? targetIndex + 1 : targetIndex, 0, record);
+      rows.value = all;
+    }
+    return { from, to, record, rows: next };
   }
 
   // 服务端模式：请求序号守卫，乱序返回的旧响应直接丢弃（R6）
@@ -616,6 +670,8 @@ export function useTableRender<T extends DataRecord>(
     virtual: options.virtual,
     height: options.height,
     tree,
+    draggable: draggableConfig,
+    reorderRows,
     // 列显隐（R20–R24）：统一投影 + 动作 + 重置基准
     visibleKeys: readonly(visibleKeysInternal),
     setVisibleKeys,

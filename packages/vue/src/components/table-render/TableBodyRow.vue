@@ -3,8 +3,9 @@ import type { PropType, VNodeChild } from "vue";
 import { cloneVNode, h, isVNode } from "vue";
 import { Checkbox } from "@/components/checkbox";
 import { Tooltip } from "@/components/tooltip";
-import { SELECTION_CELL } from "./constants";
+import { DRAG_CELL, SELECTION_CELL } from "./constants";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
+import GripIcon from "../icon-shared/GripIcon.vue";
 import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
 import type { TableBodyLine, TableColumnOptions } from "./types";
 
@@ -22,6 +23,12 @@ const props = defineProps({
   sticky: { type: Object as PropType<StickyMap>, required: true },
   /** 树形缩进基准 px；undefined 表示未启用树形（不渲染 depth 缩进与 caret） */
   treeIndent: { type: Number, default: undefined },
+  /** 是否渲染拖拽把手列（draggable 启用且未被守卫降级） */
+  dragColumn: { type: Boolean, default: false },
+  /** 本行把手禁用（排序激活 / rowKey 缺失 / 行级谓词 false） */
+  dragDisabled: { type: Boolean, default: false },
+  /** 本行正在被拖拽（占位态：半透明 + 虚线描边，实时让位预览中即落点提示） */
+  dragging: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -30,6 +37,14 @@ const emit = defineEmits<{
   "row-dblclick": [event: MouseEvent];
   "row-contextmenu": [event: MouseEvent];
   "cell-click": [columnKey: string, event: MouseEvent];
+  /** 把手 dragstart（仅把手可起拖，整行不可拖） */
+  "drag-start": [event: DragEvent];
+  /** 行 dragover（实时让位预览判定） */
+  "drag-over": [event: DragEvent];
+  /** 行 drop（成功落位） */
+  drop: [event: DragEvent];
+  /** 把手 dragend（含取消路径，仅清理状态） */
+  "drag-end": [event: DragEvent];
 }>();
 
 function cellText(line: TableBodyLine, index: number): string {
@@ -53,9 +68,15 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
 <template>
   <tr
     class="border-b transition-colors hover:bg-muted/50"
+    :class="{
+      'opacity-50 [&>td]:outline-2 [&>td]:outline-dashed [&>td]:-outline-offset-2 [&>td]:outline-primary/40':
+        props.dragging,
+    }"
     @click="emit('row-click', $event)"
     @dblclick="emit('row-dblclick', $event)"
     @contextmenu="emit('row-contextmenu', $event)"
+    @dragover="emit('drag-over', $event)"
+    @drop="emit('drop', $event)"
   >
     <!-- 选择单元格：阻断冒泡避免触发行 row-click（S5）；radio 为原生控件 -->
     <td
@@ -81,6 +102,27 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
         :aria-label="`选择第 ${props.line.index + 1} 行`"
         @update:checked="(checked: boolean) => emit('select', checked)"
       />
+    </td>
+    <!-- 拖拽把手单元格：仅把手可起拖（draggable 在按钮上，整行不可拖）；阻断冒泡避免触发行 row-click -->
+    <td
+      v-if="props.dragColumn"
+      class="p-1 text-center align-middle"
+      :class="stickyClass(props.sticky, DRAG_CELL)"
+      :style="stickyStyle(props.sticky, DRAG_CELL, false)"
+      @click.stop
+    >
+      <button
+        type="button"
+        data-drag-handle
+        class="text-muted-foreground inline-flex size-6 cursor-grab items-center justify-center rounded-sm active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="props.dragDisabled"
+        :draggable="!props.dragDisabled"
+        :aria-label="`拖拽排序第 ${props.line.index + 1} 行`"
+        @dragstart="emit('drag-start', $event)"
+        @dragend="emit('drag-end', $event)"
+      >
+        <GripIcon class="size-4" />
+      </button>
     </td>
     <td
       v-for="(value, index) in props.line.cells"

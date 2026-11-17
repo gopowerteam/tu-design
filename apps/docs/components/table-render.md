@@ -557,6 +557,70 @@ const table = defineTable<Dept>({
 - **配置防御**：`tree` 非对象或 `childrenKey` 非字符串时 DEV 警告并按普通表格渲染
 - **不做**：父子级联勾选、受控 expanded（程序化展开/收起 API）、详情展开行（expandable detail row，独立二期）、懒加载子树
 
+## 行拖拽排序
+
+`draggable: true`（或对象配置）开启行拖拽排序：表体新增**把手列**（grip 图标，紧随选择列），仅把手可起拖（整行不可拖，不与 `row-click`/文本选择/单元格按钮冲突），**仅当前页内**拖拽。底层为原生 HTML5 DnD，零第三方依赖；不支持触屏（桌面管理后台场景）。
+
+<DemoPreview file="table-render/DragSortDemo.vue" />
+
+```vue
+<script setup lang="ts">
+import { defineTable, type TableDragSortPayload } from "@tu-design/vue";
+import { ref } from "vue";
+
+const data = ref(apps);
+
+const table = defineTable<App>({
+  data,
+  rowKey: "id",
+  draggable: true, // 或 { draggable: (record) => record.editable, width: 40 }
+  columns: [/* ... */],
+});
+
+function onDragSort(payload: TableDragSortPayload<App>) {
+  // payload: { from, to, record, rows } —— from/to 为页内 0-based 索引，rows = 当前页新行序
+  // 静态模式：引擎已先行重排内部数据，调用方应回写自身数据源（典型：按新行序重算 weight 批量提交）
+  data.value = payload.rows.map((row, index) => ({ ...row, weight: (index + 1) * 10 }));
+}
+</script>
+
+<template>
+  <TTableRender :definition="table" row-key="id" @drag-sort="onDragSort" />
+</template>
+```
+
+### `draggable` 配置
+
+| 字段         | 类型                     | 默认 | 说明                                                                    |
+| ------------ | ------------------------ | ---- | ----------------------------------------------------------------------- |
+| `draggable?` | `(record: T) => boolean` | —    | 行级可拖过滤（对齐选择列 `selectable` 范式）；返回 `false` 的行把手置灰 |
+| `width?`     | `number`                 | `32` | 把手列宽（px）；非数字时 DEV 警告并按默认处理                           |
+
+### `drag-sort` 事件
+
+仅**成功落位**（drop）时触发；取消路径（Esc / 拖出窗外 / 同源落位）不发。载荷 `TableDragSortPayload<T>`：
+
+| 字段     | 类型     | 说明                                       |
+| -------- | -------- | ------------------------------------------ |
+| `from`   | `number` | 源行页内索引（0-based）                    |
+| `to`     | `number` | 目标行页内索引（0-based）                  |
+| `record` | `T`      | 被拖拽的行记录                             |
+| `rows`   | `T[]`    | 当前页新行序（供批量重算 weight / 持久化） |
+
+行为细则：
+
+- **整行拖拽快照**：起拖时浏览器幽灵影为**带完整边框的整行截图**（离屏克隆 + `setDragImage`，抓取点与指针对齐），而非把手小图标
+- **实时让位预览**：dragover 悬停即见表内行序实时移动（被拖行让位到悬停行位置，其余行相对序不变）；被拖行占位渲染半透明 + 逐格虚线描边，占位本身即落点提示。让位后被拖行恰落在光标下，天然不振荡
+- **落位语义**：drop 提交最终预览序（落在自身占位 = 有效提交）；多跳预览等价于单次「源行原位移 → 最终预览位」。取消路径（Esc / 拖出窗外）预览序弹回原序、不发事件
+- **静态模式**：引擎先行重排内部全量数据（页内索引自动映射全量位置，跨页数据不受影响）再发事件。**调用方应回写自身数据源**——引擎按 data 引用同步，不回写则后续任何 data 变更会覆盖拖拽结果
+- **服务端模式**：只发事件、不改内部数据；调用方持久化（批量更新 weight 等）后 `reload()`
+- **排序互斥（动态守卫）**：列排序激活期间把手置灰（排序视图下手动序无意义），取消排序后恢复；与 `defaultSort` / 受控 `sort` 初值同传时 DEV 警告
+- **配置互斥**：与 `tree` / `virtual` 不能同时启用（DEV 警告并忽略 `draggable`）
+- **rowKey 记录级守卫**：当前页任一记录缺 `rowKey` 字段时禁用拖拽并 DEV 警告一次（索引兜底态下行身份不稳定）；空表不触发
+- **布局叠加**：把手列视作最左 sticky 列参与偏移累计（选择列 offset 0 → 把手列 → fixed-left 业务列），列宽计入表格 min-width（R32）；行选择、fill 模式、列显隐均可组合；加载骨架含把手列占位
+- **已知限制**：让位为即时重排（无 FLIP 过渡动画）；预览期间 index 派生渲染器（如 `r.serial()`）短暂显示原序号，落位提交后即正确；行级谓词 `false` 仅限制不可起拖，仍可被让位越过（pinned 定位语义二期）
+- **不做**：跨页拖拽、触屏支持、键盘拖拽（a11y 二期）、树形层级内拖拽
+
 ## 受控模式（v-model）
 
 `pageIndex` / `pageSize` / `sort` / `selectedKeys` 四个 prop（或 `defineTable` 同名字段，支持传 ref）传入即进入**受控模式**：外部是这些状态的唯一真相源，表格内部变化经既有事件（`update:page-index` / `update:page-size` / `sort-change` / `update:selected-keys`）通知父层回写——标准 v-model 闭环。缺省保持既有非受控行为，完全向后兼容。
@@ -994,38 +1058,39 @@ const table = defineTable<Task>({
 
 ### Props
 
-| prop                                                                                                                                             | 类型                    | 默认       | 说明                                                                                                                                                                 |
-| ------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `definition`                                                                                                                                     | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                                                                                                                       |
-| `rowKey`                                                                                                                                         | `string`                | **必填**   | 行主键字段名                                                                                                                                                         |
-| `columns`                                                                                                                                        | `TableColumnOptions[]`  | —          | 拆分式列配置                                                                                                                                                         |
-| `onLoad`                                                                                                                                         | 见上                    | —          | 拆分式数据源                                                                                                                                                         |
-| `data`                                                                                                                                           | `T[]`                   | —          | 拆分式静态数据源                                                                                                                                                     |
-| `autoLoad`                                                                                                                                       | `boolean`               | `true`     | 同 config                                                                                                                                                            |
-| `pageSize` / `pageSizeOpts`                                                                                                                      | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                                        |
-| `loading`                                                                                                                                        | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                  |
-| `emptyText`                                                                                                                                      | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                        |
-| `search`                                                                                                                                         | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                           |
-| `showSearch`                                                                                                                                     | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                              |
-| `showPagination`                                                                                                                                 | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                                     |
-| `fillHeight`                                                                                                                                     | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节 |
-| `rowSelection` / `virtual` / `height` / `tree` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告             |
+| prop                                                                                                                                                           | 类型                    | 默认       | 说明                                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition`                                                                                                                                                   | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                                                                                                                         |
+| `rowKey`                                                                                                                                                       | `string`                | **必填**   | 行主键字段名                                                                                                                                                           |
+| `columns`                                                                                                                                                      | `TableColumnOptions[]`  | —          | 拆分式列配置                                                                                                                                                           |
+| `onLoad`                                                                                                                                                       | 见上                    | —          | 拆分式数据源                                                                                                                                                           |
+| `data`                                                                                                                                                         | `T[]`                   | —          | 拆分式静态数据源                                                                                                                                                       |
+| `autoLoad`                                                                                                                                                     | `boolean`               | `true`     | 同 config                                                                                                                                                              |
+| `pageSize` / `pageSizeOpts`                                                                                                                                    | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                                          |
+| `loading`                                                                                                                                                      | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                    |
+| `emptyText`                                                                                                                                                    | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                          |
+| `search`                                                                                                                                                       | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                             |
+| `showSearch`                                                                                                                                                   | `boolean`               | —          | `false` 关闭内置搜索区（R27）；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                |
+| `showPagination`                                                                                                                                               | `boolean`               | —          | `false` 关闭内置分页条（R28）；缺省时单页自动隐藏（R13）不变，见下方组合式布局节                                                                                       |
+| `fillHeight`                                                                                                                                                   | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节   |
+| `rowSelection` / `virtual` / `height` / `tree` / `draggable` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` / `draggable` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
 
 ### Events
 
 `defineEmits` 声明的全部事件：
 
-| 事件                                               | 载荷                                   | 说明                                                                                    |
-| -------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------------- |
-| `update:page-index` / `update:page-size`           | `(pageIndex)` / `(pageSize)`           | 分页状态单向通知；配对回写即 v-model，见「受控模式（v-model）」                         |
-| `sort-change`                                      | `(sort: SortableOptions \| undefined)` | 排序变化；受控/非受控的内部交互均经此通知                                               |
-| `row-click` / `row-dblclick` / `row-contextmenu`   | `(record, index, event)`               | 行交互；contextmenu 不主动 preventDefault                                               |
-| `cell-click`                                       | `(record, columnKey, index, event)`    | 单元格点击（columnKey 定位列）；与 `row-click` 冒泡并存——cell 触发时 row-click 也会触发 |
-| `selection-change`                                 | `(rows)`                               | 选中行集变化（含跨页保留行）                                                            |
-| `update:selected-keys`                             | `(keys)`                               | 选中主键集回写（v-model 可用）                                                          |
-| `search` / `reset`                                 | `(values)`                             | 搜索表单联动：校验通过后搜索 / 重置为 defaults 后重载时触发，载荷为当前表单值快照       |
-| `load-error`                                       | `(error)`                              | 服务端模式 `onLoad` 抛错或 rejects；下一次 load 开始时错误清除                          |
-| `update:visible-keys` / `column-visibility-change` | `(keys)`                               | 列显隐；前者支持 v-model，后者受控/非受控均触发供持久化                                 |
+| 事件                                               | 载荷                                   | 说明                                                                                      |
+| -------------------------------------------------- | -------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `update:page-index` / `update:page-size`           | `(pageIndex)` / `(pageSize)`           | 分页状态单向通知；配对回写即 v-model，见「受控模式（v-model）」                           |
+| `sort-change`                                      | `(sort: SortableOptions \| undefined)` | 排序变化；受控/非受控的内部交互均经此通知                                                 |
+| `row-click` / `row-dblclick` / `row-contextmenu`   | `(record, index, event)`               | 行交互；contextmenu 不主动 preventDefault                                                 |
+| `cell-click`                                       | `(record, columnKey, index, event)`    | 单元格点击（columnKey 定位列）；与 `row-click` 冒泡并存——cell 触发时 row-click 也会触发   |
+| `selection-change`                                 | `(rows)`                               | 选中行集变化（含跨页保留行）                                                              |
+| `update:selected-keys`                             | `(keys)`                               | 选中主键集回写（v-model 可用）                                                            |
+| `search` / `reset`                                 | `(values)`                             | 搜索表单联动：校验通过后搜索 / 重置为 defaults 后重载时触发，载荷为当前表单值快照         |
+| `load-error`                                       | `(error)`                              | 服务端模式 `onLoad` 抛错或 rejects；下一次 load 开始时错误清除                            |
+| `update:visible-keys` / `column-visibility-change` | `(keys)`                               | 列显隐；前者支持 v-model，后者受控/非受控均触发供持久化                                   |
+| `drag-sort`                                        | `(payload: TableDragSortPayload)`      | 行拖拽成功落位（取消路径不发）；`{ from, to, record, rows }`，见[行拖拽排序](#行拖拽排序) |
 
 ### Slots
 
@@ -1054,6 +1119,7 @@ const table = defineTable<Task>({
 | `virtual?`            | `boolean`                                         | —                | 表体行虚拟化渲染（当前页行窗口内，分页语义不变）；须同时配置 `height`，否则 DEV 警告并降级            |
 | `height?`             | `number \| string`                                | —                | 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 `virtual: true` 时生效                                    |
 | `tree?`               | `TreeOptions`                                     | —                | 树形数据（子行展开/收起）；配置无效时 DEV 警告并忽略，见[树形数据](#树形数据)                         |
+| `draggable?`          | `boolean \| TableDraggableOptions<T>`             | —                | 行拖拽排序（把手列页内 DnD + `drag-sort` 事件）；与 tree/virtual 互斥，见[行拖拽排序](#行拖拽排序)    |
 | `columnVisibility?`   | `ColumnVisibilityOptions`                         | —                | 聚合式列显隐：`{ defaultVisibleKeys?: string[] }`（R21 重置基准）；未知 key 静默忽略                  |
 | `pageIndex?`          | `number`                                          | —                | 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 `update:page-index` 通知                      |
 | `pageSize?`           | `number`                                          | —                | 受控每页条数：传入即受控；`pageIndex` 未受控时 R9 归位内部处理并通知                                  |
@@ -1065,22 +1131,24 @@ const table = defineTable<Task>({
 
 返回 `TableRenderDefinition<T>`：
 
-| 字段                                      | 说明                                                                      |
-| ----------------------------------------- | ------------------------------------------------------------------------- |
-| `columns`                                 | 扁平叶子列配置（下游消费口径）                                            |
-| `columnTree`                              | 原始列节点树（表头矩阵与面板树形结构来源；手工构造定义为可选）            |
-| `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                    |
-| `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`          |
-| `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                |
-| `loading`                                 | 只读布尔（内部取数中）                                                    |
-| `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                    |
-| `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                      |
-| `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                   |
-| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行（S6） |
-| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`（S7）                                 |
-| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集（S12）                                              |
-| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束（S4）                              |
-| `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区  |
+| 字段                                      | 说明                                                                              |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| `columns`                                 | 扁平叶子列配置（下游消费口径）                                                    |
+| `columnTree`                              | 原始列节点树（表头矩阵与面板树形结构来源；手工构造定义为可选）                    |
+| `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                            |
+| `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`                  |
+| `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                        |
+| `loading`                                 | 只读布尔（内部取数中）                                                            |
+| `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                            |
+| `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                              |
+| `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                           |
+| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行（S6）         |
+| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`（S7）                                         |
+| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集（S12）                                                      |
+| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束（S4）                                      |
+| `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区          |
+| `draggable`                               | 解析后的行拖拽配置（冲突被忽略时为 `undefined`）                                  |
+| `reorderRows(from, to)`                   | 页内重排动作（0-based 页内索引）；返回 `drag-sort` 载荷，守卫不通过时 `undefined` |
 
 辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），入参为列节点树（叶子或分组），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
 

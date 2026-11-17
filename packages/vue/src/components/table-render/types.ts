@@ -130,6 +130,14 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   /** 树形数据：子行展开/收起（展开按钮在首个业务列内）；配置无效时 DEV 警告并忽略 */
   tree?: TreeOptions;
   /**
+   * 行拖拽排序（仅当前页内，把手列触发）：true 或对象配置。
+   * 与 tree/virtual 互斥（DEV 警告并忽略）；列排序激活期间把手置灰；
+   * 当前页存在缺 rowKey 字段的记录时禁用（DEV 警告一次）。
+   * 静态模式引擎先行重排内部数据并经 drag-sort 通知（调用方应回写自身数据源）；
+   * 服务端模式只发 drag-sort，由调用方持久化后 reload
+   */
+  draggable?: boolean | TableDraggableOptions<T>;
+  /**
    * 受控页码（1-based，D11）。约定：传入（非 undefined）即受控，缺省保持非受控；
    * 内部翻页经 update:page-index 通知，外部变更经受控 watch 同步（语义等值跳过，防回弹循环）
    */
@@ -153,6 +161,22 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
    * DEV 警告 definition 优先（R26）
    */
   defaultVisibleKeys?: MaybeRefOrGetter<string[] | undefined>;
+}
+
+/** 行拖拽排序配置（draggable 对象形态；true 等价 {}） */
+export interface TableDraggableOptions<T extends DataRecord = DataRecord> {
+  /** 行级可拖过滤（对齐 S5 selectable 范式）；返回 false 的行把手置灰 */
+  draggable?: (record: T) => boolean;
+  /** 把手列宽，默认 32（对齐 selection.width 范式） */
+  width?: number;
+}
+
+/** drag-sort 事件载荷：from/to 为页内索引（0-based，与 rows 同口径）；rows = 当前页新行序 */
+export interface TableDragSortPayload<T extends DataRecord = DataRecord> {
+  from: number;
+  to: number;
+  record: T;
+  rows: T[];
 }
 
 /** 树形数据配置（T 系列） */
@@ -236,6 +260,13 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   height: number | string | undefined;
   /** 树形配置（引擎校验后的回传，供组件读取 indentSize；无效配置被忽略时为 undefined） */
   tree: TreeOptions | undefined;
+  /** 行拖拽配置（引擎校验后的回传；与 tree/virtual 冲突被忽略时为 undefined） */
+  draggable: TableDraggableOptions<T> | undefined;
+  /**
+   * 页内重排（from/to 为页内 0-based 索引）：静态模式先行重排内部全量数据，
+   * 服务端模式不改内部数据；返回 drag-sort 载荷（守卫不通过/无效索引时为 undefined）
+   */
+  reorderRows: (from: number, to: number) => TableDragSortPayload<T> | undefined;
   /** 最近一次 onLoad 失败的 Error（仅服务端模式产生）；下一次 load 开始时清除 */
   error: Readonly<Ref<Error | undefined>>;
   /** 可见列 key（columns 原序子集）；受控/非受控统一投影 */

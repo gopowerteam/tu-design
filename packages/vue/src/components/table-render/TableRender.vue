@@ -12,7 +12,7 @@ import { Skeleton } from "@/components/skeleton";
 import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/lib/utils";
 import { isColumnGroup } from "./columns";
-import { PAGE_TABLE_FILL_KEY, SELECTION_CELL } from "./constants";
+import { PAGE_TABLE_FILL_KEY, DRAG_CELL, SELECTION_CELL } from "./constants";
 import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
 import TableBodyRow from "./TableBodyRow.vue";
 import TablePagination from "./TablePagination.vue";
@@ -24,12 +24,15 @@ import type {
   TableColumnGroupOptions,
   TableColumnNode,
   TableColumnOptions,
+  TableDraggableOptions,
+  TableDragSortPayload,
   TableLoadParams,
   TableRenderDefinition,
   TableSelectionOptions,
   TreeOptions,
 } from "./types";
 import { useTableRender } from "./useTableRender";
+import { createRowSnapshot, useRowDrag } from "./useRowDrag";
 
 // boolean flags 用运行时声明 + default: undefined 禁用 Vue 的 Boolean casting
 // （casting 会让未传的 prop 变 false；Checkbox/Dialog/FormRender 同款约定）
@@ -63,6 +66,11 @@ const props = defineProps({
   height: { type: [Number, String] as PropType<number | string> },
   /** 树形数据（子行展开/收起）；拆分式直接传，聚合式请在 defineTable 配置 */
   tree: { type: Object as PropType<TreeOptions> },
+  /** 行拖拽排序（仅拆分式生效；聚合式请在 defineTable 配置）：true 或对象配置；与 tree/virtual 互斥 */
+  draggable: {
+    type: [Boolean, Object] as PropType<boolean | TableDraggableOptions>,
+    default: undefined,
+  },
   /** 受控页码（1-based）：传入即受控，缺省非受控；内部翻页经 update:page-index 通知 */
   pageIndex: { type: Number },
   /** 受控排序：传入即受控；内部/外部变化均经 sort-change 通知 */
@@ -116,6 +124,9 @@ const emit = defineEmits<{
   "update:visible-keys": [keys: string[]];
   /** 列显隐变化（受控/非受控均触发，供业务持久化；载荷 = 可见列 key 有序数组，columns 原序） */
   "column-visibility-change": [keys: string[]];
+  /** 行拖拽落位（仅成功 drop 触发，取消路径不发）：from/to 为页内索引，rows = 当前页新行序。
+   * 静态模式引擎已先行重排，调用方应回写自身数据源；服务端模式需持久化后 reload */
+  "drag-sort": [payload: TableDragSortPayload];
 }>();
 
 defineSlots<{
@@ -140,6 +151,11 @@ if (props.definition && props.rowSelection && import.meta.env.DEV) {
     "[tu-design] <TableRender> 聚合式下 rowSelection 请在 defineTable 配置，组件 prop 已忽略。",
   );
 }
+if (props.definition && props.draggable !== undefined && import.meta.env.DEV) {
+  console.warn(
+    "[tu-design] <TableRender> 聚合式下 draggable 请在 defineTable 配置，组件 prop 已忽略。",
+  );
+}
 const instance =
   props.definition ??
   useTableRender({
@@ -154,6 +170,7 @@ const instance =
     virtual: props.virtual,
     height: props.height,
     tree: props.tree,
+    draggable: props.draggable,
     pageIndex: () => props.pageIndex,
     pageSize: () => props.pageSize,
     sort: () => props.sort,
@@ -492,7 +509,9 @@ watch(instance.visibleKeys, (keys) => {
 });
 
 /** 总列数 = 可见业务列 + 选择列（空态 colspan 与骨架行，S8/R23） */
-const columnCount = computed(() => visibleColumns.value.length + (hasSelection.value ? 1 : 0));
+const columnCount = computed(
+  () => visibleColumns.value.length + (hasSelection.value ? 1 : 0) + (dragEnabled.value ? 1 : 0),
+);
 
 // ---- 固定列（sticky） --------------------------------------------------------
 
@@ -566,8 +585,17 @@ const stickyOf = computed<StickyMap>(() => {
 
   let acc = 0;
   if (hasSelection.value) {
-    map.set(SELECTION_CELL, { side: "left", offset: 0, edge: lefts.length === 0 });
+    map.set(SELECTION_CELL, {
+      side: "left",
+      offset: 0,
+      edge: lefts.length === 0 && !dragEnabled.value,
+    });
     acc = selection.value.width;
+  }
+  // 把手列紧随选择列（选择列保持 offset 0 视觉锚点），同视作最左固定列参与累计
+  if (dragEnabled.value) {
+    map.set(DRAG_CELL, { side: "left", offset: acc, edge: lefts.length === 0 });
+    acc += dragWidth;
   }
   lefts.forEach((left, index) => {
     map.set(left.key, { side: "left", offset: acc, edge: index === lefts.length - 1 });
@@ -595,6 +623,7 @@ const tableMinWidth = computed(() => {
     if (typeof column.width === "number" && column.width > 0) sum += column.width;
   }
   if (hasSelection.value && selection.value.width > 0) sum += selection.value.width;
+  if (dragEnabled.value && dragWidth > 0) sum += dragWidth;
   return sum;
 });
 
@@ -788,6 +817,139 @@ if (virtualRaw === true && heightRaw === undefined && !fill) {
   console.warn("[tu-design] <TableRender> virtual 需要配置 height，已降级普通渲染。");
 }
 const virtualEnabled = virtualRaw === true && (heightRaw !== undefined || fill);
+
+// ---- 行拖拽排序（draggable） --------------------------------------------------
+// 引擎是唯一配置解析点（tree/virtual 冲突已 warn 并忽略）；此处兜底聚合式 definition
+// 与组件 prop virtual 同传的边界（引擎解析时看不到 prop）。配置 setup 期定版。
+const dragConfig = instance.draggable;
+const dragEnabled = computed(() => dragConfig !== undefined && !virtualEnabled);
+const dragWidth = dragConfig?.width ?? 32;
+const drag = useRowDrag();
+
+// rowKey 记录级守卫：当前页任一记录缺 rowKey 字段 → 禁用拖拽（R3 索引兜底态下行身份不稳定）
+const dragKeysValid = computed(
+  () => !dragEnabled.value || body.value.every((line) => line.record[props.rowKey] != null),
+);
+let dragRowKeyWarned = false;
+watch(
+  dragKeysValid,
+  (valid) => {
+    if (!valid && !dragRowKeyWarned && import.meta.env.DEV) {
+      dragRowKeyWarned = true;
+      console.warn(
+        `[tu-design] <TableRender> 部分记录缺少 rowKey 字段 "${props.rowKey}"，已禁用行拖拽排序。`,
+      );
+    }
+  },
+  { immediate: true },
+);
+
+/**
+ * 本行把手禁用判定：排序激活（动态守卫，取消排序恢复）/ rowKey 缺失 / 行级谓词 false
+ * @param line - 行数据
+ * @returns 是否禁用本行把手
+ */
+function rowDragDisabled(line: TableBodyLine): boolean {
+  if (instance.sort.value !== undefined || !dragKeysValid.value) return true;
+  return dragConfig?.draggable ? !dragConfig.draggable(line.record) : false;
+}
+
+// ---- 实时让位预览（组件层 overlay：引擎零改动、预览期间零事件） ----------------
+// 只有被拖行在预览序中移动，其他行相对序恒定 → 让位后被拖行恰落在光标下，
+// 后续 dragover 命中自身被忽略，天然不振荡（无需几何测量）。
+const previewKeys = ref<string[] | undefined>(undefined);
+
+/** 显示序：拖拽中按预览序重排（失效 key 过滤、新增行追加，防中途外部 data 变更）；平时即引擎序 */
+const displayBody = computed<TableBodyLine[]>(() => {
+  const keys = previewKeys.value;
+  if (!keys) return body.value;
+  const byKey = new Map(body.value.map((line) => [line.key, line]));
+  const ordered: TableBodyLine[] = [];
+  for (const key of keys) {
+    const line = byKey.get(key);
+    if (line) {
+      ordered.push(line);
+      byKey.delete(key);
+    }
+  }
+  return ordered.concat([...byKey.values()]);
+});
+
+/** 离屏整行快照（仅真实浏览器 dataTransfer 存在时创建）；drop/dragend 时移除 */
+let dragSnapshot: HTMLElement | undefined;
+
+function removeDragSnapshot() {
+  dragSnapshot?.remove();
+  dragSnapshot = undefined;
+}
+
+/**
+ * 起拖（把手 dragstart）：禁用行不接收；离屏克隆整行作为拖拽快照（幽灵影 = 带边框整行截图）
+ * @param line - 源行数据
+ * @param event - 原生 dragstart 事件
+ */
+function onRowDragStart(line: TableBodyLine, event: DragEvent) {
+  if (rowDragDisabled(line)) return;
+  const tr = (event.target as HTMLElement | null)?.closest?.("tr");
+  let image: { el: Element; offsetX: number; offsetY: number } | undefined;
+  if (event.dataTransfer && tr) {
+    const rect = tr.getBoundingClientRect();
+    dragSnapshot = createRowSnapshot(tr);
+    image = {
+      el: dragSnapshot,
+      offsetX: event.clientX - rect.left,
+      offsetY: event.clientY - rect.top,
+    };
+  }
+  drag.start(line.key, event, image);
+}
+
+/**
+ * 悬停让位：把被拖行移到悬停行在当前预览序中的位置（仅被拖行移动）
+ * @param line - 悬停行数据
+ * @param event - 原生 dragover 事件
+ */
+function onRowDragOver(line: TableBodyLine, event: DragEvent) {
+  if (!drag.over(line.key, event)) return;
+  const dragging = drag.draggingKey.value!;
+  const keys = [...(previewKeys.value ?? body.value.map((item) => item.key))];
+  const fromIndex = keys.indexOf(dragging);
+  const toIndex = keys.indexOf(line.key);
+  if (fromIndex < 0 || toIndex < 0 || fromIndex === toIndex) return;
+  keys.splice(fromIndex, 1);
+  keys.splice(toIndex, 0, dragging);
+  previewKeys.value = keys;
+}
+
+/**
+ * 成功落位：提交预览序。多跳预览的复合结果 ≡ 单次「源行原位移 → 最终预览位」，
+ * 故 from = 原 body 索引、to = 预览序中被拖行最终索引，直接复用引擎 reorderRows。
+ * @param line - 落位行数据
+ * @param event - 原生 drop 事件
+ */
+function onRowDrop(line: TableBodyLine, event: DragEvent) {
+  const preview = previewKeys.value;
+  const result = drag.drop(line.key, event);
+  previewKeys.value = undefined;
+  removeDragSnapshot();
+  if (!result) return;
+  const from = body.value.findIndex((item) => item.key === result.fromKey);
+  // 有预览：提交最终预览位（含落在自身占位）；无预览：落在自身 = 无操作（from === to 引擎守卫）
+  const to = preview
+    ? preview.indexOf(result.fromKey)
+    : body.value.findIndex((item) => item.key === result.toKey);
+  if (from < 0 || to < 0) return;
+  const payload = instance.reorderRows(from, to);
+  if (payload) emit("drag-sort", payload);
+}
+
+/** 拖拽结束（含取消路径）：清理状态 + 预览序弹回引擎原序 + 移除离屏快照 */
+function onRowDragEnd() {
+  drag.end();
+  previewKeys.value = undefined;
+  removeDragSnapshot();
+}
+
 const scrollHeight = computed(() => (typeof heightRaw === "number" ? `${heightRaw}px` : heightRaw));
 /** 表头 sticky 仅在组件内存在真实纵向滚动盒时生效（fill / virtual），普通模式不挂载，行为不变 */
 const theadSticky = fill || virtualEnabled;
@@ -1115,6 +1277,17 @@ defineExpose({
                 @update:checked="onHeaderSelect"
               />
             </th>
+            <!-- 拖拽把手列表头：占位（对齐 radio 选择列范式）；视作最左固定列（紧随选择列） -->
+            <th
+              v-if="dragEnabled && rowIndex === 0"
+              scope="col"
+              :rowspan="headerRows.length"
+              class="h-10 px-1 text-center align-middle font-medium text-muted-foreground"
+              :class="[stickyClass(stickyOf, DRAG_CELL), theadThClass]"
+              :style="[{ width: `${dragWidth}px` }, stickyStyle(stickyOf, DRAG_CELL, true)]"
+            >
+              <span class="sr-only">拖拽排序</span>
+            </th>
             <th
               v-for="(cell, cellIndex) in cells"
               :key="cell.key"
@@ -1167,6 +1340,14 @@ defineExpose({
                 <Skeleton class="size-4" />
               </td>
               <td
+                v-if="dragEnabled"
+                class="p-1 text-center align-middle"
+                :class="stickyClass(stickyOf, DRAG_CELL)"
+                :style="stickyStyle(stickyOf, DRAG_CELL, false)"
+              >
+                <Skeleton class="size-4" />
+              </td>
+              <td
                 v-for="column in visibleColumns"
                 :key="column.key"
                 class="p-2 align-middle"
@@ -1211,6 +1392,9 @@ defineExpose({
               :selected="selectedKeys.has(item.line.key)"
               :sticky="stickyOf"
               :tree-indent="tree ? treeIndent : undefined"
+              :drag-column="dragEnabled"
+              :drag-disabled="rowDragDisabled(item.line)"
+              :dragging="drag.draggingKey.value === item.line.key"
               @select="(checked: boolean) => onRowSelect(item.line, checked)"
               @row-click="onRowClick(item.line.record, item.line.index, $event)"
               @row-dblclick="onRowDblclick(item.line.record, item.line.index, $event)"
@@ -1219,6 +1403,10 @@ defineExpose({
                 (columnKey: string, event: MouseEvent) =>
                   onCellClick(item.line.record, columnKey, item.line.index, event)
               "
+              @drag-start="onRowDragStart(item.line, $event)"
+              @drag-over="onRowDragOver(item.line, $event)"
+              @drop="onRowDrop(item.line, $event)"
+              @drag-end="onRowDragEnd()"
             />
             <tr aria-hidden="true" data-virtual-pad :style="{ height: `${padBottom}px` }">
               <td :colspan="columnCount" class="border-0 p-0"></td>
@@ -1227,7 +1415,7 @@ defineExpose({
 
           <template v-else>
             <TableBodyRow
-              v-for="line in body"
+              v-for="line in displayBody"
               :key="line.key"
               :line="line"
               :columns="visibleColumns"
@@ -1235,6 +1423,9 @@ defineExpose({
               :selected="selectedKeys.has(line.key)"
               :sticky="stickyOf"
               :tree-indent="tree ? treeIndent : undefined"
+              :drag-column="dragEnabled"
+              :drag-disabled="rowDragDisabled(line)"
+              :dragging="drag.draggingKey.value === line.key"
               @select="(checked: boolean) => onRowSelect(line, checked)"
               @row-click="onRowClick(line.record, line.index, $event)"
               @row-dblclick="onRowDblclick(line.record, line.index, $event)"
@@ -1243,6 +1434,10 @@ defineExpose({
                 (columnKey: string, event: MouseEvent) =>
                   onCellClick(line.record, columnKey, line.index, event)
               "
+              @drag-start="onRowDragStart(line, $event)"
+              @drag-over="onRowDragOver(line, $event)"
+              @drop="onRowDrop(line, $event)"
+              @drag-end="onRowDragEnd()"
             />
           </template>
 

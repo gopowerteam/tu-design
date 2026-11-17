@@ -33,6 +33,7 @@ dist-ssr
 .claude/worktrees/
 .dsh-worktrees/
 .qoder/
+.workflow/
 apps/docs/.vitepress/cache
 !.vscode/
 !.vscode/settings.json

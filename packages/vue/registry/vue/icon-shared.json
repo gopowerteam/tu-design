@@ -3,7 +3,7 @@
   "name": "icon-shared",
   "version": "0.5.8",
   "type": "registry:ui",
-  "description": "内置功能性图标（CloseIcon/ChevronIcon/CalendarIcon），内部共享，非公共 API。图标组件零默认类：尺寸/旋转/过渡类由使用处显式传入，避免 fallthrough 拼接时同名工具类排序冲突。",
+  "description": "内置功能性图标（CloseIcon/ChevronIcon/CalendarIcon/GripIcon），内部共享，非公共 API。图标组件零默认类：尺寸/旋转/过渡类由使用处显式传入，避免 fallthrough 拼接时同名工具类排序冲突。",
   "files": [
     {
       "path": "icon-shared/CalendarIcon.vue",
@@ -22,6 +22,12 @@
       "type": "registry:component",
       "target": "components/ui/icon-shared/CloseIcon.vue",
       "content": "<template>\n  <svg\n    viewBox=\"0 0 24 24\"\n    fill=\"none\"\n    stroke=\"currentColor\"\n    stroke-width=\"2\"\n    stroke-linecap=\"round\"\n    stroke-linejoin=\"round\"\n    aria-hidden=\"true\"\n  >\n    <path d=\"M18 6 6 18\" />\n    <path d=\"m6 6 12 12\" />\n  </svg>\n</template>\n"
+    },
+    {
+      "path": "icon-shared/GripIcon.vue",
+      "type": "registry:component",
+      "target": "components/ui/icon-shared/GripIcon.vue",
+      "content": "<template>\n  <svg\n    viewBox=\"0 0 24 24\"\n    fill=\"none\"\n    stroke=\"currentColor\"\n    stroke-width=\"2\"\n    stroke-linecap=\"round\"\n    stroke-linejoin=\"round\"\n    aria-hidden=\"true\"\n  >\n    <circle cx=\"9\" cy=\"12\" r=\"1\" />\n    <circle cx=\"9\" cy=\"5\" r=\"1\" />\n    <circle cx=\"9\" cy=\"19\" r=\"1\" />\n    <circle cx=\"15\" cy=\"12\" r=\"1\" />\n    <circle cx=\"15\" cy=\"5\" r=\"1\" />\n    <circle cx=\"15\" cy=\"19\" r=\"1\" />\n  </svg>\n</template>\n"
     }
   ]
 }

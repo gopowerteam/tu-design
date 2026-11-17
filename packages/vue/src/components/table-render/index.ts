@@ -22,6 +22,8 @@ export type {
   TableColumnGroupOptions,
   TableColumnNode,
   TableColumnOptions,
+  TableDraggableOptions,
+  TableDragSortPayload,
   TableLoadParams,
   TableRenderDefinition,
   TreeOptions,
