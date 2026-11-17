@@ -7,8 +7,10 @@ export type {
   DictColumnMapping,
   DictColumnOptions,
   DictEntryVariant,
+  ImageColumnOptions,
   SerialColumnOptions,
   TableActionButton,
+  TableActionConfirm,
 } from "./column-renders";
 export { defineColumns } from "./define-columns";
 export { defineTable } from "./define-table";

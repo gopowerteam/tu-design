@@ -16,6 +16,20 @@ const DOCS: Doc[] = [
 
 const action = ref("");
 
+/**
+ * 模拟异步删除接口：600ms 后成功（confirm 的 onClick 返回 Promise → 确认钮 loading）
+ * @param row - 被删除的文档行
+ * @returns 删除完成的 Promise
+ */
+function fakeDelete(row: Doc) {
+  return new Promise<void>((resolve) => {
+    setTimeout(() => {
+      action.value = `已删除 ${row.name}`;
+      resolve();
+    }, 600);
+  });
+}
+
 const table = defineTable<Doc>({
   data: DOCS,
   pageSize: 10,
@@ -24,6 +38,7 @@ const table = defineTable<Doc>({
     {
       key: "ops",
       title: "操作",
+      width: 200,
       render: (r) =>
         r.button([
           "查看", // 字符串简写，等价 { text: "查看" }
@@ -31,6 +46,16 @@ const table = defineTable<Doc>({
           {
             text: (row) => (row.locked ? "已锁定" : "解锁"),
             disabled: (row) => row.locked, // 逐行禁用
+          },
+          {
+            text: "删除",
+            variant: "destructive", // 确认钮自动推断红色
+            confirm: {
+              title: (row) => `删除「${row.name}」？`,
+              description: "删除后不可恢复",
+              confirmText: "删除",
+            },
+            onClick: (row) => fakeDelete(row), // 异步：确认后 loading，成功自动关闭
           },
         ]),
     },
@@ -46,7 +71,8 @@ const table = defineTable<Doc>({
     </p>
     <p class="text-muted-foreground mt-1 text-xs">
       第 2 行演示 <code>disabled</code> 逐行禁用与函数化 <code>text</code>；onClick 收到
-      <code>(record, index)</code>。
+      <code>(record, index)</code>。「删除」演示 <code>confirm</code> 二次确认：点击只开气泡，
+      确认后异步执行（确认钮 loading，成功自动关闭）。
     </p>
   </div>
 </template>

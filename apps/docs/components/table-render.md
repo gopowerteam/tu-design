@@ -801,7 +801,7 @@ const table = defineTable<Order>({
 
 ## 内置列渲染器
 
-`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`column.render` 声明为 `(r: ColumnRenders<T>) => ColumnRender<T>` 工厂形态——**`r` 由 `defineTable<T>` 的列类型自动推断，无需手写泛型**。5 个预设渲染器覆盖高频样板：状态映射、日期/货币格式化、序号列、操作列。
+`defineForm` 的 widget 有 `r.input()`，表格列同样有 `r`：`column.render` 声明为 `(r: ColumnRenders<T>) => ColumnRender<T>` 工厂形态——**`r` 由 `defineTable<T>` 的列类型自动推断，无需手写泛型**。6 个预设渲染器覆盖高频样板：状态映射、日期/货币格式化、序号列、操作列、图片列。
 
 五种渲染器同台演示（含 `disabled` 逐行禁用、函数化 `text`）：
 
@@ -840,9 +840,10 @@ const table = defineTable<Order>({
 | [`date`](#r-date-pattern-—-日期格式化)                 | `(pattern? = "yyyy-MM-dd")`              | 令牌模板格式化；非法输入原样显示                 |
 | [`currency`](#r-currency-currency-locale-—-货币格式化) | `(currency? = "CNY", locale? = "zh-CN")` | `Intl.NumberFormat` 货币格式；NaN 原样显示       |
 | [`serial`](#r-serial-base-—-序号列)                    | `(base? = 1)`                            | 页内序号 `index + base`                          |
-| [`button`](#r-button-items-—-操作列)                   | `(items)`                                | 操作列按钮行，支持字符串简写                     |
+| [`button`](#r-button-items-—-操作列)                   | `(items)`                                | 操作列按钮行，字符串简写 + confirm 二次确认      |
+| [`image`](#r-image-options-—-图片列)                   | `(options?)`                             | 图片缩略图，失败切 fallback / 占位盒，原生懒加载 |
 
-约定：所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`）通过第三参 `column.key` 读取。`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`image`/`progress` 暂不支持。
+约定：所有渲染器返回 `(record, index, column) => VNodeChild`，与 `column.render` 同签名；需要字段值的渲染器（`dict`/`date`/`currency`/`image`）通过第三参 `column.key` 读取。`tag` 并入 `dict` 的 Badge 形态；`text` 即默认取值；`render` 就是自定义口；`progress` 暂不支持。
 
 ### `r.dict(mapping, options?)` — 字典映射
 
@@ -967,30 +968,77 @@ r.currency("USD", "en-US"); // $1,234.50
 
 ### `r.button(items)` — 操作列
 
-字符串简写、函数化 text、逐行 disabled 与 onClick：
+字符串简写、函数化 text、逐行 disabled、onClick 与 confirm 二次确认：
 
 <DemoPreview file="table-render/ButtonDemo.vue" />
 
-| 字段        | 类型                                    | 默认   | 说明                                         |
-| ----------- | --------------------------------------- | ------ | -------------------------------------------- |
-| `items`     | `Array<string \| TableActionButton>`    | —      | 按钮序列；**字符串简写等价 `{ text }`**      |
-| `text`      | `string \| ((record, index) => string)` | —      | 按钮文本，支持按行定制                       |
-| `onClick?`  | `(record, index) => void`               | —      | 点击回调（**不含事件对象**，见下方注意事项） |
-| `variant?`  | `ButtonVariants["variant"]`             | `link` | 沿用 Button 组件全部变体                     |
-| `disabled?` | `(record, index) => boolean`            | —      | 逐行求值，返回真即渲染原生 `disabled`        |
+| 字段        | 类型                                    | 默认   | 说明                                                                                                                          |
+| ----------- | --------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `items`     | `Array<string \| TableActionButton>`    | —      | 按钮序列；**字符串简写等价 `{ text }`**                                                                                       |
+| `text`      | `string \| ((record, index) => string)` | —      | 按钮文本，支持按行定制                                                                                                        |
+| `onClick?`  | `(record, index) => unknown`            | —      | 点击回调（**不含事件对象**，见下方注意事项）；有 `confirm` 时仅在确认后触发，返回 Promise 获得 pending 语义（其余返回值忽略） |
+| `variant?`  | `ButtonVariants["variant"]`             | `link` | 沿用 Button 组件全部变体                                                                                                      |
+| `disabled?` | `(record, index) => boolean`            | —      | 逐行求值，返回真即渲染原生 `disabled`                                                                                         |
+| `confirm?`  | `string \| TableActionConfirm`          | —      | 二次确认气泡（复用 Popconfirm）；**字符串简写 = 气泡标题**                                                                    |
+
+`TableActionConfirm` 字段：`title`（必填，支持 `(record, index) => string`）、`description?`（同支持函数）、`confirmText?`（默认「确定」）、`cancelText?`（默认「取消」）、`variant?`（`default | destructive`，缺省时按钮 `variant: "destructive"` 自动推断红色确认钮）。
 
 行为细则：
 
 - 渲染为 `flex items-center gap-1` 的按钮行，`size="sm"`；**空数组渲染为空字符串**（不产生节点）
 - 点击回调只携带 `(record, index)`；点击会**冒泡触发行 `row-click`**（行点击绑在 `<tr>` 上）——操作列与行点击并存时，请在 `row-click` 处理器里排除操作列来源，或对操作列所在表格不启用 `row-click`
+- **有 `confirm` 时**：点击按钮只打开确认气泡，`onClick` 仅在点「确定」后执行；取消不触发回调。确认按钮在 Teleport 面板内，**点确认不冒泡 `row-click`**（触发按钮仍冒泡，适用上一条）。`confirm` 通常与 `onClick` 搭配（缺省时确认后空操作关闭）
+- **异步 pending 语义**（与 Popconfirm/AlertDialog 对齐）：`onClick` 返回 Promise 时确认钮转 loading 并锁定全部关闭通道（ESC/点外部/取消钮），resolve 后自动关闭、reject 保持打开可重试
+- `disabled` 按钮原生不派发 click，确认气泡天然打不开
 - 空数组与全禁用是有意支持的合法形态（权限收敛后常整列禁用/隐藏）
+- 已知限制：每个 confirm 按钮独立 Popover 实例（超大表格高频操作列留意开销）；气泡打开期间行拖拽重排可能错位、行删除随组件卸载关闭
 
 ```ts
 r.button([
   { text: "编辑", onClick: (row) => edit(row) },
   { text: (row) => (row.locked ? "已锁定" : "解锁"), disabled: (row) => row.locked },
   "删除", // 简写，等价 { text: "删除" }
+  // 二次确认：字符串简写 = 气泡标题
+  { text: "发布", confirm: "确定发布该文档？", onClick: (row) => publish(row) },
+  // 对象形态 + 异步 onClick（确认后 loading，成功自动关闭、失败保持打开）
+  {
+    text: "删除",
+    variant: "destructive", // 确认钮自动推断 destructive
+    confirm: {
+      title: (row) => `删除「${row.name}」？`,
+      description: "删除后不可恢复",
+      confirmText: "删除",
+    },
+    onClick: (row) => api.delete(row.id), // 返回 Promise
+  },
 ]);
+```
+
+### `r.image(options?)` — 图片列
+
+缩略图展示（原生 `<img>`，零额外组件依赖）；加载失败切备用图、再失败显示占位盒：
+
+<DemoPreview file="table-render/ImageDemo.vue" />
+
+| 字段        | 类型                                                       | 默认      | 说明                                               |
+| ----------- | ---------------------------------------------------------- | --------- | -------------------------------------------------- |
+| `size?`     | `number`                                                   | `40`      | 方形边长 px（inline style）                        |
+| `fit?`      | `"cover" \| "contain" \| "fill" \| "none" \| "scale-down"` | `cover`   | 图片适应方式                                       |
+| `shape?`    | `"rounded" \| "square" \| "circle"`                        | `rounded` | 外形（rounded-md / 直角 / 圆形）                   |
+| `alt?`      | `string \| ((record, index) => string)`                    | `""`      | 替代文本（装饰图语义）；建议按行传入有意义描述     |
+| `fallback?` | `string \| ((record, index) => string)`                    | —         | 加载失败时的备用图 URL（仅切换一次），支持按行求值 |
+
+行为细则：
+
+- 单元格值取自 `record[column.key]`；**非字符串（含 null/undefined/number）或空串渲染为空字符串**（不产生节点，与 dict 兜底一致）
+- 四态闭环：加载中（img 自带 `bg-muted` 底色）→ 成功显示；失败且有 `fallback` → 切换备用图；失败无 `fallback` / 备用也失败 → 同尺寸 `bg-muted` 占位盒 + 图片图标
+- **默认 `loading="lazy"`**：原生懒加载，大表格 / 虚拟滚动场景延迟离屏图片请求
+- error 状态随 src 变化复位（虚拟滚动 / 分页行复用不串图）
+- 图片列为 VNode 直通，`ellipsis` 对其无效果（图片无需截断，不必配置）
+- 已知限制：v1 无点击放大预览 / 多图；行拖拽幽灵影中未加载完的图片可能空白（纯观感）。预览需求走下方自定义渲染器逃逸口
+
+```ts
+{ key: "cover", title: "封面", render: (r) => r.image({ size: 48, shape: "circle", alt: (row) => row.name }) }
 ```
 
 ### 自定义渲染器
@@ -999,7 +1047,7 @@ r.button([
 
 <DemoPreview file="table-render/CustomRenderDemo.vue" />
 
-内置渲染器覆盖不到的形态（比如带确认弹窗的操作、进度条、头像组），直接写同签名的函数即可，内置与自定义可以逐列混用：
+内置渲染器覆盖不到的形态（比如进度条、头像组），直接写同签名的函数即可，内置与自定义可以逐列混用（带确认弹窗的操作已内置：`r.button` 的 `confirm` 选项）：
 
 ```tsx
 // progress-column.tsx —— JSX 写法（Vue JSX 用 class 而非 className）
@@ -1039,6 +1087,39 @@ const table = defineTable<Task>({
     { key: "status", title: "状态", render: (r) => r.dict({/* ... */}) }, // 内置
   ],
 });
+```
+
+图片点击放大预览（`r.image` v1 无预览，用逃逸口 + Dialog 自建 lightbox；触发元素记得 `stopPropagation` 防冒泡 `row-click`）：
+
+```tsx
+import type { TableColumnOptions } from "@tu-design/vue";
+import { Dialog } from "@tu-design/vue";
+
+interface Product {
+  name: string;
+  cover: string;
+}
+
+function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
+  return (r) =>
+    r.render((record) => (
+      <Dialog title={record.name}>
+        {{
+          trigger: () => (
+            <img
+              src={record.cover}
+              alt={record.name}
+              class="size-10 cursor-zoom-in rounded-md object-cover"
+              onClick={(e: MouseEvent) => e.stopPropagation()}
+            />
+          ),
+          default: () => (
+            <img src={record.cover} alt={record.name} class="max-h-[70vh] w-full object-contain" />
+          ),
+        }}
+      </Dialog>
+    ));
+}
 ```
 
 选择顺序建议：**能 `formatter` 就不 `render`**（纯文本格式化走取值链更轻）；格式化不够了再上内置渲染器；内置也不够才手写 `render`。三者优先级：`render` > `formatter` > `record[key]`。
@@ -1200,7 +1281,7 @@ const table = defineTable<Task>({
 ## 常见问题
 
 - **为什么我的布尔枚举映射不生效？** —— `Record` 的键约束不支持 `boolean`，把字段规整为 `0`/`1` 或字符串（`"true"`/`"false"`）再配 `dict`。
-- **点了操作列按钮，行点击也触发了？** —— 行点击绑在 `<tr>` 上，按钮点击会冒泡；操作列与 `row-click` 并存时需在行点击处理器中区分来源（事件目标是否在操作列单元格内）。
+- **点了操作列按钮，行点击也触发了？** —— 行点击绑在 `<tr>` 上，按钮点击会冒泡；操作列与 `row-click` 并存时需在行点击处理器中区分来源（事件目标是否在操作列单元格内）。例外：`confirm` 确认气泡的「确定/取消」钮在 Teleport 面板内，点击不冒泡到行。
 - **`onClick` 能拿到事件对象吗？** —— 不能，回调签名是 `(record, index)`。这是有意收敛：需要事件的特殊场景请用自定义 `render` 完全接管。
 - **`date` 的时区行为是什么？** —— 走浏览器本地时区解析与显示；服务端返回 UTC 字符串且需要固定时区展示时，请先在自己的数据层转换为目标时区的 `Date`。
 - **`serial` 翻页后重头计数正常吗？** —— 正常，这是页内序号的设计语义；跨页连续序号需要总行数偏移，暂不支持。

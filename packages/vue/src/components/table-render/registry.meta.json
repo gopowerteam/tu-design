@@ -6,6 +6,7 @@
     "checkbox",
     "form-render",
     "icon-shared",
+    "popconfirm",
     "popover",
     "separator",
     "skeleton",
