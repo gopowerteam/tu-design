@@ -21,16 +21,16 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         # changelogithub 生成 Release notes 需要完整 git 历史
         with:
           fetch-depth: 0
 
       # pnpm 必须先于 setup-node 安装（setup-node@v5 的 Environment details
       # 会探测 packageManager 字段，pnpm 缺失时硬失败；与 ci.yml 顺序对齐）
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
 
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           registry-url: https://registry.npmjs.org
