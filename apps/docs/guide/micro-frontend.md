@@ -43,6 +43,7 @@ wujie 把子应用文档树 graft 进 shadowRoot 渲染：**graft 树的 CSS 包
 - `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；
 - 触发器祖先带 `transform`（如入场动画容器）会劫持 `fixed` 的包含块，此时建议关闭 Teleport 让面板留在原地（Popover 为 `portal: false`，其他浮层组件以各自文档的对应 prop 为准）；
 - wujie 以 degrade 模式（iframe 保活）运行时页面无 shadowRoot，组件样式随子应用留在 iframe 内，建议同样关闭 Teleport 让面板留在原地；
+- **层叠上下文（z-index）**：graft 渲染进 shadow DOM，但 shadow DOM **不创建独立层叠上下文**，子应用浮层的 z-index 与宿主页面元素直接比较。库的模态层 `--z-modal`（60）保证遮罩盖住置于 50~59 的宿主 chrome；宿主 chrome 若设 ≥ 60 会击穿遮罩，这是层叠契约而非硬保证。完整层叠序与 in-place/teleported 浮层分工见[主题 · z-index 层叠体系](/guide/theming)；
 - qiankun / micro-app 为同文档渲染（无 iframe realm），预期无需适配（尚未实测）；非 iframe 型 graft 沙箱若未来出现，`sandbox.ts` 的 marker 探测为扩展点——追加该沙箱的官方标记信号即可。
 
 以上机制在全部浮层组件中生效，无需配置；个别组件特有的覆盖入口（如 Popover 的 `to` / `portal` / `z-index`）见对应组件文档。

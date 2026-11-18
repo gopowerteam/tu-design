@@ -136,5 +136,5 @@ Dialog 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
 ```
 
 ::: tip 微前端环境
-本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。
+本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。遮罩与面板消费模态层 `--z-modal`（60），保证盖住置于 50~59 的宿主 chrome；层叠契约详见[主题 · z-index 层叠体系](/guide/theming)。
 :::

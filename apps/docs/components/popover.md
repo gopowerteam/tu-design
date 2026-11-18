@@ -85,27 +85,27 @@ hover/focus/manual 模式下面板锚点使用 Ark 的 `Anchor`（无内建 clic
 
 ### Props
 
-| Prop                  | 类型                                        | 默认值     | 说明                                                                                                             |
-| --------------------- | ------------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------- |
-| `v-model:open`        | `boolean`                                   | —          | 展开状态；不传为非受控                                                                                           |
-| `default-open`        | `boolean`                                   | `false`    | 非受控时的初始状态                                                                                               |
-| `lazy-mount`          | `boolean`                                   | `false`    | 首次展开才挂载面板内容                                                                                           |
-| `unmount-on-exit`     | `boolean`                                   | `false`    | 收起时卸载面板内容                                                                                               |
-| `trigger`             | `"click" \| "hover" \| "focus" \| "manual"` | `"click"`  | 触发方式：click 内建切换；hover/focus 延迟桥接；manual 纯受控                                                    |
-| `open-delay`          | `number`                                    | `100`      | hover/focus 打开延迟（毫秒）                                                                                     |
-| `close-delay`         | `number`                                    | `100`      | hover/focus 关闭延迟（毫秒）                                                                                     |
-| `keep-alive-on-hover` | `boolean`                                   | `true`     | hover/focus 时悬浮/聚焦面板保持打开                                                                              |
-| `side`                | `"top" \| "bottom" \| "left" \| "right"`    | `"bottom"` | 面板主轴方向；`positioning.placement` 显式给出时以其为准                                                         |
-| `align`               | `"start" \| "center" \| "end"`              | `"center"` | 面板横轴对齐（与 `side` 组合成 12 方位）                                                                         |
-| `arrow`               | `boolean`                                   | `false`    | 显示指向触发元素的箭头                                                                                           |
-| `arrow-class`         | `string`                                    | —          | 追加/覆盖箭头样式类                                                                                              |
-| `disabled`            | `boolean`                                   | `false`    | 禁用触发（不响应任何触发事件；已打开状态不受影响）                                                               |
-| `portal`              | `boolean`                                   | `true`     | 面板 Teleport（默认 `body`）；`false` 时留在原地（不受嵌套裁剪影响）                                             |
-| `to`                  | `string \| HTMLElement`                     | —          | Teleport 目标（选择器/元素），仅 `portal=true` 时生效；缺省时在真 shadow DOM 或 wujie 沙箱自动降级为应用挂载容器 |
-| `match-trigger-width` | `boolean`                                   | `false`    | 面板宽度与触发元素一致（建议配 `content-class="w-auto"`）                                                        |
-| `z-index`             | `number`                                    | —          | 覆盖面板/定位层级（默认走 zag 的 `--z-index` 层级体系）                                                          |
-| `content-class`       | `string`                                    | —          | 追加/覆盖面板样式类（如 `"w-56 p-0"`）                                                                           |
-| `content-props`       | `Record<string, unknown>`                   | —          | 透传到面板根元素的属性（`id`/`style`/`data-*` 等）                                                               |
+| Prop                  | 类型                                        | 默认值     | 说明                                                                                                                        |
+| --------------------- | ------------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `v-model:open`        | `boolean`                                   | —          | 展开状态；不传为非受控                                                                                                      |
+| `default-open`        | `boolean`                                   | `false`    | 非受控时的初始状态                                                                                                          |
+| `lazy-mount`          | `boolean`                                   | `false`    | 首次展开才挂载面板内容                                                                                                      |
+| `unmount-on-exit`     | `boolean`                                   | `false`    | 收起时卸载面板内容                                                                                                          |
+| `trigger`             | `"click" \| "hover" \| "focus" \| "manual"` | `"click"`  | 触发方式：click 内建切换；hover/focus 延迟桥接；manual 纯受控                                                               |
+| `open-delay`          | `number`                                    | `100`      | hover/focus 打开延迟（毫秒）                                                                                                |
+| `close-delay`         | `number`                                    | `100`      | hover/focus 关闭延迟（毫秒）                                                                                                |
+| `keep-alive-on-hover` | `boolean`                                   | `true`     | hover/focus 时悬浮/聚焦面板保持打开                                                                                         |
+| `side`                | `"top" \| "bottom" \| "left" \| "right"`    | `"bottom"` | 面板主轴方向；`positioning.placement` 显式给出时以其为准                                                                    |
+| `align`               | `"start" \| "center" \| "end"`              | `"center"` | 面板横轴对齐（与 `side` 组合成 12 方位）                                                                                    |
+| `arrow`               | `boolean`                                   | `false`    | 显示指向触发元素的箭头                                                                                                      |
+| `arrow-class`         | `string`                                    | —          | 追加/覆盖箭头样式类                                                                                                         |
+| `disabled`            | `boolean`                                   | `false`    | 禁用触发（不响应任何触发事件；已打开状态不受影响）                                                                          |
+| `portal`              | `boolean`                                   | `true`     | 面板 Teleport（默认 `body`）；`false` 时留在原地（不受嵌套裁剪影响）                                                        |
+| `to`                  | `string \| HTMLElement`                     | —          | Teleport 目标（选择器/元素），仅 `portal=true` 时生效；缺省时在真 shadow DOM 或 wujie 沙箱自动降级为应用挂载容器            |
+| `match-trigger-width` | `boolean`                                   | `false`    | 面板宽度与触发元素一致（建议配 `content-class="w-auto"`）                                                                   |
+| `z-index`             | `number`                                    | —          | 覆盖面板/定位层级（默认走模态层 `--z-modal`，经内联 style 生效、优先于层级类，见[主题 · z-index 层叠体系](/guide/theming)） |
+| `content-class`       | `string`                                    | —          | 追加/覆盖面板样式类（如 `"w-56 p-0"`）                                                                                      |
+| `content-props`       | `Record<string, unknown>`                   | —          | 透传到面板根元素的属性（`id`/`style`/`data-*` 等）                                                                          |
 
 其余 attrs（如 `positioning`、`modal`、`ids`）原样透传给 Ark Popover Root；`portal` 经真实 `<Teleport>` 实现（Ark Vue 原语不自带传送），目标由 `to` 指定或自动解析。
 
