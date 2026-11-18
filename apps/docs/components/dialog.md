@@ -119,7 +119,7 @@ Dialog 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
 
 | 变量                 | 用途                          |
 | -------------------- | ----------------------------- |
-| `--background`       | 面板底色（`bg-background`）   |
+| `--dialog`           | 面板底色（`bg-dialog`）       |
 | `--border`           | 面板边框色（`border`）        |
 | `--muted-foreground` | 描述文字                      |
 | `--ring`             | 右上角关闭按钮焦点环颜色      |
@@ -130,7 +130,7 @@ Dialog 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
 在任意容器上覆盖即得到作用域主题：
 
 ```html
-<div style="--background: oklch(0.98 0.01 260)">
+<div style="--dialog: oklch(0.98 0.01 260)">
   <TDialog v-model:open="open" title="品牌色对话框">…</TDialog>
 </div>
 ```

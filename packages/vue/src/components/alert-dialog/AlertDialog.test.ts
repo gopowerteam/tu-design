@@ -242,3 +242,14 @@ describe("AlertDialog ids 无冒号覆盖", () => {
     r.w.unmount();
   });
 });
+
+// —— 色彩语义（issue #2）：模态面板面消费 --dialog，画布带色主题下面板不被 --background 染色 ——
+describe("AlertDialog 面板底色 token --dialog", () => {
+  it("Content 使用 bg-dialog（模态面板表面），不再消费画布位 bg-background", async () => {
+    const r = mountOpen({});
+    await waitOpen();
+    expect(content()!.className).toContain("bg-dialog");
+    expect(content()!.className).not.toContain("bg-background");
+    r.w.unmount();
+  });
+});

@@ -66,10 +66,10 @@ const { loading, handleConfirm, handleCancel } = useConfirmPending({
   close,
 });
 
-// 面板样式：复用 Dialog 的内容面板类，宽度收窄为 sm:max-w-md 的确认弹窗尺度
+// 面板样式：复用 Dialog 的内容面板类（含 --dialog 模态表面位，issue #2），宽度收窄为 sm:max-w-md 的确认弹窗尺度
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
+    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
   ),
 );
 </script>

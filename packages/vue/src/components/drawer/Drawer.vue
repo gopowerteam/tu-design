@@ -116,7 +116,7 @@ const isLateral = computed(() => props.placement === "left" || props.placement =
 // 侧向：基础 w-full（移动端全宽）+ sm: 断点档位宽度；顶/底向：基础 h-full + sm: 档位高度
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[var(--z-modal,60)] flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
+    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[var(--z-modal,60)] flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
     config.value.content,
     isLateral.value
       ? cn("w-full", config.value.sizes[props.size])

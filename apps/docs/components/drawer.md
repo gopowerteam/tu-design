@@ -104,12 +104,12 @@ npx @tu-design/cli add drawer
 
 Drawer 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
 
-| 变量                 | 用途                        |
-| -------------------- | --------------------------- |
-| `--background`       | 面板底色（`bg-background`） |
-| `--border`           | 面板贴合边（`border-*`）    |
-| `--muted-foreground` | 描述文字                    |
-| `--ring`             | 关闭按钮焦点环颜色          |
+| 变量                 | 用途                     |
+| -------------------- | ------------------------ |
+| `--dialog`           | 面板底色（`bg-dialog`）  |
+| `--border`           | 面板贴合边（`border-*`） |
+| `--muted-foreground` | 描述文字                 |
+| `--ring`             | 关闭按钮焦点环颜色       |
 
 遮罩（Backdrop）为固定 `bg-black/50`，不使用主题变量；暗色模式下遮罩与面板底色均随 `.dark` 的 token 自动切换，无需额外处理。
 
@@ -117,7 +117,7 @@ Drawer 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming
 
 ```vue
 <template>
-  <div class="[--background:oklch(0.96_0.01_250)] [--border:oklch(0.85_0.02_250)]">
+  <div class="[--dialog:oklch(0.96_0.01_250)] [--border:oklch(0.85_0.02_250)]">
     <TDrawer title="主题化抽屉">
       <template #trigger>
         <TButton variant="outline">打开</TButton>

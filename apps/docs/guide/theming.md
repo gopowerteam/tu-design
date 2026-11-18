@@ -18,6 +18,7 @@ tokens.css 提供三层定制入口，按介入深度排列：
 | ---------------------------------------- | -------------------------- | ---------------------------------------------------------------------- |
 | `--background` / `--foreground`          | 页面底色 / 默认文字        | 明暗互换                                                               |
 | `--card` / `--popover`（含 foreground）  | 卡片 / 弹层底色与文字      | 同步加深（popover 略浅于 card，制造层次）                              |
+| `--dialog` / `--dialog-foreground`       | 模态面板底色/文字          | 暗色兜底与画布同值，画布带色时面板独立                                 |
 | `--primary` / `--primary-foreground`     | 主色（按钮、链接强调）     | 取值反转：暗色下主色接近白                                             |
 | `--secondary` / `--secondary-foreground` | 次级色块                   | 同步加深                                                               |
 | `--muted` / `--muted-foreground`         | 弱化背景 / 弱化文字        | 同步加深                                                               |
@@ -53,6 +54,7 @@ tokens.css 提供三层定制入口，按介入深度排列：
 ```css
 @theme inline {
   --color-background: var(--background);
+  --color-dialog: var(--dialog);
   --color-primary: var(--primary);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -181,7 +183,7 @@ tokens.css 中每个语义 token 都以 `var(--app-*, 官方兜底)` 的形式�
 | 应用侧变量                                                             | 桥接到                             | 说明                                         |
 | ---------------------------------------------------------------------- | ---------------------------------- | -------------------------------------------- |
 | `--app-bg-page`                                                        | `--background`                     | 页面底色                                     |
-| `--app-bg-surface`                                                     | `--muted`                          | 弱化背景                                     |
+| `--app-bg-surface`                                                     | `--muted`、`--dialog`              | 弱化背景；模态面板表面（双消费）             |
 | `--app-bg-raised`                                                      | `--card`、`--popover`              | 浮起表面                                     |
 | `--app-bg-hover`                                                       | `--accent`                         | hover 等强调背景                             |
 | `--app-text-1`                                                         | `--foreground` 及各 `*-foreground` | 主文字                                       |
@@ -197,6 +199,7 @@ tokens.css 中每个语义 token 都以 `var(--app-*, 官方兜底)` 的形式�
 设计决策（与上游 shadcn 的差异边界）：
 
 - **`--secondary` / `--secondary-foreground` 有意不桥接**——上游定位即中性灰，无品牌语义；
+- **模态面板底色独立语义位 `--dialog`**（issue #2）：`--background` 是页面画布，画布带色的主题下模态面板不再被页面底色染色；作用域覆盖面板底色请覆盖 `--dialog` 而非 `--background`；`--app-bg-surface` 由 `--muted` 与 `--dialog` 双消费；
 - **`-soft` 自动派生**：只定义实色（如 `--app-success`）即可，浅底自动回落为 `color-mix` 派生；
 - **`.dark` 内重声明 `-soft`**：应用侧自定义 `-soft` 时必须在 `.dark` 内再写一遍，否则无法响应暗色实色变化。
 
