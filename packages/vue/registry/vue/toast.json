@@ -5,7 +5,7 @@
   "type": "registry:ui",
   "description": "全局轻提示：ToastProvider 在应用根部挂载一次，useToast() 提供命令式 API（success/error/info/warning/loading/promise/dismiss）；基于 Ark UI Toast 原语，语义 type 映射主题 token 配色。",
   "registryDependencies": ["icon-shared", "utils"],
-  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "dependencies": ["@ark-ui/vue@^5.40.0"],
   "files": [
     {
       "path": "toast/ToastProvider.vue",

@@ -11,7 +11,7 @@ import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 import ValueTags from "../tree-shared/ValueTags.vue";
-import { createTreeMate, type Key, type TreeNode, type TreeOption } from "../tree-shared";
+import { createTreeMate, type Key, type TreeOption, type TreeOptionNode } from "../tree-shared";
 import { nextActiveKey, type MoveKey } from "../tree-shared/keyboard";
 
 // ids 全量覆盖（无冒号）：ArkPopover 浮层载体，规避 wujie patch getElementById
@@ -124,7 +124,7 @@ function handleExpandedUpdate(keys: Key[]) {
   emit("update:expandedKeys", keys);
 }
 
-function toggleNode(node: TreeNode) {
+function toggleNode(node: TreeOptionNode) {
   const next = expandedKeys.value.includes(node.key)
     ? expandedKeys.value.filter((k) => k !== node.key)
     : [...expandedKeys.value, node.key];
@@ -184,7 +184,7 @@ function updateValue(next: Key | Key[] | undefined) {
   emit("update:modelValue", next);
 }
 
-function selectNode(node: TreeNode) {
+function selectNode(node: TreeOptionNode) {
   if (node.disabled) return;
   if (props.checkable) {
     const current = normalizeValue(value.value);
@@ -274,7 +274,7 @@ const visibleNodes = computed(() => treeMate.value.getFlattenedNodes(expandedKey
 // —— 过滤：命中节点及其祖先路径可见（搜索态下全树展开）——
 const pattern = ref("");
 const searchPattern = computed(() => pattern.value.trim().toLowerCase());
-const filteredNodes = computed<TreeNode[]>(() => {
+const filteredNodes = computed<TreeOptionNode[]>(() => {
   if (!props.filterable || !searchPattern.value) return visibleNodes.value;
   const mate = treeMate.value;
   // 命中节点与其全部祖先均保留（祖先自身无命中也保留）
@@ -289,7 +289,7 @@ const filteredNodes = computed<TreeNode[]>(() => {
   return allNodes.filter((n) => keep.has(n.key));
 });
 
-function labelOf(node: TreeNode): string {
+function labelOf(node: TreeOptionNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 

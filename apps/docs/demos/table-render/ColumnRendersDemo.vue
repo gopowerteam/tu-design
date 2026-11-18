@@ -75,8 +75,7 @@ const table = defineTable<Invoice>({
   <div class="w-full">
     <TTableRender :definition="table" row-key="id" @row-click="picked = $event[0]" />
     <p v-if="picked" class="text-muted-foreground mt-3 text-sm">
-      点击了「查看」：<code>{{ picked.customer }}</code
-      >（{{ picked.id }}）
+      点击了「查看」：<code>{{ picked.customer }}</code>（{{ picked.id }}）
     </p>
     <p class="text-muted-foreground mt-1 text-xs">
       第 3 行演示 <code>disabled</code> 逐行禁用与函数化 <code>text</code>；

@@ -5,7 +5,7 @@
   "type": "registry:ui",
   "description": "多格验证码输入：length 指定格数，支持 otp/mask/字符类型、焦点自动跳格与填满回调，可选分隔符插槽。",
   "registryDependencies": ["utils"],
-  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "dependencies": ["@ark-ui/vue@^5.40.0"],
   "files": [
     {
       "path": "pin-input/PinInput.vue",

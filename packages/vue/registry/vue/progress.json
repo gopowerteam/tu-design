@@ -5,7 +5,7 @@
   "type": "registry:ui",
   "description": "进度条：基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。",
   "registryDependencies": ["utils"],
-  "dependencies": ["@ark-ui/vue@^5.39.2"],
+  "dependencies": ["@ark-ui/vue@^5.40.0"],
   "files": [
     {
       "path": "progress/Progress.vue",

@@ -9,4 +9,4 @@ export type {
   TreeNode,
   TreeMate,
 } from "./interface";
-export type { TreeOption } from "./types";
+export type { TreeOption, TreeOptionNode } from "./types";

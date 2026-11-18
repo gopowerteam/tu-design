@@ -58,7 +58,7 @@
     "happy-dom": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
-    "unplugin-vue": "^8.0.0",
+    "unplugin-vue": "^8.0.1",
     "vite-plus": "catalog:",
     "vitest": "catalog:",
     "vue": "catalog:",

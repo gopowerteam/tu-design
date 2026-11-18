@@ -2,13 +2,8 @@ import type { ColumnDef, RowSelectionState } from "@tanstack/vue-table";
 import { computed, onMounted, reactive, readonly, ref, shallowRef, toValue, watch } from "vue";
 import type { Ref } from "vue";
 import { flattenColumns } from "./columns";
-import {
-  getCoreRowModel,
-  getExpandedRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useVueTable,
-} from "@tanstack/vue-table";
+import { useTable } from "@tanstack/vue-table";
+import { TABLE_FEATURES, type TableRenderFeatures } from "./constants";
 import type {
   DataRecord,
   SortableOptions,
@@ -249,10 +244,17 @@ export function useTableRender<T extends DataRecord>(
   }
 
   // ---- 引擎组装 -------------------------------------------------------------
-  const table = useVueTable({
-    get data() {
-      return rows.value;
-    },
+  // v9 适配器在构造时快照 options，data 变更要等 flush 才同步进引擎；
+  // 因此先完成一次数据装载再构造（否则首屏行模型为空）
+  syncData();
+
+  // v9 受控选择：state 切片为 computed 投影，解析与落盘由 onRowSelectionChange 负责
+  const selectionSlice = computed(() => ({ rowSelection: rowSelectionState.value }));
+
+  // 显式泛型：features 槽位的 TData 缺省为 any，令 useTable 推断发散（VueTable→Table 不可赋值）
+  const table = useTable<TableRenderFeatures, T>({
+    features: TABLE_FEATURES,
+    data: rows,
     getRowId: (originalRow, index) => rowIdOf(originalRow, index),
     // 树形：子行走 childrenKey（空数组与缺字段都视为叶子）；展开模型接入后
     // getRowModel() 返回「父行 + 可见子行」的扁平序列，行带 depth/toggleExpanded
@@ -260,8 +262,7 @@ export function useTableRender<T extends DataRecord>(
       const children = (originalRow as DataRecord)[childrenKey];
       return Array.isArray(children) ? children : [];
     },
-    getExpandedRowModel: getExpandedRowModel(),
-    columns: columns.map<ColumnDef<T>>((column) => ({
+    columns: columns.map<ColumnDef<TableRenderFeatures, T>>((column) => ({
       accessorKey: column.key,
       header: column.title,
       enableSorting: column.sortable === true,
@@ -278,14 +279,9 @@ export function useTableRender<T extends DataRecord>(
       // defaultExpandAll：true = 全部展开；否则全收起（TanStack expanded 空对象）
       expanded: tree?.defaultExpandAll === true ? true : {},
     },
-    getCoreRowModel: getCoreRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     manualPagination: serverMode,
     manualSorting: serverMode,
-    get state() {
-      return { rowSelection: rowSelectionState.value };
-    },
+    state: selectionSlice,
     enableRowSelection: selectionConfig?.selectable
       ? (row) => selectionConfig.selectable!(row.original)
       : selectionConfig !== undefined,
@@ -306,7 +302,7 @@ export function useTableRender<T extends DataRecord>(
   });
 
   watch(
-    () => table.getState().pagination,
+    () => table.atoms.pagination.get(),
     (pagination) => {
       if (page.pageIndex === pagination.pageIndex + 1 && page.pageSize === pagination.pageSize)
         return;
@@ -317,7 +313,7 @@ export function useTableRender<T extends DataRecord>(
   );
 
   watch(
-    () => table.getState().sorting,
+    () => table.atoms.sorting.get(),
     (sorting) => {
       const next: SortableOptions | undefined = sorting[0]
         ? { key: sorting[0].id, direction: sorting[0].desc ? "desc" : "asc" }
@@ -330,6 +326,8 @@ export function useTableRender<T extends DataRecord>(
   );
 
   // 静态数据源：ref/getter 会自动跟随；普通数组为快照，可用 reload() 重同步
+  // 首装已由上方 syncData() 完成；此处不带 immediate，避免构造后再写一次 rows
+  // 触发 v9 适配器挂起同步、吞掉一次渲染更新（点击后 DOM 慢一拍的根源）
   function syncData() {
     const data = toValue(options.data);
     if (data !== undefined && !Array.isArray(data)) {
@@ -340,7 +338,7 @@ export function useTableRender<T extends DataRecord>(
     page.total = rows.value.length;
   }
 
-  watch(() => toValue(options.data), syncData, { immediate: true });
+  watch(() => toValue(options.data), syncData);
 
   function setPageIndex(pageIndex: number) {
     table.setPageIndex(Math.max(0, pageIndex - 1));
@@ -607,7 +605,7 @@ export function useTableRender<T extends DataRecord>(
       return;
     }
     // radio：单选互斥；checkbox：累加
-    const next =
+    const next: RowSelectionState =
       selectionConfig?.type === "radio"
         ? { [key]: true }
         : { ...rowSelectionState.value, [key]: true };

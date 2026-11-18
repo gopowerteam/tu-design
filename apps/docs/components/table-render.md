@@ -23,7 +23,7 @@ npx @tu-design/cli add table-render
 
 ## 基础用法
 
-`defineTable` 须在组件 `setup` 中调用（TanStack `useVueTable` 依赖组件挂载），返回值直接传给 `:definition`：
+`defineTable` 须在组件 `setup` 中调用（TanStack `useTable` 依赖组件挂载），返回值直接传给 `:definition`：
 
 <DemoPreview file="table-render/StaticTableDemo.vue" />
 
@@ -1126,12 +1126,12 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 
 ## 组件结构
 
-| 成员                      | 说明                                                                                                                                                                                                |
-| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TTableRender`            | 表格本体：包装 TanStack `useVueTable`，内置分页器（`TablePagination`，已公开、可独立使用，见下方组合式布局节）、行选择、固定列、虚拟滚动与树形展开；列单元格渲染见上文[内置列渲染器](#内置列渲染器) |
-| `defineTable<T>(config)`  | 聚合函数：`useTableRender` 的别名，一步返回 `TableRenderDefinition`（须在组件 setup 中调用，TanStack 约束）                                                                                         |
-| `useTableRender(options)` | 底层组合函数：包装 TanStack `useVueTable`，供已有实例 / 动态配置的高级场景                                                                                                                          |
-| `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                                                              |
+| 成员                      | 说明                                                                                                                                                                                             |
+| ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `TTableRender`            | 表格本体：包装 TanStack `useTable`，内置分页器（`TablePagination`，已公开、可独立使用，见下方组合式布局节）、行选择、固定列、虚拟滚动与树形展开；列单元格渲染见上文[内置列渲染器](#内置列渲染器) |
+| `defineTable<T>(config)`  | 聚合函数：`useTableRender` 的别名，一步返回 `TableRenderDefinition`（须在组件 setup 中调用，TanStack 约束）                                                                                      |
+| `useTableRender(options)` | 底层组合函数：包装 TanStack `useTable`，供已有实例 / 动态配置的高级场景                                                                                                                          |
+| `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                                                           |
 
 ## API
 
@@ -1291,7 +1291,7 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 
 ## 注意事项
 
-- **须在 `setup` 中调用 `defineTable`**：TanStack `useVueTable` 依赖组件挂载。拆分式 props 则无此限制（内核在 TableRender 内部创建）。
+- **须在 `setup` 中调用 `defineTable`**：TanStack `useTable` 依赖组件挂载。拆分式 props 则无此限制（内核在 TableRender 内部创建）。
 - **两种模式互斥**：同时传 `onLoad` 与 `data` 时按服务端模式处理，并在 DEV 下给出警告。
 - **`onLoad` 抛错不会打断表格**：内部 `console.error` 并保持空态，请在自己的 `onLoad` 里做错误提示。
 - **竞态已内置**：同一表格的多次取数带序号守卫，先发后到的旧响应不会覆盖新结果，无需自行 debounce（但也不会替你做节流）。

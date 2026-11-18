@@ -3,12 +3,12 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
-import type { Key, TreeNode } from "../tree-shared";
+import type { Key, TreeOptionNode } from "../tree-shared";
 import type { TreeOption } from "../tree-shared";
 
 const props = defineProps({
   /** 展开态扁平化的可见节点序列（来自 treeMate.getFlattenedNodes(expandedKeys)） */
-  nodes: { type: Array as PropType<Array<TreeNode>>, required: true },
+  nodes: { type: Array as PropType<Array<TreeOptionNode>>, required: true },
   /** 当前选中键集合（用于 data-selected 回显） */
   selectedKeys: { type: Array as PropType<Key[]>, default: () => [] },
   /** 展开的分支键集合 */
@@ -24,11 +24,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-  select: [node: TreeNode];
-  toggle: [node: TreeNode];
+  select: [node: TreeOptionNode];
+  toggle: [node: TreeOptionNode];
 }>();
 
-function label(node: TreeNode): string {
+function label(node: TreeOptionNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 
@@ -38,23 +38,23 @@ const expandedSet = computed(() => new Set(props.expandedKeys));
 const checkedSet = computed(() => new Set(props.checkedKeys));
 const indeterminateSet = computed(() => new Set(props.indeterminateKeys));
 
-function hasChildren(node: TreeNode): boolean {
+function hasChildren(node: TreeOptionNode): boolean {
   return !node.isLeaf && !!node.children?.length;
 }
 
-function isExpanded(node: TreeNode): boolean {
+function isExpanded(node: TreeOptionNode): boolean {
   return hasChildren(node) && expandedSet.value.has(node.key);
 }
 
-function isSelected(node: TreeNode): boolean {
+function isSelected(node: TreeOptionNode): boolean {
   return props.checkable ? checkedSet.value.has(node.key) : selectedSet.value.has(node.key);
 }
 
-function isChecked(node: TreeNode): boolean {
+function isChecked(node: TreeOptionNode): boolean {
   return checkedSet.value.has(node.key);
 }
 
-function isIndeterminate(node: TreeNode): boolean {
+function isIndeterminate(node: TreeOptionNode): boolean {
   return indeterminateSet.value.has(node.key);
 }
 </script>

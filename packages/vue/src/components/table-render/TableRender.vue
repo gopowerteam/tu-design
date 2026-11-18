@@ -41,8 +41,8 @@ const props = defineProps({
   definition: { type: Object as PropType<TableRenderDefinition<any>> },
   /** 数据主键（记录缺字段时以行索引兜底） */
   rowKey: { type: String, required: true },
-  /** 拆分式：与 definition 二选一，definition 优先（支持分组列节点） */
-  columns: { type: Array as PropType<TableColumnNode[]> },
+  /** 拆分式：与 definition 二选一，definition 优先（支持分组列节点；列泛型不约束记录形态） */
+  columns: { type: Array as PropType<TableColumnNode<any>[]> },
   onLoad: {
     type: Function as PropType<(params: TableLoadParams) => void | Promise<unknown>>,
   },
@@ -156,7 +156,9 @@ if (props.definition && props.draggable !== undefined && import.meta.env.DEV) {
     "[tu-design] <TableRender> 聚合式下 draggable 请在 defineTable 配置，组件 prop 已忽略。",
   );
 }
-const instance =
+// 显式 any 泛型：Row 的泛型为 in out（不变），拆分式推断出的 DataRecord 具型与
+// definition<any> 逃逸舱口互不相容（TS6 getParentRow 递归比对报 unrelated）
+const instance: TableRenderDefinition<any> =
   props.definition ??
   useTableRender({
     columns: props.columns ?? [],
@@ -175,7 +177,7 @@ const instance =
     pageSize: () => props.pageSize,
     sort: () => props.sort,
     selectedKeys: () => props.selectedKeys,
-    columnVisibility: props.definition?.columnVisibility,
+    // 聚合式 columnVisibility 由 definition 自带路径承载；拆分式此处恒空（TS6 下 ?? 右侧收窄坐实）
     defaultVisibleKeys: () => props.defaultVisibleKeys,
     visibleKeys: () => props.visibleKeys,
   });
@@ -1110,7 +1112,8 @@ function onCellClick(record: DataRecord, columnKey: string, index: number, event
 defineExpose({
   table: instance.table,
   page: instance.page,
-  sort: instance.sort,
+  // 不暴露 sort：与受控 sort prop 同名，实例上互相遮蔽（TS6 起 h()/mount 类型检查拒绝该组件）；
+  // 排序状态经 sort-change 事件与 definition.sort 投影获取
   loading: instance.loading,
   error: instance.error,
   visibleKeys: instance.visibleKeys,
@@ -1137,7 +1140,7 @@ defineExpose({
         v-if="showSearchArea"
         class="min-w-0 flex-1"
         :definition="search"
-        :searchable="search.actions ? undefined : true"
+        :searchable="search?.actions ? undefined : true"
         @search="onSearch"
         @reset="onReset"
       />

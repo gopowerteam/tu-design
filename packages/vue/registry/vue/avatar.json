@@ -5,7 +5,7 @@
   "type": "registry:ui",
   "description": "头像，支持尺寸/形状、加载占位与失败回退（Ark UI）。",
   "registryDependencies": ["utils"],
-  "dependencies": ["@ark-ui/vue@^5.39.2", "class-variance-authority@^0.7.1"],
+  "dependencies": ["@ark-ui/vue@^5.40.0", "class-variance-authority@^0.7.1"],
   "files": [
     {
       "path": "avatar/Avatar.vue",

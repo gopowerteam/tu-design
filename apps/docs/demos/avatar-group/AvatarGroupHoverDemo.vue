@@ -20,9 +20,7 @@ const srcs = [
     <div class="flex flex-wrap items-center gap-8">
       <TAvatarGroup :max="3" expand-on-hover>
         <TAvatar v-for="(src, i) in srcs" :key="i" :src="src" :alt="`成员 ${i + 1}`" />
-        <template #rest="{ rest }"
-          ><span class="text-xs font-semibold">…{{ rest }}</span></template
-        >
+        <template #rest="{ rest }"><span class="text-xs font-semibold">…{{ rest }}</span></template>
       </TAvatarGroup>
       <span class="text-xs text-muted-foreground"
         >rest 插槽自定义尾巴（如省略号风格），同样支持悬停展开</span

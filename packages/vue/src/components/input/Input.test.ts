@@ -47,7 +47,7 @@ describe("Input", () => {
     const w = mount(Input, {
       props: {
         modelValue: 5,
-        "onUpdate:modelValue": (v: string | number) => w.setProps({ modelValue: v }),
+        "onUpdate:modelValue": (v: string | number | undefined) => w.setProps({ modelValue: v }),
       },
     });
     dispatchInput(w, "42");

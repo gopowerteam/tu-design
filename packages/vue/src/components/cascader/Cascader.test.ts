@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
-import type { TreeOption } from "../tree-shared";
+import type { Key, TreeOption } from "../tree-shared";
 import { Cascader } from "./index";
 
 // 三层树：浙江 → 杭州 → 西湖
@@ -132,7 +132,7 @@ describe("Cascader", () => {
             checkable: true,
             cascade: true,
             modelValue: value.value,
-            "onUpdate:modelValue": (v: string[]) => (value.value = v),
+            "onUpdate:modelValue": (v: Key | Key[] | undefined) => (value.value = v as string[]),
           });
       },
     });

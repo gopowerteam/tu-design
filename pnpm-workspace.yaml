@@ -10,43 +10,43 @@ catalogMode: prefer
 minimumReleaseAge: 0
 
 catalog:
-  "@types/node": ^24
+  "@types/node": ^26.6.6
   dev: ^0.1.5
   rm: ^0.1.8
-  run: ^2.1.7
-  typescript: ^5.9
-  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
-  vite-plus: 1.0.0
-  vue: ^3.5.43
-  "@ark-ui/vue": ^5.39.2
-  "@zag-js/popper": ^1.43.3
+  run: ^2.1.13
+  typescript: ^6.0.3 # TS7 native 暂无法被 vue-tsc 解析（language-tools#6167），停在 6.x JS 线
+  vite: npm:@voidzero-dev/vite-plus-core@8.3.8000
+  vite-plus: 1.7.0
+  vue: ^3.5.45
+  "@ark-ui/vue": ^5.40.0
+  "@zag-js/popper": ^1.48.0
   "@tanstack/vue-form": ^1.33.5
-  "@tanstack/vue-table": ^8.21.3
-  "@tanstack/vue-virtual": ^3.13.47
+  "@tanstack/vue-table": ^9.3.1
+  "@tanstack/vue-virtual": ^3.13.52
   valibot: ^1.5.0
-  tailwindcss: ^4
-  "@tailwindcss/vite": ^4
+  tailwindcss: ^4.3.5
+  "@tailwindcss/vite": ^4.3.5
   unplugin-vue-components: ^32.1.0
   clsx: ^2.1.1
   tailwind-merge: ^3.7.0
   class-variance-authority: ^0.7.1
   tw-animate-css: ^1.4.0
-  "@vue/test-utils": ^2.5.1
-  "@types/prompts": ^2.4.8
-  vitest: ^5.0.1
-  happy-dom: ^20
-  shiki: ^4.4.3
+  "@vue/test-utils": ^2.6.0
+  "@types/prompts": ^2.4.9
+  vitest: ^5.1.1
+  happy-dom: ^21.0.4
+  shiki: ^4.6.0
   vitepress: "2.0.0-alpha.20"
-  yaml: ^2.4.0
-  tsx: ^4.0.0
-  commander: ^15
-  prompts: ^2
-  picocolors: ^1
+  yaml: ^2.9.1
+  tsx: ^4.23.15
+  commander: ^15.1.0
+  prompts: ^2.4.2
+  picocolors: ^1.1.1
   "@modelcontextprotocol/sdk": ^1.32.2
-  zod: ^4
+  zod: ^4.6.7
   bumpp: ^12.3.0
-  vue-tsc: ^3.3.11
-  "@vitejs/plugin-vue": ^6
+  vue-tsc: ^3.3.14
+  "@vitejs/plugin-vue": ^6.0.11
 overrides:
   vite@*: "catalog:"
 peerDependencyRules:
@@ -54,6 +54,10 @@ peerDependencyRules:
     - vite
   allowedVersions:
     vite: "*"
+    # vite-plus 1.7 捆绑 vitest/@vitest 浏览器套件 5.1.0 传递实例；
+    # vitest 主包 5.1.1 对其 optional peer 的同版本要求无法满足（本仓库不用 browser/UI 模式）
+    "@vitest/ui": "*"
+    "@vitest/browser-preview": "*"
 allowBuilds:
   esbuild: true
   inotify: set this to true or false

@@ -31,8 +31,8 @@ import {
   createTreeMate,
   type CheckStrategy,
   type Key,
-  type TreeNode,
   type TreeOption,
+  type TreeOptionNode,
 } from "../tree-shared";
 import { nextActiveKey, type MoveKey } from "../tree-shared/keyboard";
 import CascaderPanel from "./CascaderPanel.vue";
@@ -186,8 +186,8 @@ function removeTag(key: Key) {
 
 // —— 展开路径（单路径：展开新列即收敛到该节点路径）——
 const expandedPath = ref<Key[]>([]);
-const columns = computed<TreeNode[][]>(() => {
-  const result: TreeNode[][] = [treeMate.value.treeNodes];
+const columns = computed<TreeOptionNode[][]>(() => {
+  const result: TreeOptionNode[][] = [treeMate.value.treeNodes];
   let current = treeMate.value.treeNodes;
   for (const key of expandedPath.value) {
     const node = current.find((n) => n.key === key);
@@ -200,15 +200,15 @@ const columns = computed<TreeNode[][]>(() => {
 
 const expandedPathSet = computed(() => new Set(expandedPath.value));
 
-function isExpanded(node: TreeNode): boolean {
+function isExpanded(node: TreeOptionNode): boolean {
   return expandedPathSet.value.has(node.key);
 }
 
-function handleExpand(node: TreeNode) {
+function handleExpand(node: TreeOptionNode) {
   expandedPath.value = treeMate.value.getPath(node.key).keyPath;
 }
 
-function toggleCheck(node: TreeNode) {
+function toggleCheck(node: TreeOptionNode) {
   const current = toArrayValue(value.value);
   const op = current.includes(node.key) ? "uncheck" : "check";
   const merged = treeMate.value[op](node.key, current, {
@@ -218,7 +218,7 @@ function toggleCheck(node: TreeNode) {
   commitValue(merged.checkedKeys);
 }
 
-function handleSelect(node: TreeNode) {
+function handleSelect(node: TreeOptionNode) {
   // 级联语义：非叶子仅展开，叶子才选中/勾选
   if (node.children?.length) {
     handleExpand(node);
@@ -240,7 +240,7 @@ function handleSelect(node: TreeNode) {
 }
 
 // —— 回显：showPath 拼 keyPath 标签 ——
-function labelOf(node: TreeNode): string {
+function labelOf(node: TreeOptionNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 
@@ -249,7 +249,7 @@ function pathLabel(key: Key): string {
   return path
     .map((k) => {
       const node = treeMate.value.getNode(k);
-      return node ? labelOf(node as unknown as TreeNode) : String(k);
+      return node ? labelOf(node as unknown as TreeOptionNode) : String(k);
     })
     .join(props.separator);
 }
@@ -257,7 +257,7 @@ function pathLabel(key: Key): string {
 function displayLabel(key: Key): string {
   const node = treeMate.value.getNode(key);
   if (!node) return "";
-  return props.showPath ? pathLabel(key) : labelOf(node as unknown as TreeNode);
+  return props.showPath ? pathLabel(key) : labelOf(node as unknown as TreeOptionNode);
 }
 
 const singleLabel = computed(() =>
@@ -277,7 +277,7 @@ const activeKey = ref<Key | null>(null);
 const MOVE_KEYS: MoveKey[] = ["ArrowDown", "ArrowUp", "Home", "End"];
 
 // activeKey 落在哪一列（无 active 或找不到时视为第 0 列）
-function activeColumn(): TreeNode[] {
+function activeColumn(): TreeOptionNode[] {
   for (const col of columns.value) {
     if (col.some((n) => n.key === activeKey.value)) return col;
   }

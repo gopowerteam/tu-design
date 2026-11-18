@@ -49,7 +49,7 @@ watch(
   () => props.modelValue,
   (value) => {
     if (!isControlled.value || value === lastEmitted) return;
-    display.value = value === null ? "" : formatCurrency(value, props.valueUnit, props.labelUnit);
+    display.value = value == null ? "" : formatCurrency(value, props.valueUnit, props.labelUnit);
   },
 );
 </script>

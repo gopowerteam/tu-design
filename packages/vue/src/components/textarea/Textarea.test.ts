@@ -54,7 +54,8 @@ describe("Textarea", () => {
         return () =>
           h(Textarea, {
             modelValue: value.value,
-            "onUpdate:modelValue": (v: string) => (value.value = v),
+            "onUpdate:modelValue": (v: string | number | undefined) =>
+              (value.value = String(v ?? "")),
           });
       },
     });
@@ -72,7 +73,8 @@ describe("Textarea", () => {
         return () =>
           h(Textarea, {
             modelValue: value.value,
-            "onUpdate:modelValue": (v: string | number) => (value.value = v),
+            "onUpdate:modelValue": (v: string | number | undefined) =>
+              (value.value = v as number | string),
           });
       },
     });

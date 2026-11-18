@@ -380,7 +380,7 @@ describe("Popover", () => {
     w.unmount();
   });
 
-  // —— zIndex（Positioner 内联 z-index 生效；默认态为 zag 的 var(--z-index)） ——
+  // —— zIndex（Positioner 内联 z-index 生效；默认态不写内联，层级由 z-[var(--z-modal,60)] 类兜底） ——
   it("zIndex 覆盖层级（内联 style）", async () => {
     const w = mountPopover({ defaultOpen: true, zIndex: 50 });
     await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
@@ -389,7 +389,8 @@ describe("Popover", () => {
 
     const w2 = mountPopover({ defaultOpen: true });
     await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
-    expect(positioner()!.style.zIndex).toBe("var(--z-index)");
+    // zag 1.47+ 仅当 content 计算 z-index 非 auto 时才接管 Positioner 内联值
+    expect(positioner()!.style.zIndex).toBe("");
     w2.unmount();
   });
 

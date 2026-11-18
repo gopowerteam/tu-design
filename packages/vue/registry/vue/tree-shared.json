@@ -40,7 +40,7 @@
       "path": "tree-shared/index.ts",
       "type": "registry:lib",
       "target": "components/ui/tree-shared/index.ts",
-      "content": "export { createTreeMate } from \"./create\";\nexport { flatten } from \"./flatten\";\nexport type {\n  CheckStrategy,\n  Key,\n  KeyedRawNode,\n  MergedKeys,\n  RawNode,\n  TreeNode,\n  TreeMate,\n} from \"./interface\";\nexport type { TreeOption } from \"./types\";\n"
+      "content": "export { createTreeMate } from \"./create\";\nexport { flatten } from \"./flatten\";\nexport type {\n  CheckStrategy,\n  Key,\n  KeyedRawNode,\n  MergedKeys,\n  RawNode,\n  TreeNode,\n  TreeMate,\n} from \"./interface\";\nexport type { TreeOption, TreeOptionNode } from \"./types\";\n"
     },
     {
       "path": "tree-shared/interface.ts",
@@ -70,7 +70,7 @@
       "path": "tree-shared/types.ts",
       "type": "registry:lib",
       "target": "components/ui/tree-shared/types.ts",
-      "content": "import type { Key } from \"./interface\";\n\n/** 组件公开的选项类型：key/label/children 常用字段显式化，其余字段透传（对齐 naive-ui TreeOption） */\nexport interface TreeOption {\n  key: Key;\n  label?: string;\n  children?: TreeOption[];\n  disabled?: boolean;\n  isLeaf?: boolean;\n  [key: string]: unknown;\n}\n"
+      "content": "import type { Key, TreeNode } from \"./interface\";\n\n/** 组件公开的选项类型：key/label/children 常用字段显式化，其余字段透传（对齐 naive-ui TreeOption） */\nexport interface TreeOption {\n  key: Key;\n  label?: string;\n  children?: TreeOption[];\n  disabled?: boolean;\n  isLeaf?: boolean;\n  [key: string]: unknown;\n}\n\n/** TreeOption 具象泛型下的树节点：裸 `TreeNode` 默认 RawNode 实例化，TS6 起方法级变体拒收具型节点 */\nexport type TreeOptionNode = TreeNode<TreeOption, TreeOption, TreeOption>;\n"
     },
     {
       "path": "tree-shared/utils.ts",

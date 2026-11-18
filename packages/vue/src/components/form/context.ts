@@ -1,11 +1,10 @@
-import type { AnyFieldApi, FormApi, VueFormApi } from "@tanstack/vue-form";
+import type { AnyFieldApi } from "@tanstack/vue-form";
 import type { ComputedRef, InjectionKey, Ref, ShallowRef } from "vue";
 
-/** useForm() 返回实例的宽松形态（provide/inject 边界会擦除泛型，any 化是契约） */
-/* prettier-ignore */
-export type FormInstance =
-  FormApi<any, any, any, any, any, any, any, any, any, any, any, any> &
-  VueFormApi<any, any, any, any, any, any, any, any, any, any, any, any>;
+/** useForm() 返回实例的宽松形态（provide/inject 边界会擦除泛型，any 化是契约）。
+ * 注：TS6 对 FormApi<any> 的方法成员按逆变检查（如 pushFieldValue 的 TField 收窄为 never），
+ * any 化交集不再能兼容任意具体泛型实例，故契约直接 any 化。 */
+export type FormInstance = any;
 
 /** FormField 内部经 form.Field 插槽才能拿到 field 实例，用 ShallowRef 承载 provide 时序 */
 export interface FieldContext {

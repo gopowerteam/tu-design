@@ -3,11 +3,11 @@ import type { PropType } from "vue";
 import { computed } from "vue";
 import { cn } from "@/lib/utils";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
-import type { Key, TreeNode, TreeOption } from "../tree-shared";
+import type { Key, TreeOptionNode, TreeOption } from "../tree-shared";
 
 const props = defineProps({
   /** 列数据：columns[0] 为根层，后续每列为展开路径的子层 */
-  columns: { type: Array as PropType<TreeNode[][]>, required: true },
+  columns: { type: Array as PropType<TreeOptionNode[][]>, required: true },
   /** 下级展开触发方式 */
   expandTrigger: { type: String as PropType<"click" | "hover">, default: "click" },
   /** 已选中的 key（单选叶子 / 多选勾选值） */
@@ -19,19 +19,19 @@ const props = defineProps({
   /** 键盘游标所在节点 */
   activeKey: { type: [String, Number] as PropType<Key | null>, default: null },
   /** 节点是否处于展开路径上（父组件传入，用于箭头朝向） */
-  isExpanded: { type: Function as PropType<(node: TreeNode) => boolean>, required: true },
+  isExpanded: { type: Function as PropType<(node: TreeOptionNode) => boolean>, required: true },
 });
 
 const emit = defineEmits<{
   /** 展开 node 的下级列 */
-  expand: [node: TreeNode];
+  expand: [node: TreeOptionNode];
   /** 点击行（非叶子→展开，叶子→选中/勾选，语义由父组件解释） */
-  select: [node: TreeNode];
+  select: [node: TreeOptionNode];
   /** 勾选切换 */
-  check: [node: TreeNode];
+  check: [node: TreeOptionNode];
 }>();
 
-function labelOf(node: TreeNode): string {
+function labelOf(node: TreeOptionNode): string {
   return (node.rawNode as TreeOption).label ?? String(node.key);
 }
 
@@ -40,18 +40,18 @@ const selectedSet = computed(() => new Set(props.selectedKeys));
 const checkedSet = computed(() => new Set(props.checkedKeys));
 const indeterminateSet = computed(() => new Set(props.indeterminateKeys));
 
-function rowClick(node: TreeNode) {
+function rowClick(node: TreeOptionNode) {
   if (node.disabled) return;
   emit("select", node);
 }
 
-function expandHover(node: TreeNode) {
+function expandHover(node: TreeOptionNode) {
   if (props.expandTrigger === "hover" && node.children?.length && !node.disabled) {
     emit("expand", node);
   }
 }
 
-function toggleCheck(node: TreeNode) {
+function toggleCheck(node: TreeOptionNode) {
   if (!node.disabled) emit("check", node);
 }
 </script>

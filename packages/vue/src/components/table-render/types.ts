@@ -1,6 +1,7 @@
 import type { ColumnRender, ColumnRenders } from "./column-renders";
 import type { FormRenderDefinition } from "../form-render";
 import type { Row, Table as TanstackTable } from "@tanstack/vue-table";
+import type { TableRenderFeatures } from "./constants";
 import type { MaybeRefOrGetter, Ref, VNodeChild } from "vue";
 
 /** 任意数据行（表格是弱类型数据容器，行结构由调用方的 T 决定） */
@@ -10,8 +11,8 @@ export interface DataRecord {
 
 /** 表体行渲染单元：TanStack Row 引用 + 可见列值矩阵（TableRender → TableBodyRow） */
 export interface TableBodyLine {
-  /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded */
-  row: Row<DataRecord>;
+  /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded；TData 随引擎实例泛型 */
+  row: Row<TableRenderFeatures, any>;
   key: string;
   index: number;
   record: DataRecord;
@@ -225,7 +226,7 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
    */
   columnTree?: TableColumnNode<T>[];
   /** TanStack 表格实例（逃逸舱口） */
-  table: TanstackTable<T>;
+  table: TanstackTable<TableRenderFeatures, T>;
   page: Readonly<PageableOptions>;
   sort: Readonly<{ value: SortableOptions | undefined }>;
   loading: Readonly<{ value: boolean }>;

@@ -51,8 +51,7 @@ const table = defineTable<User>({
   <div class="w-full">
     <TTableRender :definition="table" row-key="id" @row-click="picked = $event[0]" />
     <p v-if="picked" class="text-muted-foreground mt-3 text-sm">
-      选中行：<code>{{ picked.name }}</code
-      >（id={{ picked.id }}）
+      选中行：<code>{{ picked.name }}</code>（id={{ picked.id }}）
     </p>
   </div>
 </template>
