@@ -3,7 +3,10 @@
  * 主题桥接：语义色优先消费应用级 --app-* CSS 变量（应用主题系统写入），
  * 未定义时回落官方 oklch 值 —— 无主题系统的项目观感与上游一致，零破坏。
  * 契约（--app-* 全集见各项目主题包，如 @repo/themes）：
- * - --app-bg-page/surface/raised/hover      → --background/--card/--popover/--muted/--accent
+ * - --app-bg-page    → --background（页面画布底；模态面板不消费此位）
+ * - --app-bg-surface → --muted（弱化背景）与 --dialog（模态面板表面）双消费
+ * - --app-bg-raised  → --card、--popover（浮起表面）
+ * - --app-bg-hover   → --accent（hover 强调背景）
  * - --app-text-1/2/3                        → --foreground 及各 *-foreground/--muted-foreground
  *   （text-3 上游零消费，供应用侧直接使用）
  * - --app-accent/-contrast                  → --primary(+foreground)/--ring
@@ -26,6 +29,9 @@
   --card-foreground: var(--app-text-1, oklch(0.145 0 0));
   --popover: var(--app-bg-raised, oklch(1 0 0));
   --popover-foreground: var(--app-text-1, oklch(0.145 0 0));
+  /* 模态面板表面（Dialog/AlertDialog/Drawer，issue #2）：独立于页面画布 --background */
+  --dialog: var(--app-bg-surface, oklch(1 0 0));
+  --dialog-foreground: var(--app-text-1, oklch(0.145 0 0));
   --primary: var(--app-accent, oklch(0.205 0 0));
   --primary-foreground: var(--app-accent-contrast, oklch(0.985 0 0));
   --secondary: oklch(0.97 0 0);
@@ -73,6 +79,9 @@
   --card-foreground: var(--app-text-1, oklch(0.985 0 0));
   --popover: var(--app-bg-raised, oklch(0.269 0 0));
   --popover-foreground: var(--app-text-1, oklch(0.985 0 0));
+  /* 暗色兜底取画布同值（0.145）：与迁移前面板观感一致，零破坏（issue #2） */
+  --dialog: var(--app-bg-surface, oklch(0.145 0 0));
+  --dialog-foreground: var(--app-text-1, oklch(0.985 0 0));
   --primary: var(--app-accent, oklch(0.922 0 0));
   --primary-foreground: var(--app-accent-contrast, oklch(0.205 0 0));
   --secondary: oklch(0.269 0 0);
@@ -113,6 +122,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-dialog: var(--dialog);
+  --color-dialog-foreground: var(--dialog-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
