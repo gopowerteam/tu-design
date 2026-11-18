@@ -251,4 +251,20 @@ describe("Drawer ids 无冒号覆盖", () => {
     expect(content()!.id).toMatch(/^v-\d+$/);
     w2.unmount();
   });
+
+  // —— 层叠体系（issue #1）：模态面消费 --z-modal ——
+  it("Backdrop/Positioner/Content 使用模态层 token --z-modal", async () => {
+    const w = mountDrawer({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    const backdrop = document.querySelector<HTMLElement>(
+      '[data-scope="drawer"][data-part="backdrop"]',
+    );
+    const positioner = document.querySelector<HTMLElement>(
+      '[data-scope="drawer"][data-part="positioner"]',
+    );
+    for (const el of [backdrop, positioner, content()]) {
+      expect(el!.className).toContain("z-[var(--z-modal,60)]");
+    }
+    w.unmount();
+  });
 });

@@ -109,11 +109,11 @@ const rootPositioning = computed(() =>
        （group-hover 会污染面板内全部格子），并消除 overflow 容器裁剪弹层的隐患；
        目标经沙箱适配降级（shadow DOM / wujie graft → 应用挂载容器） -->
     <Teleport :to="teleportTarget">
-      <ArkDatePicker.Positioner class="z-[var(--z-overlay)]">
+      <ArkDatePicker.Positioner class="z-[var(--z-modal,60)]">
         <ArkDatePicker.Content
           :class="
             cn(
-              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-[var(--z-overlay)] rounded-md border shadow-md',
+              'bg-popover text-popover-foreground data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 relative z-[var(--z-modal,60)] rounded-md border shadow-md',
             )
           "
         >

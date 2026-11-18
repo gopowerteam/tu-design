@@ -38,12 +38,13 @@ tokens.css 提供三层定制入口，按介入深度排列：
 
 ### 圆角与层级
 
-| 变量              | 用途                                   |
-| ----------------- | -------------------------------------- |
-| `--radius`        | 圆角基准，sm/md/lg/xl/2xl 全部由它派生 |
-| `--z-sticky`      | 表体 sticky 列层级（10）               |
-| `--z-sticky-head` | 表头 sticky 层级（30）                 |
-| `--z-overlay`     | 浮层/弹窗统一层级（50）                |
+| 变量              | 用途                                           |
+| ----------------- | ---------------------------------------------- |
+| `--radius`        | 圆角基准，sm/md/lg/xl/2xl 全部由它派生         |
+| `--z-sticky`      | 表体 sticky 列层级（10）                       |
+| `--z-sticky-head` | 表头 sticky 层级（30）                         |
+| `--z-overlay`     | 非模态浮层层级（50，原地锚定弹出）             |
+| `--z-modal`       | 模态层（60，模态弹窗与传送至 body 的浮层共用） |
 
 ## Tailwind 映射
 
@@ -85,18 +86,29 @@ tokens.css 提供三层定制入口，按介入深度排列：
 
 ## z-index 层叠体系
 
-所有层级由三个 token 统一管理，约定层叠序从低到高：
+所有层级由四个 token 统一管理，约定层叠序从低到高：
 
 ```
 表体 sticky 列 (--z-sticky: 10)
   < 表头普通列 sticky (z-20，TableRender theadThClass 提供)
   < 表头 sticky (--z-sticky-head: 30，表头 fixed 列经 stickyStyle inline style 消费)
-  < 浮层/弹窗 (--z-overlay: 50)
+  < 非模态浮层 (--z-overlay: 50)
+  < 宿主应用 chrome（消费方自定义，须置于 50~60 之间）
+  < 模态层 (--z-modal: 60)
 ```
 
-Dialog、Popover、Select、DropdownMenu、Tooltip、日期弹层等全部浮层组件的 Positioner 统一消费 `z-[var(--z-overlay)]`；同级浮层按 DOM 挂载次序叠放。需要单独调高某个浮层时，Popover 等组件提供 `zIndex` prop 覆盖默认值。
+两层浮层的分工：
 
-自定义页面内的 sticky 元素时请复用这三个变量并保持间隔，避免与组件浮层冲突。
+- **`--z-overlay`（非模态浮层）**：面板留在原地的 Select、Tooltip、DropdownMenu、ContextMenu。它们锚定在触发元素子树内；若位于弹窗内部，则处于 Dialog Content 的层叠上下文内，天然绘制在面板之上，无需更高数值。
+- **`--z-modal`（模态层）**：Dialog、AlertDialog、Drawer 的 Backdrop/Positioner/Content，以及传送（Teleport）至 body（微前端沙箱下降级至应用挂载容器）的 Popover、Cascader、TreeSelect、日期弹层的 Positioner。后者与模态面同层，按 DOM 挂载次序叠放——传送节点恒后于应用根容器，保证弹窗内的下拉面板永远浮在弹窗面板之上；而弹窗打开时弹窗外浮层被遮罩与焦点陷阱阻断，不存在与模态面同开的可达路径。
+
+需要单独调高某个浮层时，Popover 等组件提供 `zIndex` prop（内联 style，优先级高于层级类）覆盖默认值。
+
+### 微前端 / 宿主 chrome 接入注意
+
+- 宿主页面的导航、侧边栏等 chrome 元素如需高于普通浮层，请把 z-index 放在 **50~60 之间**；**不得 ≥ 60**，否则模态遮罩会被 chrome 穿透（`--z-modal: 60` 是层叠契约而非硬保证，宿主与子应用同处一个层叠上下文时，数值比较无法被库侧防御）。
+- 微前端（如 wujie）下 shadow DOM 不创建独立层叠上下文，子应用浮层的 z-index 与宿主元素直接比较，上述契约尤其关键。
+- 自定义页面内的 sticky 元素时请复用这些变量并保持间隔，避免与组件浮层冲突。旧版样式文件未定义 `--z-modal` 时，层级类内置 `var(--z-modal, 60)` 兜底，但建议随版本更新 tokens。
 
 ## 状态色的消费方式
 

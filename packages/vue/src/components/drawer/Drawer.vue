@@ -116,7 +116,7 @@ const isLateral = computed(() => props.placement === "left" || props.placement =
 // 侧向：基础 w-full（移动端全宽）+ sm: 断点档位宽度；顶/底向：基础 h-full + sm: 档位高度
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[var(--z-overlay)] flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-[var(--z-modal,60)] flex flex-col gap-4 overflow-y-auto p-6 shadow-lg duration-200",
     config.value.content,
     isLateral.value
       ? cn("w-full", config.value.sizes[props.size])
@@ -139,9 +139,11 @@ const contentClass = computed(() =>
     </ArkDrawer.Trigger>
 
     <ArkDrawer.Backdrop
-      class="fixed inset-0 z-[var(--z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
-    <ArkDrawer.Positioner :class="cn('fixed inset-0 z-[var(--z-overlay)] flex', config.positioner)">
+    <ArkDrawer.Positioner
+      :class="cn('fixed inset-0 z-[var(--z-modal,60)] flex', config.positioner)"
+    >
       <ArkDrawer.Content :class="contentClass">
         <div v-if="hasHeader || $slots.title || $slots.description" class="flex flex-col gap-1.5">
           <ArkDrawer.Title

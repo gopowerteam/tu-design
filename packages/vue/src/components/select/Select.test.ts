@@ -196,4 +196,12 @@ describe("Select ids 无冒号覆盖", () => {
     expect(content()!.id).toMatch(/^v-\d+$/);
     w2.unmount();
   });
+
+  // —— 层叠体系（issue #1）：原地锚定浮层保持 --z-overlay（弹窗内处于 Content 栈上下文内，无需抬层）——
+  it("面板保持非模态浮层 token --z-overlay", async () => {
+    const w = mountSelect({ open: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.className).toContain("z-[var(--z-overlay)]");
+    w.unmount();
+  });
 });

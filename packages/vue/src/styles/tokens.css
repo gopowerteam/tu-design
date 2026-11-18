@@ -54,10 +54,16 @@
   --ring: var(--app-accent, oklch(0.708 0 0));
   --radius: 0.625rem;
   /* 层叠序：表体 sticky < 表头普通列 sticky(fill/virtual 表头钉住，z-20 由 TableRender theadThClass 提供)
-     < 表头 sticky < 浮层/弹窗（同级浮层按 DOM 挂载次序叠放；表头 fixed 列经 stickyStyle inline style 消费 --z-sticky-head） */
+     < 表头 sticky < 非模态浮层 < 宿主应用 chrome < 模态层（chrome 由消费方置于 overlay~modal 之间，
+     不得 ≥ modal，否则击穿模态遮罩；表头 fixed 列经 stickyStyle inline style 消费 --z-sticky-head）
+     --z-overlay：原地锚定的 Select/Tooltip/DropdownMenu/ContextMenu（弹窗内处于 Content 栈上下文内，天然高于面板）
+     --z-modal：Dialog/AlertDialog/Drawer 的 Backdrop/Positioner/Content + teleport 至 body 的
+     Popover/Cascader/TreeSelect/日期弹层 Positioner（同层按 DOM 挂载次序叠放，teleport 节点恒后于应用
+     根容器，故弹窗内下拉恒浮于面板之上；模态打开时弹窗外浮层被遮罩与焦点陷阱阻断，不可达同开） */
   --z-sticky: 10;
   --z-sticky-head: 30;
   --z-overlay: 50;
+  --z-modal: 60;
 }
 
 .dark {

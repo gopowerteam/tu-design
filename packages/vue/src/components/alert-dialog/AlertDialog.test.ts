@@ -225,4 +225,20 @@ describe("AlertDialog ids 无冒号覆盖", () => {
     expect(content()!.id).toMatch(/^v-\d+$/);
     r.w.unmount();
   });
+
+  // —— 层叠体系（issue #1）：模态面消费 --z-modal（复用 dialog machine，同 scope）——
+  it("Backdrop/Positioner/Content 使用模态层 token --z-modal", async () => {
+    const r = mountOpen({});
+    await waitOpen();
+    const backdrop = document.querySelector<HTMLElement>(
+      '[data-scope="dialog"][data-part="backdrop"]',
+    );
+    const positioner = document.querySelector<HTMLElement>(
+      '[data-scope="dialog"][data-part="positioner"]',
+    );
+    for (const el of [backdrop, positioner, content()]) {
+      expect(el!.className).toContain("z-[var(--z-modal,60)]");
+    }
+    r.w.unmount();
+  });
 });

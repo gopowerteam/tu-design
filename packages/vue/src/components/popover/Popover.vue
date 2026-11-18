@@ -176,7 +176,7 @@ const rootPositioning = computed<ArkPositioning>(() => {
 // 面板样式：内置类 + contentClass + contentProps.class 三方合并（twMerge 自动去冲突，后者优先）
 const contentClass = computed(() =>
   cn(
-    "bg-popover text-popover-foreground z-[var(--z-overlay)] w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
+    "bg-popover text-popover-foreground z-[var(--z-modal,60)] w-72 rounded-md border p-4 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95",
     props.contentClass,
     props.contentProps?.["class"] as ClassValue,
   ),
@@ -188,7 +188,7 @@ const arrowClass = computed(() =>
 );
 
 // zIndex prop 走内联 style（Tailwind 任意值类不适合动态拼接）；未传保持默认层级类
-const positionerClass = computed(() => (props.zIndex != null ? "" : "z-[var(--z-overlay)]"));
+const positionerClass = computed(() => (props.zIndex != null ? "" : "z-[var(--z-modal,60)]"));
 const positionerStyle = computed(() =>
   props.zIndex != null ? { zIndex: props.zIndex } : undefined,
 );

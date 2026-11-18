@@ -57,7 +57,7 @@ const hasHeader = computed(() => Boolean(props.title || props.description));
 // 面板样式：内置类 + contentClass 合并（twMerge 自动去冲突，后者优先）
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-overlay)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg",
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg",
     props.contentClass,
   ),
 );
@@ -77,10 +77,10 @@ const contentClass = computed(() =>
     </ArkDialog.Trigger>
 
     <ArkDialog.Backdrop
-      class="fixed inset-0 z-[var(--z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <ArkDialog.Positioner
-      class="fixed inset-0 z-[var(--z-overlay)] flex items-center justify-center p-4"
+      class="fixed inset-0 z-[var(--z-modal,60)] flex items-center justify-center p-4"
     >
       <ArkDialog.Content :class="contentClass">
         <!-- 标题/描述：#title / #description 插槽优先，回退 title/description props；皆无则不渲染对应 DOM -->

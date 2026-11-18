@@ -211,4 +211,17 @@ describe("Dialog ids 无冒号覆盖", () => {
     expect(content()!.id).toMatch(/^v-\d+$/);
     w2.unmount();
   });
+
+  // —— 层叠体系（issue #1）：模态面消费 --z-modal，微前端下遮罩可盖住宿主 chrome ——
+  it("Backdrop/Positioner/Content 使用模态层 token --z-modal", async () => {
+    const w = mountDialog({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    const positioner = document.querySelector<HTMLElement>(
+      '[data-scope="dialog"][data-part="positioner"]',
+    );
+    for (const el of [backdrop(), positioner, content()]) {
+      expect(el!.className).toContain("z-[var(--z-modal,60)]");
+    }
+    w.unmount();
+  });
 });

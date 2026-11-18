@@ -177,4 +177,17 @@ describe("Tooltip ids 无冒号覆盖", () => {
     expect(content()!.id).toMatch(/^v-\d+$/);
     w2.unmount();
   });
+
+  // —— 层叠体系（issue #1）：原地锚定浮层保持 --z-overlay（zag 镜像 Content 计算 z 至 positioner）——
+  it("面板保持非模态浮层 token --z-overlay", async () => {
+    const w = mount(Tooltip, {
+      props: { delayDuration: 0, content: "提示文本" },
+      slots: { default: () => h("button", "悬停我") },
+      attachTo: document.body,
+    });
+    await w.find('[data-part="trigger"]').trigger("pointermove");
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(content()!.className).toContain("z-[var(--z-overlay)]");
+    w.unmount();
+  });
 });

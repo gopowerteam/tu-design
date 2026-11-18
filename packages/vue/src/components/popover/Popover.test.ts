@@ -462,4 +462,13 @@ describe("Popover", () => {
     expect(content()!.textContent).toContain("底部区");
     w.unmount();
   });
+
+  // —— 层叠体系（issue #1）：teleported 浮层与模态同层，弹窗内下拉按树序恒浮于面板之上 ——
+  it("Positioner/Content 使用模态层 token --z-modal", async () => {
+    const w = mountPopover({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    expect(positioner()!.className).toContain("z-[var(--z-modal,60)]");
+    expect(content()!.className).toContain("z-[var(--z-modal,60)]");
+    w.unmount();
+  });
 });

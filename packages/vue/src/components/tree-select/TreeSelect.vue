@@ -451,11 +451,11 @@ watch(isOpen, (open) => {
     <!-- 弹层 Teleport：脱离表单 DOM，消除 overflow 容器裁剪隐患（DatePicker 同款）；
          目标经沙箱适配降级（shadow DOM / wujie graft → 应用挂载容器） -->
     <Teleport :to="teleportTarget">
-      <ArkPopover.Positioner class="z-[var(--z-overlay)]">
+      <ArkPopover.Positioner class="z-[var(--z-modal,60)]">
         <ArkPopover.Content
           :class="
             cn(
-              'bg-popover text-popover-foreground z-[var(--z-overlay)] rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
+              'bg-popover text-popover-foreground z-[var(--z-modal,60)] rounded-md border p-0 shadow-md outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
             )
           "
           :style="{ minWidth: panelMinWidth }"

@@ -69,7 +69,7 @@ const { loading, handleConfirm, handleCancel } = useConfirmPending({
 // 面板样式：复用 Dialog 的内容面板类，宽度收窄为 sm:max-w-md 的确认弹窗尺度
 const contentClass = computed(() =>
   cn(
-    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-overlay)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
+    "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
   ),
 );
 </script>
@@ -83,10 +83,10 @@ const contentClass = computed(() =>
     @update:open="handleUpdate"
   >
     <ArkDialog.Backdrop
-      class="fixed inset-0 z-[var(--z-overlay)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <ArkDialog.Positioner
-      class="fixed inset-0 z-[var(--z-overlay)] flex items-center justify-center p-4"
+      class="fixed inset-0 z-[var(--z-modal,60)] flex items-center justify-center p-4"
     >
       <!-- role="alertdialog"：覆盖 Ark Content 默认 role="dialog"，补偿无上游 AlertDialog 原语的角色语义 -->
       <ArkDialog.Content :class="contentClass" role="alertdialog" aria-modal="true">
