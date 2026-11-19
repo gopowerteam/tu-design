@@ -17,6 +17,7 @@ import {
 } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 import type { PickerPositioning } from "../date-shared/positioning";
 
 const props = defineProps({
@@ -123,8 +124,11 @@ const { isOpen, setOpen } = useControlledBoolean({
 // iframe realm 下 strategy 默认 fixed（absolute 包含块错位，fixed 唯一正确解）；
 // 无 to prop，面板恒传送 ——
 const teleportTarget = useSandboxTeleportTarget(() => undefined);
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { ...props.positioning }),
+  withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
 
 // 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 import ChevronIcon from "../icon-shared/ChevronIcon.vue";
 import { normalizeSelectItem, type SelectItemOption } from "./types";
 
@@ -94,8 +95,11 @@ const { isOpen, setOpen } = useControlledBoolean({
 // 弹层与触发器同宽（zag popper：Positioner width = var(--reference-width)，size middleware
 // 恰在 sameWidth 启用时激活；机制先例见 Popover matchTriggerWidth）。
 // spread 顺序保证用户显式传 positioning.sameWidth 时以其为准。
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { sameWidth: true, ...props.positioning }),
+  withSandboxStrategy(props.positioning, { sameWidth: true, ...props.positioning }, tuProvider),
 );
 </script>
 

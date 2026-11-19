@@ -2,7 +2,12 @@ import { mount } from "@vue/test-utils";
 import { h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { ToastProvider, useToast } from "./index";
-import { __configureToaster, __getInternalToaster, __setToastMounted } from "./useToast";
+import {
+  __configureToaster,
+  __getInternalToaster,
+  __getToastHostCount,
+  __setToastMounted,
+} from "./useToast";
 
 afterEach(() => {
   __setToastMounted(false);
@@ -161,5 +166,27 @@ describe("ToastProvider store 生命周期", () => {
     expect(__getInternalToaster()).not.toBe(first);
     expect(__getInternalToaster().attrs.max).toBe(9);
     w2.unmount();
+  });
+
+  // —— 双宿主引用计数（TuDesignProvider :toast 与 ToastProvider 并存防护）——
+  it("双宿主并存告警一次；先卸载其一，另一宿主 toast 仍正常且不误报未挂载", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const w1 = mount(ToastProvider);
+    const w2 = mount(ToastProvider, { props: { max: 5 } });
+    expect(__getToastHostCount()).toBe(2);
+    expect(warn.mock.calls.filter((a) => String(a[0]).includes("[tu-design]"))).toHaveLength(1);
+    expect(String(warn.mock.calls.flat())).toContain("重复挂载");
+
+    w1.unmount();
+    // 只裁决 [tu-design] 语义告警（zag dismissable 的 "branch node" 属卸载时序内部噪音，与本契约无关）
+    const tuDesignWarns = () => warn.mock.calls.filter((a) => String(a[0]).includes("[tu-design]"));
+    warn.mockClear();
+    useToast().success({ title: "仍工作", duration: 60_000 });
+    await vi.waitFor(() => expect(w2.text()).toContain("仍工作"));
+    expect(tuDesignWarns()).toHaveLength(0);
+
+    w2.unmount();
+    expect(__getToastHostCount()).toBe(0);
+    warn.mockRestore();
   });
 });

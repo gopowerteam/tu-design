@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 
 /** 面板相对触发器的对齐方向 */
 type Align = "start" | "center" | "end";
@@ -157,6 +158,9 @@ const onPanelLeave = () => {
 
 onBeforeUnmount(clearTimer);
 
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 // side/align → Ark positioning.placement（12 方位，居中不带对齐后缀）；
 // 外部经 attrs 传入的 positioning 已显式指定 placement 时以其为准，其余字段原样合并。
 // iframe realm 下 strategy 默认 fixed（absolute 包含块错位修正），机制详注见
@@ -166,11 +170,15 @@ const rootPositioning = computed<ArkPositioning>(() => {
   const placement = (
     props.align === "center" ? props.side : `${props.side}-${props.align}`
   ) as ArkPlacement;
-  return withSandboxStrategy(user, {
-    ...user,
-    placement,
-    sameWidth: props.matchTriggerWidth || user.sameWidth,
-  });
+  return withSandboxStrategy(
+    user,
+    {
+      ...user,
+      placement,
+      sameWidth: props.matchTriggerWidth || user.sameWidth,
+    },
+    tuProvider,
+  );
 });
 
 // 面板样式：内置类 + contentClass + contentProps.class 三方合并（twMerge 自动去冲突，后者优先）

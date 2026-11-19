@@ -5,6 +5,7 @@ import { Menu as ArkMenu } from "@ark-ui/vue/menu";
 import type { MenuRootProps } from "@ark-ui/vue/menu";
 import { cn } from "@/lib/utils";
 import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 // 与 dropdown-menu 同构：items 类型与渲染逻辑直接复用其实现（单一事实来源）
 import MenuItems from "../dropdown-menu/MenuItems.vue";
 import type { MenuItemOption } from "../dropdown-menu/types";
@@ -38,8 +39,11 @@ function handleSelect(details: { value: string }) {
 
 // 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：面板无 Teleport 留原地，
 // iframe realm 下 strategy 默认 fixed 使指针 anchorPoint 视口坐标与包含块对齐
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { ...props.positioning }),
+  withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
 
 // 面板样式对齐 DropdownMenu 面板（token 化，暗色随主题变量自动切换）

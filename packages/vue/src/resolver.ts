@@ -59,6 +59,7 @@ export const COMPONENT_NAMES = [
   "ToastProvider",
   "TreeSelect",
   "Tooltip",
+  "TuDesignProvider",
   "WeekPicker",
   "YearPicker",
 ] as const;

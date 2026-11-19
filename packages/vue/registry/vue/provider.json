@@ -1,0 +1,28 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry-item.json",
+  "name": "provider",
+  "version": "0.5.10",
+  "type": "registry:ui",
+  "description": "应用根组件（可选）：mode 显式声明微前端渲染环境（覆盖浮层沙箱自动探测），:toast 聚合消息提示宿主；不使用时一切行为与自动探测一致。",
+  "registryDependencies": ["overlay-shared", "toast"],
+  "files": [
+    {
+      "path": "provider/TuDesignProvider.vue",
+      "type": "registry:component",
+      "target": "components/ui/provider/TuDesignProvider.vue",
+      "content": "<script setup lang=\"ts\">\nimport type { PropType } from \"vue\";\nimport { provide } from \"vue\";\nimport { TU_PROVIDER_KEY } from \"../overlay-shared/config\";\nimport type { TuProviderMode } from \"../overlay-shared/config\";\nimport { ToastProvider } from \"../toast\";\nimport type { TuToastConfig } from \"./types\";\n\n/**\n * 应用根组件（可选层）：微前端环境显式声明 + 根部能力聚合。\n *\n * 1. `mode`：声明渲染环境，覆盖浮层组件的自动沙箱探测（Teleport 降级 /\n *    定位策略 / 模态滚动锁）。解析优先级：组件显式 prop > 本 mode > 自动探测。\n *    行为组语义与框架映射表见文档「微前端与沙箱 · 手动声明运行环境」。\n *    不挂载本组件或不传 mode 时，一切行为与自动探测现行版本完全一致。\n * 2. `:toast`：消息提示宿主（组合渲染 ToastProvider，present = enabled）；\n *    与独立挂载 ToastProvider 二选一，双挂载 dev 告警。\n *\n * 两者均为 mount-time 契约（provide 快照 / ToastProvider 挂载时消费），\n * 动态变更用 :key 重挂载。须包住子应用根（inject 沿逻辑树，Teleport 子树同样命中；\n * 组件挂载在 Provider 子树之外时回落 auto 兜底）。\n */\ndefineOptions({ inheritAttrs: false });\n\nconst props = defineProps({\n  /** 渲染环境声明（行为组名，非框架名）；缺省 auto = 现行探测链 */\n  mode: { type: String as PropType<TuProviderMode>, default: \"auto\" },\n  /** 消息提示宿主配置：未传不渲染 Toaster；传 {} 全走缺省 */\n  toast: { type: Object as PropType<TuToastConfig>, default: undefined },\n});\n\n// mount-time 快照：mode 变更不响应（契约见组件头注）\nprovide(TU_PROVIDER_KEY, { mode: props.mode });\n</script>\n\n<template>\n  <!-- present = enabled：:toast 传入即挂载消息宿主（组合复用 ToastProvider，零复制） -->\n  <ToastProvider v-if=\"props.toast\" v-bind=\"props.toast\" />\n  <slot />\n</template>\n"
+    },
+    {
+      "path": "provider/index.ts",
+      "type": "registry:lib",
+      "target": "components/ui/provider/index.ts",
+      "content": "export { default as TuDesignProvider } from \"./TuDesignProvider.vue\";\nexport type { TuToastConfig } from \"./types\";\nexport type { TuProviderMode } from \"../overlay-shared/config\";\n"
+    },
+    {
+      "path": "provider/types.ts",
+      "type": "registry:lib",
+      "target": "components/ui/provider/types.ts",
+      "content": "import type { ToastPlacement } from \"../toast/useToast\";\n\n/**\n * `TuDesignProvider` 的 `:toast` 命名空间配置（present = enabled）。\n * 各键语义与独立使用 ToastProvider 时的同名 prop 完全一致；mount-time 消费。\n */\nexport interface TuToastConfig {\n  /** 弹出位置 */\n  placement?: ToastPlacement;\n  /** 默认自动关闭时长（ms） */\n  duration?: number;\n  /** 同屏最大数量，超出排队 */\n  max?: number;\n}\n\n/**\n * 根部能力契约备忘（新能力加入 Provider 时遵循）：\n * - 命名空间对象 prop（如 toast），present = enabled，未传 = 该能力关闭；\n * - mount-time / reactive 必须显式声明，缺省 mount-time；\n * - 不再新增平级 Provider 组件，能力一律聚合到 TuDesignProvider。\n */\n"
+    }
+  ]
+}

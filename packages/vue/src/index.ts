@@ -46,3 +46,4 @@ export * from "./components/context-menu";
 export * from "./components/drawer";
 export * from "./components/popconfirm";
 export * from "./components/timeline";
+export * from "./components/provider";

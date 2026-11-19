@@ -9,6 +9,7 @@ import CalendarIcon from "../icon-shared/CalendarIcon.vue";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { CALENDAR_IN_PICKER, controlCls, iconBtnCls } from "./shared";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 
 /** 单值日期族（Date/Month/Year/Week）共用外壳：触发器 + 清空/日历按钮 + 弹层容器。 */
 defineOptions({ inheritAttrs: false });
@@ -61,8 +62,11 @@ function openFromInput() {
 // iframe realm 下 strategy 默认 fixed（absolute 包含块错位，fixed 唯一正确解）；
 // 覆盖 Date/Month/Year/Week 四个单值日期组件，无 to prop，面板恒传送 ——
 const teleportTarget = useSandboxTeleportTarget(() => undefined);
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { ...props.positioning }),
+  withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
 </script>
 

@@ -11,6 +11,10 @@ description: 全局命令式轻提示：Provider 一次挂载，useToast() 随�
 `useToast()` 是模块级单例，与组件树解耦，因此**必须在应用根部渲染一次 `<ToastProvider>`**，否则 toast 只会入队、不会渲染。挂载前调用 toast 方法时，开发环境会在控制台输出警告提醒。`useToast()` 的返回引用恒定，Provider 挂载时按 props 重建内部实例对调用方完全透明。
 :::
 
+::: tip 推荐经 TuDesignProvider 挂载
+新的根部写法为 [`<TuDesignProvider :toast="{...}">`](/components/provider)（内部组合 `ToastProvider`，能力等价）。`:toast` 与单独挂载的 `<ToastProvider>` 二选一——同时出现即双宿主，开发环境会告警一次且后挂载者的配置生效。存量项目可平移：`<ToastProvider placement=... />` → `<TuDesignProvider :toast="{ placement: ... }">`。
+:::
+
 安装：
 
 ```bash

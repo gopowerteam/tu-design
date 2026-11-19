@@ -24,6 +24,7 @@ tu-design 按用途将组件分为四类：**基础组件**、**表单组件**�
 [**Skeleton** 骨架屏<br><span>加载占位骨架屏。</span>](/components/skeleton)
 [**Spin** 加载中<br><span>加载中旋转指示器，支持独立 spinner 与包裹内容（半透明遮罩）两种形态。</span>](/components/spin)
 [**Toast** 轻提示<br><span>全局命令式轻提示：Provider 一次挂载，useToast() 随处调用，语义 type 自动映射主题色。</span>](/components/toast)
+[**TuDesignProvider** 应用根组件<br><span>可选根部聚合：mode 显式声明微前端渲染环境，:toast 挂载消息宿主；不配则一切如旧。</span>](/components/provider)
 
 </div>
 

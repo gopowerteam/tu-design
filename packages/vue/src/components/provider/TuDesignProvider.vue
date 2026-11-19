@@ -1,0 +1,40 @@
+<script setup lang="ts">
+import type { PropType } from "vue";
+import { provide } from "vue";
+import { TU_PROVIDER_KEY } from "../overlay-shared/config";
+import type { TuProviderMode } from "../overlay-shared/config";
+import { ToastProvider } from "../toast";
+import type { TuToastConfig } from "./types";
+
+/**
+ * 应用根组件（可选层）：微前端环境显式声明 + 根部能力聚合。
+ *
+ * 1. `mode`：声明渲染环境，覆盖浮层组件的自动沙箱探测（Teleport 降级 /
+ *    定位策略 / 模态滚动锁）。解析优先级：组件显式 prop > 本 mode > 自动探测。
+ *    行为组语义与框架映射表见文档「微前端与沙箱 · 手动声明运行环境」。
+ *    不挂载本组件或不传 mode 时，一切行为与自动探测现行版本完全一致。
+ * 2. `:toast`：消息提示宿主（组合渲染 ToastProvider，present = enabled）；
+ *    与独立挂载 ToastProvider 二选一，双挂载 dev 告警。
+ *
+ * 两者均为 mount-time 契约（provide 快照 / ToastProvider 挂载时消费），
+ * 动态变更用 :key 重挂载。须包住子应用根（inject 沿逻辑树，Teleport 子树同样命中；
+ * 组件挂载在 Provider 子树之外时回落 auto 兜底）。
+ */
+defineOptions({ inheritAttrs: false });
+
+const props = defineProps({
+  /** 渲染环境声明（行为组名，非框架名）；缺省 auto = 现行探测链 */
+  mode: { type: String as PropType<TuProviderMode>, default: "auto" },
+  /** 消息提示宿主配置：未传不渲染 Toaster；传 {} 全走缺省 */
+  toast: { type: Object as PropType<TuToastConfig>, default: undefined },
+});
+
+// mount-time 快照：mode 变更不响应（契约见组件头注）
+provide(TU_PROVIDER_KEY, { mode: props.mode });
+</script>
+
+<template>
+  <!-- present = enabled：:toast 传入即挂载消息宿主（组合复用 ToastProvider，零复制） -->
+  <ToastProvider v-if="props.toast" v-bind="props.toast" />
+  <slot />
+</template>

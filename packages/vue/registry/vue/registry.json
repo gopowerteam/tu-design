@@ -227,6 +227,13 @@
       "description": "进度条：基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。"
     },
     {
+      "name": "provider",
+      "version": "0.5.10",
+      "title": "Provider",
+      "type": "registry:ui",
+      "description": "应用根组件（可选）：mode 显式声明微前端渲染环境（覆盖浮层沙箱自动探测），:toast 聚合消息提示宿主；不使用时一切行为与自动探测一致。"
+    },
+    {
       "name": "radio-group",
       "version": "0.5.10",
       "title": "RadioGroup",

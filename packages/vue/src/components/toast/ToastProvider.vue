@@ -9,6 +9,9 @@ import { __configureToaster, __setToastMounted } from "./useToast";
 /**
  * Toast 渲染容器：在应用根部挂载一次。
  * 内部按 props 重建 useToast 单例 store，随后所有 toast 方法经单例转发到这里渲染。
+ *
+ * 兼容出口：新接入推荐 `<TuDesignProvider :toast="{...}">`（内部组合本组件）。
+ * 两者同时挂载即双宿主，dev 告警且后挂载者配置生效，请二选一。
  */
 const props = defineProps({
   /** 弹出位置 */

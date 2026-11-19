@@ -1,6 +1,6 @@
 # 微前端与沙箱环境
 
-tu-design 的浮层组件在 **wujie 微前端**、**Shadow DOM 沙箱**（如 micro-app `strictStyleIsolation`、web component 沙箱）等环境下会**自动适配**，无需任何配置。本文沉淀这套适配的通用机制——由组件库的 `overlay-shared` 公共层统一实现，对所有浮层组件行为一致；各组件文档只保留组件特有的 props（如 `to`、`positioning` 透传），不再重复展开（下文以 Popover 举例之处均为通用机制）。
+tu-design 的浮层组件在 **wujie 微前端**、**Shadow DOM 沙箱**（如 micro-app `strictStyleIsolation`、web component 沙箱）等环境下会**自动适配**，无需任何配置。本文沉淀这套适配的通用机制——由组件库的 `overlay-shared` 公共层统一实现，对所有浮层组件行为一致；各组件文档只保留组件特有的 props（如 `to`、`positioning` 透传），不再重复展开（下文以 Popover 举例之处均为通用机制）。需要更准、更可控的显式声明时，可用 [`TuDesignProvider mode`](/components/provider) 覆盖自动探测（见文末专节）。
 
 ## 适用范围
 
@@ -49,13 +49,24 @@ wujie 把子应用文档树 graft 进 shadowRoot 渲染：**graft 树的 CSS 包
 
 策略集中在 `overlay-shared/useSandboxOverlay.ts` 的 `overlayPreventScroll()` 单点实现，Dialog / Drawer / AlertDialog 三处共享；返回值仅 wujie 下为 `false`，其余为 `undefined`（不覆盖 Ark 的 `preventScroll = modal` 派生默认，attrs 透传 `:modal="false"` 的用法不受影响）。
 
+## 手动声明运行环境（TuDesignProvider）
+
+自动探测的固有边界：marker 随 wujie 版本演进可能改名（届时降级**静默失效**）、degrade 模式与默认模式不可区分、非 iframe 的 graft 型沙箱不在信号覆盖内。对这几类场景，库提供显式声明层——在子应用根部挂载 [`<TuDesignProvider mode="...">`](/components/provider)，直接告知渲染拓扑：
+
+- 解析优先级：**组件显式 prop（`to` / `positioning.strategy` 等）> Provider `mode` > 自动探测**；
+- `mode` 取值按「隔离构成」而非框架品牌：`none`（无特殊拓扑）/ `shadow`（仅 shadow 边界）/ `shadow-iframe`（shadow 边界 + 独立 iframe realm，即 wujie 默认形态），缺省 `auto` 走探测；
+- 显式声明时**不执行任何探测代码**——marker 漂移、结构伪装都不再影响声明值；
+- `mode="none"` 同样覆盖 wujie degrade 模式的正确声明（degrade 下 iframe 自成一体，各适配皆无收益，见「已知边界」对应条目）。
+
+不配置 = 行为与历史版本完全一致；何时值得配置见组件文档的框架映射速查表。
+
 ## 已知边界
 
 - `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；
 - 触发器祖先带 `transform`（如入场动画容器）会劫持 `fixed` 的包含块，此时建议关闭 Teleport 让面板留在原地（Popover 为 `portal: false`，其他浮层组件以各自文档的对应 prop 为准）；
-- wujie 以 degrade 模式（iframe 保活）运行时页面无 shadowRoot，组件样式随子应用留在 iframe 内，建议同样关闭 Teleport 让面板留在原地；
+- wujie 以 degrade 模式（iframe 保活）运行时页面无 shadowRoot，组件样式随子应用留在 iframe 内，建议同样关闭 Teleport 让面板留在原地（**更优**：根部声明 `<TuDesignProvider mode="none">`，一次性关闭全部自动适配，免逐组件设置）；
 - **层叠上下文（z-index）**：graft 渲染进 shadow DOM，但 shadow DOM **不创建独立层叠上下文**，子应用浮层的 z-index 与宿主页面元素直接比较。库的模态层 `--z-modal`（60）保证遮罩盖住置于 50~59 的宿主 chrome；宿主 chrome 若设 ≥ 60 会击穿遮罩，这是层叠契约而非硬保证。完整层叠序与 in-place/teleported 浮层分工见[主题 · z-index 层叠体系](/guide/theming)；
 - wujie 下滚动锁禁用后，若子应用自身把 `body` 做成可滚（高度链未锁定），弹窗打开时背景可随滚轮滚动；「锁住宿主背景」需宿主参与（对真滚动容器施加 `overflow: hidden`），属跨沙箱协调的后续扩展点，见 [issue #4](https://github.com/gopowerteam/tu-design/issues/4) 讨论；
-- qiankun / micro-app 为同文档渲染（无 iframe realm），预期无需适配（尚未实测）；非 iframe 型 graft 沙箱若未来出现，`sandbox.ts` 的 marker 探测为扩展点——追加该沙箱的官方标记信号即可。
+- qiankun / micro-app 为同文档渲染（无 iframe realm），预期无需适配（尚未实测）；非 iframe 型 graft 沙箱若未来出现，`sandbox.ts` 的 marker 探测为扩展点——追加该沙箱的官方标记信号即可，**或由该沙箱的使用方直接显式声明 `mode`**（探测不到也能配置对，见上节）。
 
 以上机制在全部浮层组件中生效，无需配置；个别组件特有的覆盖入口（如 Popover 的 `to` / `portal` / `z-index`）见对应组件文档。

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
+import { useTuProvider } from "../overlay-shared/config";
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
 // SyntaxError 刷屏（详注见 useOverlayIds）
@@ -57,8 +58,11 @@ const { isOpen, setOpen } = useControlledBoolean({
 
 // 沙箱适配（机制详注见 useSandboxOverlay / sandbox.ts）：面板无 Teleport 留原地，
 // iframe realm 下 strategy 默认 fixed 消除 absolute 包含块（最近 positioned 祖先）错位
+// Provider 显式配置快照：withSandboxStrategy 在 computed 内调用，inject 须于 setup 顶层捕获后传入
+const tuProvider = useTuProvider();
+
 const rootPositioning = computed(() =>
-  withSandboxStrategy(props.positioning, { ...props.positioning }),
+  withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
 </script>
 

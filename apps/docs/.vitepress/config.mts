@@ -187,6 +187,10 @@ export default defineConfig({
         {
           text: "基础组件",
           items: [
+            {
+              text: "应用根 <span class='sidebar-en'>TuDesignProvider</span>",
+              link: "/components/provider",
+            },
             { text: "头像 <span class='sidebar-en'>Avatar</span>", link: "/components/avatar" },
             {
               text: "头像组 <span class='sidebar-en'>AvatarGroup</span>",

@@ -20,7 +20,11 @@ const DEFAULTS = {
 // 内部转发到 current 指向的 zag store；Provider 挂载时按 props 重建 store。
 let current = createToaster(DEFAULTS);
 let currentConfig = { ...DEFAULTS };
-let providerMounted = false;
+// 宿主引用计数：ToastProvider 实例（含 TuDesignProvider :toast 组合出的）各计一个。
+// 布尔标志会让「双宿主先卸载其一」误关 mounted 态（后挂载者赢、先卸载者误报），
+// 计数归零才算真未挂载；归零同时复位双宿主告警标志（新一轮可再告警）。
+let hostCount = 0;
+let doubleHostWarned = false;
 
 /**
  * 按 props 重建单例内部 store（ToastProvider 挂载时调用）。
@@ -54,18 +58,36 @@ export function __getInternalToaster() {
 }
 
 /**
- * 标记 Provider 已挂载/已卸载（Provider 生命周期与测试用）。
- * @param value - true 表示 Provider 已挂载，false 表示已卸载
+ * 宿主挂载/卸载计数的测试出口：true 计 +1，false 计 −1（下限 0）。
+ * 计数 >1（双宿主并存，TuDesignProvider :toast 与 ToastProvider 同挂）时 dev 告警一次。
+ * @param value - true 表示一个宿主挂载，false 表示一个宿主卸载
  */
 export function __setToastMounted(value: boolean) {
-  providerMounted = value;
+  hostCount += value ? 1 : -1;
+  if (hostCount <= 0) {
+    hostCount = 0;
+    doubleHostWarned = false;
+  } else if (hostCount > 1 && import.meta.env.DEV && !doubleHostWarned) {
+    doubleHostWarned = true;
+    console.warn(
+      "[tu-design] toast 宿主重复挂载：<TuDesignProvider :toast> 与 <ToastProvider> 二选一，同时挂载时后挂载者的配置生效，请先卸载其一。",
+    );
+  }
+}
+
+/**
+ * 读取当前宿主计数（测试用）。
+ * @returns 已挂载 toast 宿主数量
+ */
+export function __getToastHostCount(): number {
+  return hostCount;
 }
 
 /**
  * Provider 未挂载时在开发环境输出告警，提醒先在应用根部挂载 <ToastProvider>。
  */
 function warnIfUnmounted() {
-  if (!providerMounted && import.meta.env.DEV) {
+  if (hostCount === 0 && import.meta.env.DEV) {
     console.warn(
       "[tu-design] 在 <ToastProvider> 挂载前调用了 toast。请在应用根部挂载一次 <ToastProvider>，否则提示不会渲染。",
     );
