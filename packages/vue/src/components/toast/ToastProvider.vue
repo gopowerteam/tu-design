@@ -4,6 +4,8 @@ import { Toaster, Toast } from "@ark-ui/vue/toast";
 import type { ToastPlacement } from "./useToast";
 import { cn } from "@/lib/utils";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
+import { useTuProvider } from "../overlay-shared/config";
+import { ensureRafClockGuard } from "../overlay-shared/rafClock";
 import { __configureToaster, __setToastMounted } from "./useToast";
 
 /**
@@ -12,6 +14,9 @@ import { __configureToaster, __setToastMounted } from "./useToast";
  *
  * 兼容出口：新接入推荐 `<TuDesignProvider :toast="{...}">`（内部组合本组件）。
  * 两者同时挂载即双宿主，dev 告警且后挂载者配置生效，请二选一。
+ *
+ * rAF 时钟守卫：独立挂载路径兜底（组合挂载时 TuDesignProvider 已装，幂等无害）；
+ * mode="none"（经 inject 继承）显式跳过，其余哨兵门控（详注 overlay-shared/rafClock.ts）。
  */
 const props = defineProps({
   /** 弹出位置 */
@@ -26,6 +31,9 @@ const props = defineProps({
 const toaster = shallowRef(
   __configureToaster({ placement: props.placement, duration: props.duration, max: props.max }),
 );
+
+// rAF 时钟守卫（setup 顶层同步安装，零空窗；mode="none" 显式关闭）
+if (useTuProvider().mode !== "none") void ensureRafClockGuard();
 
 onMounted(() => __setToastMounted(true));
 onBeforeUnmount(() => __setToastMounted(false));

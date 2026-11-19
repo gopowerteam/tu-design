@@ -181,6 +181,19 @@ bus.$on("overlay:unlock", (appId: string) => {
 
 契约在移动端的效果须真机验收：iOS Safari 的橡皮筋滚动、`position: fixed` 锁的 `scrollTop` 还原、触摸手势滚动链均与桌面模拟不同。建议至少覆盖：弹窗打开时背景不滚、关闭后滚动位置还原、多模态快速开关无锁残留、子应用 deactivate/销毁后无锁残留。
 
+## rAF 时钟守卫（沙箱时钟混用）
+
+wujie 会把子应用的 `requestAnimationFrame` 替换为**主应用的** rAF（其 window 属性白名单 `/animationFrame$/i` 所致），而 `performance` 仍指向子应用 iframe 本地——两条时间线在同一子应用作用域并存。Ark UI 底层的 zag 状态机 Timer（[issue #6](https://github.com/gopowerteam/tu-design/issues/6) 实证其 `start()` 取 `performance.now()`、`tick()` 取 rAF 回调时间戳）混用两时钟计时，测得的流逝 ≈「宿主加载 → 子应用打开」间隔（秒~分钟级）：有限时长 toast 首帧即被判超时消失，而 `loading` / `duration: Infinity`（不启计时器）完全正常——该差分即本缺陷的指纹。
+
+挂载 [`<TuDesignProvider>`](/components/provider) 或 [`<ToastProvider>`](/components/toast) 根部时库自动安装哨兵检测，无需配置：
+
+- 首个 rAF 回调测量 `|回调时间戳 − performance.now()|`，超过阈值 100ms（正常环境同帧抖动 ≤16ms，≈6 帧余量，零误伤）判定为混用拓扑，此后 rAF 回调时间戳统一改传本地 `performance.now()`（与上游单时钟修复同构），全部 zag 计时链路（toast 自动关闭、clipboard 已复制态、splitter、timer）恢复正确流逝；
+- 干净环境首帧裁决后**自动恢复原引用**，零残留；普通同源 iframe 嵌入（现代浏览器对原始 iframe 已按文档自身时间线归一，无此问题）不受任何影响——因此守卫按**运行时实测**门控，而非按运行环境声明门控（按 mode 门控会在普通 iframe 下反向注入「时长被拉长」的新缺陷，issue #6 分析已实证）；
+- `mode="none"` 显式关闭守卫（与「显式关全部适配」语义一致）；
+- 上游 zag 修复混用后（`Timer.tick` 单时钟一行改动），哨兵测得漂移归零、守卫自动休眠，与上游修复安全共存。
+
+快速自检（宿主 DevTools console）：找到 wujie 沙箱 iframe 后执行 `f.contentWindow.requestAnimationFrame(ts => console.log(ts - f.contentWindow.performance.now()))`——修复前输出秒~分钟级毫秒数，守卫生效后应 ≈ 一帧内（≤20ms）。
+
 ## 已知边界
 
 - `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；

@@ -15,10 +15,19 @@ vi.mock("../overlay-shared/sandbox", async (importOriginal) => {
   };
 });
 
+// rAF 时钟守卫接线证明:no-op 代位(mode="none" 零调用 / 其余安装,机制单测见 rafClock.test.ts)
+vi.mock("../overlay-shared/rafClock", () => ({
+  ensureRafClockGuard: vi.fn(() =>
+    Promise.resolve({ installed: false, driftMs: Number.NaN, restore: () => {} }),
+  ),
+}));
+
 import { isInWujie } from "../overlay-shared/sandbox";
+import { ensureRafClockGuard } from "../overlay-shared/rafClock";
 import { __getToastHostCount, __setToastMounted } from "../toast/useToast";
 
 const mockWujie = vi.mocked(isInWujie);
+const mockEnsureGuard = vi.mocked(ensureRafClockGuard);
 
 const content = () =>
   document.querySelector<HTMLElement>('[data-scope="dialog"][data-part="content"]');
@@ -46,6 +55,7 @@ afterEach(() => {
   document.body.style.removeProperty("overflow");
   document.documentElement.style.removeProperty("--scrollbar-width");
   mockWujie.mockReset();
+  mockEnsureGuard.mockClear();
   // ToastProvider 若经 :toast 挂载，其 onBeforeUnmount 已配对递减；此处复位测试失败
   // 中断导致的残留计数（while 兜底，正常路径 0 次循环）
   while (__getToastHostCount() > 0) __setToastMounted(false);
@@ -97,6 +107,29 @@ describe("TuDesignProvider mode 显式环境声明", () => {
     });
     const w = mount(Host);
     expect(mode).toBe("shadow");
+    w.unmount();
+  });
+});
+
+describe("TuDesignProvider rAF 时钟守卫接线", () => {
+  it("显式隔离 mode:setup 顶层安装一次", () => {
+    mockEnsureGuard.mockClear();
+    const w = mountWithProvider({ mode: "shadow-iframe" });
+    expect(mockEnsureGuard).toHaveBeenCalledTimes(1);
+    w.unmount();
+  });
+
+  it("auto + :toast:Provider 与组合的 ToastProvider 各安装一次", () => {
+    mockEnsureGuard.mockClear();
+    const w = mountWithProvider({ mode: "auto", toast: {} });
+    expect(mockEnsureGuard).toHaveBeenCalledTimes(2);
+    w.unmount();
+  });
+
+  it("none + :toast:组合链全程跳过(mode 经 inject 继承,显式关全部适配)", () => {
+    mockEnsureGuard.mockClear();
+    const w = mountWithProvider({ mode: "none", toast: {} });
+    expect(mockEnsureGuard).not.toHaveBeenCalled();
     w.unmount();
   });
 });
