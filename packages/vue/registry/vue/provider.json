@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "provider",
-  "version": "0.5.12",
+  "version": "0.5.13",
   "type": "registry:ui",
   "description": "应用根组件（可选）：mode 显式声明微前端渲染环境（覆盖浮层沙箱自动探测），:toast 聚合消息提示宿主；不使用时一切行为与自动探测一致。",
   "registryDependencies": ["overlay-shared", "toast"],
