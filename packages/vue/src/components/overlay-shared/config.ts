@@ -28,6 +28,11 @@ export type TuProviderMode = "auto" | "none" | "shadow" | "shadow-iframe";
 /** Provider 注入的配置快照（mount-time 消费；动态变更用 :key 重挂载） */
 export interface TuProviderConfig {
   mode: TuProviderMode;
+  /**
+   * overlay 命名空间 prop（present = enabled，mount-time；issue #5）。
+   * 可选键：既有 provide({ mode }) 字面量与 DEFAULT_CONFIG 不受影响。
+   */
+  overlay?: TuOverlayContract;
 }
 
 /** provide/inject 契约键（沿逻辑树传递，Teleport 子树同样命中） */
@@ -100,4 +105,25 @@ export function preventScrollOverride(mode: TuProviderMode): boolean | undefined
     case "auto":
       return isInWujie() ? false : undefined;
   }
+}
+
+/**
+ * overlay 滚动锁契约（issue #5）：消费方提供 lock() → 解锁函数，
+ * 契约层只负责「是否消费」的拓扑判定，不包装、不持有状态。
+ */
+export interface TuOverlayContract {
+  lock(): VoidFunction;
+}
+
+/**
+ * overlay 契约消费判定（语义 B：仅锁禁用拓扑消费，issue #5）。
+ * overlay 命名空间 prop present = enabled，mount-time 消费；
+ * 仅当 preventScrollOverride(mode) === false（shadow-iframe 显式 / auto 探测命中 wujie）
+ * 时透传契约引用，其余拓扑（none / shadow / auto 非 wujie / 未提供 overlay）一律 null。
+ * 显式 mode 短路探测的性质由 preventScrollOverride 继承（marker 漂移免疫）。
+ * @param config Provider 配置快照
+ * @returns 锁禁用拓扑下为 config.overlay 同引用，否则 null
+ */
+export function overlayContract(config: TuProviderConfig): TuOverlayContract | null {
+  return config.overlay && preventScrollOverride(config.mode) === false ? config.overlay : null;
 }

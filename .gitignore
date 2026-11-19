@@ -40,3 +40,4 @@ apps/docs/.vitepress/cache
 !.vscode/extensions.json
 .playwright-mcp/
 *.tgz
+.learnings/

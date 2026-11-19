@@ -78,6 +78,59 @@ wujie 子应用的推荐根部写法：
 `:toast` 与单独挂载的 `<ToastProvider>` 是同一宿主的两条入口，同时出现即双宿主：开发环境告警一次，且后挂载者的配置生效。存量项目可直接把 `<ToastProvider>` 平移为 `<TuDesignProvider :toast="原props">`。
 :::
 
+## :overlay：模态滚动锁注入
+
+传入 `overlay` 对象即为模态浮层（Dialog / Drawer / AlertDialog）注入自定义滚动锁实现，用于补齐内置锁被禁用的沙箱拓扑（wujie）下的模态锁空缺。契约签名为 RAII 风格——`lock()` 返回释放函数，对齐 Zag `preventBodyScroll` 返回 cleanup 的先例：
+
+```ts
+interface TuOverlayContract {
+  /** 模态打开时调用；返回释放函数，关闭/卸载时调用且仅调用一次 */
+  lock(): VoidFunction;
+}
+```
+
+```vue
+<script setup lang="ts">
+import type { TuOverlayContract } from "@tu-design/vue";
+
+const APP_ID = "sub-app-a"; // 与宿主约定的应用唯一标识
+
+const overlay: TuOverlayContract = {
+  lock() {
+    window.$wujie?.bus.$emit("overlay:lock", APP_ID);
+    return () => window.$wujie?.bus.$emit("overlay:unlock", APP_ID);
+  },
+};
+</script>
+
+<template>
+  <TuDesignProvider mode="shadow-iframe" :overlay="overlay">
+    <RouterView />
+  </TuDesignProvider>
+</template>
+```
+
+对称驱动由库保证：模态打开时调用 `lock()`，关闭或组件卸载时调用其返回的释放函数**且仅一次**（开着即卸载也会补调）；attrs 透传 `:modal="false"` 的非模态用法不触发锁。接入方只需实现 `lock()`，无需手动 unlock。完整的 glue / 宿主接入示例见[微前端与沙箱](/guide/micro-frontend)的「模态滚动锁跨沙箱契约」一节。
+
+### 生效语义（语义 B）
+
+`overlay` **仅在 `mode` 解析为锁禁用拓扑时消费**（`shadow-iframe`，或 `auto` 探测命中 wujie）——此时内置锁本就让位，由注入的契约接管驱动；其余拓扑下注入被**忽略**，行为与不注入完全一致（Ark 原生锁路径不变），开发环境 `console.warn` 一次提示注入未生效：
+
+| mode 解析结果                           | 注入行为                                 |
+| --------------------------------------- | ---------------------------------------- |
+| `shadow-iframe` / `auto` 探测命中 wujie | 消费：注入契约驱动加锁 / 释放            |
+| `none` / `shadow` / `auto` 未命中       | 忽略 + dev warn 一次；Ark 原生锁路径不变 |
+
+不注入 `overlay` 时，行为与 v0.5.11 完全一致——本 prop 只补「锁禁用」空缺，不改动任何本来正确的锁路径。
+
+### present = enabled，mount-time 消费
+
+与 `:toast` 同一先例：传入 `overlay` 即启用（present = enabled），**挂载时消费**（provide 快照），运行时变更不生效也不响应——需要动态切换时用 `:key` 重挂载：
+
+```vue
+<TuDesignProvider :key="env" :mode="env" :overlay="overlay">
+```
+
 ## mount-time 契约
 
 `mode` 与 `toast` 均为**挂载时消费**（provide 快照 / Toaster 挂载时读取 store），运行时变更不生效也不响应——需要动态切换时用 `:key` 重挂载：
@@ -90,10 +143,11 @@ wujie 子应用的推荐根部写法：
 
 ### Props
 
-| 属性    | 类型                                                     | 默认值   | 说明                                 |
-| ------- | -------------------------------------------------------- | -------- | ------------------------------------ |
-| `mode`  | `"auto" \| "none" \| "shadow" \| "shadow-iframe"`        | `"auto"` | 渲染环境声明；详见上表               |
-| `toast` | `TuToastConfig`（`placement` / `duration` / `max` 子集） | —        | 未传不挂载消息宿主；传 `{}` 全走缺省 |
+| 属性      | 类型                                                     | 默认值   | 说明                                                      |
+| --------- | -------------------------------------------------------- | -------- | --------------------------------------------------------- |
+| `mode`    | `"auto" \| "none" \| "shadow" \| "shadow-iframe"`        | `"auto"` | 渲染环境声明；详见上表                                    |
+| `toast`   | `TuToastConfig`（`placement` / `duration` / `max` 子集） | —        | 未传不挂载消息宿主；传 `{}` 全走缺省                      |
+| `overlay` | `TuOverlayContract`（`lock(): VoidFunction`）            | —        | 未传不注入，行为与 v0.5.11 一致；仅锁禁用拓扑消费，见上节 |
 
 ### Slots
 

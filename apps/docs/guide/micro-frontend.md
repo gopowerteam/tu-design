@@ -60,6 +60,127 @@ wujie 把子应用文档树 graft 进 shadowRoot 渲染：**graft 树的 CSS 包
 
 不配置 = 行为与历史版本完全一致；何时值得配置见组件文档的框架映射速查表。
 
+## 模态滚动锁跨沙箱契约
+
+### 背景：假锁 → 无锁 → 语义空缺
+
+wujie 拓扑下模态滚动锁的演进经历了三个阶段：
+
+1. **假锁**（[issue #4](https://github.com/gopowerteam/tu-design/issues/4)）：Ark 的滚动条宽补偿公式在 graft 拓扑下混用两个坐标系，把宿主侧边栏宽度误写进子应用 `padding-right`，弹窗一开整页内容盒被压缩；
+2. **无锁**（v0.5.11 止血）：wujie 拓扑下自动禁用滚动锁（见上文「模态滚动锁」一节），误补偿消除——代价是弹窗打开时宿主背景自由滚动，模态核心语义缺失，这是止血的既定代价；
+3. **语义空缺**（[issue #5](https://github.com/gopowerteam/tu-design/issues/5)）：补齐空缺无法由组件库单方完成——Zag 的 `preventScroll` 仅 boolean、无自定义锁注入点，而真滚动容器在宿主侧。故立跨沙箱契约：**组件库对称驱动、glue 转发计数、宿主施加真锁**。
+
+### 契约签名与生效语义（语义 B）
+
+契约经 [`TuDesignProvider :overlay`](/components/provider) 注入，RAII 风格——`lock()` 返回释放函数，关闭/卸载时由库调用且仅一次：
+
+```ts
+interface TuOverlayContract {
+  /** 模态打开时调用；返回释放函数，关闭/卸载时调用且仅调用一次 */
+  lock(): VoidFunction;
+}
+```
+
+**仅当 `mode` 解析为锁禁用拓扑时消费**（`shadow-iframe` / `auto` 探测命中 wujie）；其余拓扑下注入被忽略，开发环境 `console.warn` 一次，行为与不注入完全一致（与 v0.5.11 逐位相同）。行为矩阵：
+
+| mode                              | 注入 `:overlay` | 行为                                 |
+| --------------------------------- | --------------- | ------------------------------------ |
+| `shadow-iframe`                   | 有              | 内置锁让位，注入契约驱动加锁 / 释放  |
+| `shadow-iframe`                   | 无              | 无锁（v0.5.11 现状）                 |
+| `auto` 探测命中 wujie             | 有              | 同 `shadow-iframe` 注入              |
+| `auto` 探测命中 wujie             | 无              | 无锁（现状）                         |
+| `none` / `shadow` / `auto` 未命中 | 有              | 注入忽略 + dev warn 一次；Ark 原生锁 |
+| `none` / `shadow` / `auto` 未命中 | 无              | Ark 原生锁（现状）                   |
+
+### 三方职责
+
+| 方               | 职责                                                                                                                            |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| 组件库           | 对称驱动：打开调 `lock()`，关闭/卸载调释放函数且仅一次（开着即卸载补调）；`:modal="false"` 非模态不强加锁                       |
+| glue（子应用侧） | 经 `window.$wujie.bus` 事件 `overlay:lock` / `overlay:unlock`（携带 app id）转发，按应用引用计数，deactivated/销毁时 flush 清零 |
+| 宿主             | 收到事件后对**真滚动容器**施加真滚动锁，unlock 时释放                                                                           |
+
+### glue 接入示例（子应用侧）
+
+```ts
+// glue.ts —— 运行在 wujie 子应用内
+const APP_ID = "sub-app-a"; // 与宿主约定的应用唯一标识
+const bus = window.$wujie!.bus;
+
+let count = 0;
+
+export const overlay = {
+  lock(): VoidFunction {
+    count += 1;
+    if (count === 1) bus.$emit("overlay:lock", APP_ID);
+    return () => {
+      count -= 1;
+      if (count === 0) bus.$emit("overlay:unlock", APP_ID);
+    };
+  },
+};
+
+// deactivated/销毁时 flush 清零：防止子应用带着未关闭的模态被卸载后宿主锁残留
+export function flushOverlayLocks() {
+  if (count > 0) {
+    bus.$emit("overlay:unlock", APP_ID);
+    count = 0;
+  }
+}
+
+// 挂进 wujie 卸载生命周期（alive 模式 deactivate 与销毁均会调用）
+window.__WUJIE_UNMOUNT = () => {
+  flushOverlayLocks();
+  // …原有卸载逻辑
+};
+```
+
+```vue
+<!-- 子应用根组件 -->
+<TuDesignProvider mode="shadow-iframe" :overlay="overlay">
+  <RouterView />
+</TuDesignProvider>
+```
+
+引用计数保证多个模态同开时宿主只加一次锁、全部关闭后才释放；RAII 释放函数由库保证恰好调用一次，glue 计数不会因重复释放而失衡。
+
+### 宿主接入示例
+
+```ts
+// 宿主侧：监听 bus 事件，对真滚动容器施加真锁
+import { bus } from "wujie";
+import { preventBodyScroll } from "@zag-js/remove-scroll";
+
+const releases = new Map<string, VoidFunction>();
+
+bus.$on("overlay:lock", (appId: string) => {
+  if (releases.has(appId)) return; // 幂等：同一应用重复事件不重复加锁
+  releases.set(appId, preventBodyScroll(document));
+});
+
+bus.$on("overlay:unlock", (appId: string) => {
+  releases.get(appId)?.();
+  releases.delete(appId);
+});
+```
+
+`@zag-js/remove-scroll` 只是本库的**传递依赖**——宿主无该直接依赖时可内联等价实现：对真滚动容器设 `overflow: hidden` + 滚动条宽度补偿（防布局跳动）+ iOS 用 `position: fixed` 并在释放时还原 `scrollTop`。宿主真滚动容器若不是 `document.body` 而是自定义容器，把同样的锁逻辑施加到该容器即可。
+
+### overscroll-behavior:contain 不是锁
+
+契约接入之前（或不接契约时），集成方可自行在模态 Backdrop 上叠加 `overscroll-behavior: contain`，作为**契约生效前的轻量观感改善建议**——拦截部分触摸手势滚动链。明示：**这不是锁**，以下路径全部残留：
+
+- 键盘滚动（焦点链绕过 Backdrop——Backdrop 与 Positioner 是兄弟节点）；
+- programmatic scroll（`scrollTo` 等）；
+- 桌面滚动条条带拖拽；
+- iOS < 16 不支持该属性。
+
+它达不到「宿主背景滚动无效」的验收，故不进库的缺省实现；真锁请走上面的契约。
+
+### 移动端真机验收
+
+契约在移动端的效果须真机验收：iOS Safari 的橡皮筋滚动、`position: fixed` 锁的 `scrollTop` 还原、触摸手势滚动链均与桌面模拟不同。建议至少覆盖：弹窗打开时背景不滚、关闭后滚动位置还原、多模态快速开关无锁残留、子应用 deactivate/销毁后无锁残留。
+
 ## 已知边界
 
 - `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；

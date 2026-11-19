@@ -5,13 +5,16 @@ import { Drawer as ArkDrawer } from "@ark-ui/vue/drawer";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { useOverlayScrollLock } from "../overlay-shared/useOverlayScrollLock";
 import { overlayPreventScroll } from "../overlay-shared/useSandboxOverlay";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
+
+const attrs = useAttrs();
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
 // SyntaxError 刷屏（详注见 useOverlayIds）；grabber/grabberIndicator/swipeArea
 // 随 anatomy 全量覆盖（zag drawer.dom.js:53-72）
-const { ids: rootIds } = useOverlayIds(useAttrs(), {
+const { ids: rootIds } = useOverlayIds(attrs, {
   primary: "content",
   parts: [
     "content",
@@ -63,6 +66,10 @@ const { isOpen, setOpen } = useControlledBoolean({
   defaultValue: () => props.defaultOpen,
   onChange: (open) => emit("update:open", open),
 });
+
+// overlay 滚动锁契约（issue #5，语义 B 拓扑闸在 overlayContract 内）；
+// isModal 仅在 isOpen 转换回调内求值（冻结语义，不 watch attrs）
+useOverlayScrollLock(isOpen, () => attrs.modal !== false && attrs.modal !== "false");
 
 /** 关闭抽屉（#footer 作用域插槽注入） */
 function close() {

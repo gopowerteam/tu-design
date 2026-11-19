@@ -7,11 +7,14 @@ import { Button } from "@/components/button";
 import { useConfirmPending } from "../overlay-shared/useConfirmPending";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { useOverlayScrollLock } from "../overlay-shared/useOverlayScrollLock";
 import { overlayPreventScroll } from "../overlay-shared/useSandboxOverlay";
+
+const attrs = useAttrs();
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
 // SyntaxError 刷屏（详注见 useOverlayIds）；复用 dialog machine，parts 同 Dialog
-const { ids: rootIds } = useOverlayIds(useAttrs(), {
+const { ids: rootIds } = useOverlayIds(attrs, {
   primary: "content",
   parts: ["content", "title", "description", "trigger", "closeTrigger", "positioner", "backdrop"],
 });
@@ -46,6 +49,10 @@ const { isOpen, setOpen } = useControlledBoolean({
   controlled: () => props.open,
   onChange: (open) => emit("update:open", open),
 });
+
+// overlay 滚动锁契约（issue #5，语义 B 拓扑闸在 overlayContract 内）；
+// isModal 仅在 isOpen 转换回调内求值（冻结语义，不 watch attrs）
+useOverlayScrollLock(isOpen, () => attrs.modal !== false && attrs.modal !== "false");
 
 function handleUpdate(open: boolean) {
   // pending 期间忽略一切关闭请求（走受控桥拒绝同步，弹窗保持打开）——
