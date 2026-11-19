@@ -15,7 +15,7 @@ vi.mock("./sandbox", async (importOriginal) => {
 });
 
 import { isInIframeRealm, isInWujie } from "./sandbox";
-import { useSandboxTeleportTarget } from "./useSandboxOverlay";
+import { overlayPreventScroll, useSandboxTeleportTarget } from "./useSandboxOverlay";
 
 const mockIframe = vi.mocked(isInIframeRealm);
 const mockWujie = vi.mocked(isInWujie);
@@ -79,5 +79,17 @@ describe("useSandboxTeleportTarget", () => {
     const w = mount(Host);
     await vi.waitFor(() => expect(w.text()).toBe("body"));
     w.unmount();
+  });
+});
+
+describe("overlayPreventScroll", () => {
+  it("wujie graft 返回 false（禁用滚动锁，issue #4）", () => {
+    mockWujie.mockReturnValue(true);
+    expect(overlayPreventScroll()).toBe(false);
+  });
+
+  it("非 wujie 返回 undefined（交还 Ark preventScroll=modal 缺省，不得硬编码 true）", () => {
+    mockWujie.mockReturnValue(false);
+    expect(overlayPreventScroll()).toBeUndefined();
   });
 });

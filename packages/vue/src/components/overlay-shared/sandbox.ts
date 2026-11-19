@@ -16,6 +16,9 @@
  * - fixed 元素祖先有 transform/filter 时包含块被劫持（宿主布局应避免；graft 下
  *   absolute 的 offsetParent 解析本就失效，错法不同而非新增错误）
  * - fixed 面板在祖先滚动时依赖 autoUpdate 重算，重算前一帧有视口驻留（瞬时视觉差异）
+ * - 模态滚动锁（remove-scroll）同属 graft 坐标系差异家族：innerWidth（宿主视口）与
+ *   clientWidth（子应用容器）相减把宿主 chrome 宽误当滚动条 → 弹窗开合整页重排，
+ *   策略收敛于 useSandboxOverlay.overlayPreventScroll()（wujie 下禁用，issue #4）
  * - 若未来出现「非 iframe 的 graft 型沙箱」，本探测无法覆盖，需追加该沙箱的 marker 信号
  */
 

@@ -5,6 +5,7 @@ import { Drawer as ArkDrawer } from "@ark-ui/vue/drawer";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { overlayPreventScroll } from "../overlay-shared/useSandboxOverlay";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
@@ -124,12 +125,16 @@ const contentClass = computed(() =>
     placementAnimations[props.placement],
   ),
 );
+
+// 滚动锁沙箱降级（wujie graft 下禁用，机制与论证见 overlayPreventScroll / issue #4）
+const preventScroll = overlayPreventScroll();
 </script>
 
 <template>
   <ArkDrawer.Root
     :ids="rootIds"
     :open="isOpen"
+    :prevent-scroll="preventScroll"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
     @update:open="setOpen"

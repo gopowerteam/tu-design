@@ -5,6 +5,7 @@ import { Dialog as ArkDialog } from "@ark-ui/vue/dialog";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { overlayPreventScroll } from "../overlay-shared/useSandboxOverlay";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
@@ -54,6 +55,10 @@ function close() {
 // 标题/描述有任一来源（props 或插槽）时才渲染头部区块（原 TDialogHeader 布局类）
 const hasHeader = computed(() => Boolean(props.title || props.description));
 
+// 滚动锁沙箱降级（wujie graft 下禁用，机制与论证见 overlayPreventScroll / issue #4）；
+// wujie marker 先于子应用脚本注入，setup 顶层求值时序可靠
+const preventScroll = overlayPreventScroll();
+
 // 面板样式：内置类 + contentClass 合并（twMerge 自动去冲突，后者优先）。
 // 面板底色走 --dialog 模态表面位（issue #2）：--background 是页面画布语义，画布带色的主题下面板不被染色。
 const contentClass = computed(() =>
@@ -68,6 +73,7 @@ const contentClass = computed(() =>
   <ArkDialog.Root
     :ids="rootIds"
     :open="isOpen"
+    :prevent-scroll="preventScroll"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
     @update:open="setOpen"

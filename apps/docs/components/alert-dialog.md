@@ -91,5 +91,5 @@ npx @tu-design/cli add alert-dialog
 按钮样式由 Button 组件的 `default` / `destructive` / `outline` 变体驱动；面板、遮罩沿用 Dialog 的 token（`--dialog` / `--border` / `--muted-foreground` 等），暗色模式自动跟随主题变量，无需额外适配。
 
 ::: tip 微前端环境
-本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。遮罩与面板消费模态层 `--z-modal`（60），保证盖住置于 50~59 的宿主 chrome；层叠契约详见[主题 · z-index 层叠体系](/guide/theming)。
+本组件为浮层组件，在 wujie 微前端 / Shadow DOM 沙箱下会自动适配传送目标与定位策略，详见[微前端与沙箱](/guide/micro-frontend)。模态打开时的滚动锁在 wujie 下自动禁用（宿主视口宽被误补偿为滚动条宽会导致整页重排抖动，见 [issue #4](https://github.com/gopowerteam/tu-design/issues/4)）。遮罩与面板消费模态层 `--z-modal`（60），保证盖住置于 50~59 的宿主 chrome；层叠契约详见[主题 · z-index 层叠体系](/guide/theming)。
 :::

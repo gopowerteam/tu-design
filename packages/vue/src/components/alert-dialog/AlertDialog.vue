@@ -7,6 +7,7 @@ import { Button } from "@/components/button";
 import { useConfirmPending } from "../overlay-shared/useConfirmPending";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
 import { useOverlayIds } from "../overlay-shared/useOverlayIds";
+import { overlayPreventScroll } from "../overlay-shared/useSandboxOverlay";
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
 // SyntaxError 刷屏（详注见 useOverlayIds）；复用 dialog machine，parts 同 Dialog
@@ -72,12 +73,16 @@ const contentClass = computed(() =>
     "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
   ),
 );
+
+// 滚动锁沙箱降级（wujie graft 下禁用，机制与论证见 overlayPreventScroll / issue #4）
+const preventScroll = overlayPreventScroll();
 </script>
 
 <template>
   <ArkDialog.Root
     :ids="rootIds"
     :open="isOpen"
+    :prevent-scroll="preventScroll"
     :close-on-escape="!loading"
     :close-on-interact-outside="!loading"
     @update:open="handleUpdate"

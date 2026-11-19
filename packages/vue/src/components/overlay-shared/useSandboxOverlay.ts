@@ -6,6 +6,7 @@ import { isInIframeRealm, isInWujie } from "./sandbox";
  * 浮层沙箱适配公共层（Popover 0.5.3 修复的推广形态，机制与实测依据见 sandbox.ts 头注）：
  * - useSandboxTeleportTarget：Teleport 目标降级（真 shadow DOM / wujie graft → 应用挂载容器）
  * - withSandboxStrategy：iframe realm 下 positioning.strategy 默认 fixed（absolute 包含块错位修正）
+ * - overlayPreventScroll：模态浮层滚动锁按沙箱拓扑降级（wujie graft 下禁用，issue #4）
  */
 
 /**
@@ -59,4 +60,23 @@ export function withSandboxStrategy<T extends object>(user: T | undefined, merge
     (merged as { strategy?: string }).strategy = "fixed";
   }
   return merged;
+}
+
+/**
+ * 模态浮层滚动锁策略（dialog / alert-dialog / drawer 共用，issue #4）：
+ * - wujie graft → false：@zag-js/remove-scroll 的补偿公式
+ *   `scrollbarWidth = win.innerWidth − documentElement.clientWidth` 在 graft 下跨坐标系
+ *   （iframe 报宿主视口宽，documentElement 是 graft 进 shadowRoot 的子应用容器），
+ *   宿主 chrome 宽被误当滚动条写入渲染 body（padding-right）→ 弹窗开合整页重排抖动；
+ *   且主流 wujie 拓扑下子应用 body 本就不滚（滚动在宿主容器），锁无收益只有副作用。
+ *   拓扑边界：若子应用 body 自身可滚，禁用后背景随弹窗可滚——带误补偿的锁不如不要，
+ *   wujie 下真正的「锁背景」需宿主参与（provide 注入点 + 契约事件），见 follow-up。
+ * - 其余场景 → undefined（不覆盖）：Ark Vue 适配层 cleanProps 过滤 undefined 键后
+ *   保留 zag 缺省 preventScroll = modal。禁止传硬编码 true——本库组件单根、attrs
+ *   透传，消费方可 :modal="false" 关闭模态，传 true 会强加滚动锁造成行为回归。
+ *
+ * @returns wujie graft 下 false（禁用滚动锁），其余 undefined（交还 Ark 缺省）
+ */
+export function overlayPreventScroll(): boolean | undefined {
+  return isInWujie() ? false : undefined;
 }

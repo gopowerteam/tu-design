@@ -6,12 +6,12 @@ tu-design 的浮层组件在 **wujie 微前端**、**Shadow DOM 沙箱**（如 m
 
 适配随浮层组件自动启用，按组件形态分两档：
 
-| 形态       | 组件                                                                                                                                        | 适配内容                                                      |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
-| 定位型浮层 | Popover、Tooltip、Select、DropdownMenu、ContextMenu、Cascader、TreeSelect、DatePicker、DateRangePicker、MonthPicker、WeekPicker、YearPicker | ids 无冒号覆盖 + Teleport 目标降级 + 定位策略（坐标空间）修正 |
-| 模态型浮层 | Dialog、Drawer、AlertDialog                                                                                                                 | ids 无冒号覆盖（面板居中渲染、无跟随定位，无需后两项）        |
+| 形态       | 组件                                                                                                                                        | 适配内容                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| 定位型浮层 | Popover、Tooltip、Select、DropdownMenu、ContextMenu、Cascader、TreeSelect、DatePicker、DateRangePicker、MonthPicker、WeekPicker、YearPicker | ids 无冒号覆盖 + Teleport 目标降级 + 定位策略（坐标空间）修正     |
+| 模态型浮层 | Dialog、Drawer、AlertDialog                                                                                                                 | ids 无冒号覆盖 + 模态滚动锁降级（面板居中渲染，无需定位策略两项） |
 
-微前端沙箱中浮层组件面临的核心问题是两类：**面板归属**（Teleport 目标）与**定位坐标空间**（定位策略）；wujie 沙箱还有 ids 特殊字符引发的告警刷屏问题，三者分别对应下文的适配机制。
+微前端沙箱中浮层组件面临的核心问题是两类：**面板归属**（Teleport 目标）与**定位坐标空间**（定位策略）；wujie 沙箱还有 ids 特殊字符引发的告警刷屏问题，三者分别对应下文的适配机制。模态型浮层另有一类 graft 坐标系专属问题——**滚动锁误补偿**，见文末专节。
 
 ## ids 无冒号覆盖
 
@@ -38,12 +38,24 @@ wujie 把子应用文档树 graft 进 shadowRoot 渲染：**graft 树的 CSS 包
 - 非 graft 拓扑下 fixed 与 absolute 坐标等价（包含块同为最近视口），该默认值零副作用；跨域 iframe 下 `self`/`top` 仅做引用比较，不读属性，无 `SecurityError`；
 - 显式传入 `positioning.strategy` 时以其为准（经 attrs 透传，如 `:positioning="{ strategy: 'absolute' }"`）。
 
+## 模态滚动锁
+
+模态组件打开时默认锁定页面滚动，并按「视口宽 − 文档宽」补偿消失的滚动条宽度（继承 Ark UI `preventScroll`，防主文档滚动条消失引起布局跳动）。wujie graft 拓扑下该公式的两个测量值**分属不同坐标系**——`window.innerWidth` 是沙箱 iframe 报告的**宿主视口宽**，`documentElement.clientWidth` 是 graft 进 shadowRoot 渲染的**子应用容器宽**——差值（宿主侧边栏/留白宽度，实测可达 130px）被误当滚动条宽写入渲染 `body` 的 `padding-right`：弹窗一开整页内容盒凭空压缩、表格列宽全体重排，关闭又弹回（[issue #4](https://github.com/gopowerteam/tu-design/issues/4)）。
+
+适配策略：**wujie graft 下自动禁用滚动锁**，其余场景（独立运行、qiankun、iframe 嵌入等）保持 Ark 缺省行为不变。依据有二：
+
+- wujie 主流拓扑下子应用 `body` 本就不滚动（滚动容器在宿主侧），锁不产生任何既有收益——宿主背景在修复前后都从来没被锁住过；
+- 即便子应用 body 可滚，误补偿的破坏也大于锁的收益，带 bug 的锁不如不要。
+
+策略集中在 `overlay-shared/useSandboxOverlay.ts` 的 `overlayPreventScroll()` 单点实现，Dialog / Drawer / AlertDialog 三处共享；返回值仅 wujie 下为 `false`，其余为 `undefined`（不覆盖 Ark 的 `preventScroll = modal` 派生默认，attrs 透传 `:modal="false"` 的用法不受影响）。
+
 ## 已知边界
 
 - `fixed` 面板以视口为包含块，容器滚动时面板会短暂滞后于触发器（定位引擎监听 scroll 重新对齐），介意可显式传回 `positioning: { strategy: "absolute" }`；
 - 触发器祖先带 `transform`（如入场动画容器）会劫持 `fixed` 的包含块，此时建议关闭 Teleport 让面板留在原地（Popover 为 `portal: false`，其他浮层组件以各自文档的对应 prop 为准）；
 - wujie 以 degrade 模式（iframe 保活）运行时页面无 shadowRoot，组件样式随子应用留在 iframe 内，建议同样关闭 Teleport 让面板留在原地；
 - **层叠上下文（z-index）**：graft 渲染进 shadow DOM，但 shadow DOM **不创建独立层叠上下文**，子应用浮层的 z-index 与宿主页面元素直接比较。库的模态层 `--z-modal`（60）保证遮罩盖住置于 50~59 的宿主 chrome；宿主 chrome 若设 ≥ 60 会击穿遮罩，这是层叠契约而非硬保证。完整层叠序与 in-place/teleported 浮层分工见[主题 · z-index 层叠体系](/guide/theming)；
+- wujie 下滚动锁禁用后，若子应用自身把 `body` 做成可滚（高度链未锁定），弹窗打开时背景可随滚轮滚动；「锁住宿主背景」需宿主参与（对真滚动容器施加 `overflow: hidden`），属跨沙箱协调的后续扩展点，见 [issue #4](https://github.com/gopowerteam/tu-design/issues/4) 讨论；
 - qiankun / micro-app 为同文档渲染（无 iframe realm），预期无需适配（尚未实测）；非 iframe 型 graft 沙箱若未来出现，`sandbox.ts` 的 marker 探测为扩展点——追加该沙箱的官方标记信号即可。
 
 以上机制在全部浮层组件中生效，无需配置；个别组件特有的覆盖入口（如 Popover 的 `to` / `portal` / `z-index`）见对应组件文档。
