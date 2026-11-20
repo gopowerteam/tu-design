@@ -3,11 +3,12 @@ import type { DateValue } from "@ark-ui/vue/date-picker";
 import type { DatePickerRootProps } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, provide } from "vue";
+import { computed, provide, useAttrs } from "vue";
 import { cn } from "@/lib/utils";
 import CalendarIcon from "../icon-shared/CalendarIcon.vue";
 import CloseIcon from "../icon-shared/CloseIcon.vue";
 import { CALENDAR_IN_PICKER, controlCls, iconBtnCls } from "./shared";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import { useTuProvider } from "../overlay-shared/config";
 
@@ -68,10 +69,41 @@ const tuProvider = useTuProvider();
 const rootPositioning = computed(() =>
   withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。覆盖 machine 全部直接 getById 查询点
+// （trigger/content/clearTrigger/control/positioner 与 monthSelect/yearSelect）及
+// 间接路径（getInputEls 经 getControlEl）；其中 monthSelect/yearSelect 本库不渲染，
+// 日历翻月（startValue track 每次触发 syncMonthSelectElement/syncYearSelectElement）
+// 必 miss 刷警告（wujie 2.1.0 实测复现），覆盖后落到合法选择器静默 null。函数型口
+// （label/table/tableHeader/tableBody/tableRow/cellTrigger/prev/next/viewTrigger/
+// input）无 getById 查询点，不进 parts，user 经 attrs.ids 直传保留。
+const attrs = useAttrs();
+const { ids: rootIds } = useOverlayIds(attrs, {
+  primary: "root",
+  parts: [
+    "root",
+    "content",
+    "clearTrigger",
+    "control",
+    "trigger",
+    "positioner",
+    "monthSelect",
+    "yearSelect",
+  ],
+});
+// Input 转发前剔除 ids：ids 已由 Root :ids 消费，直传会在真实 input 上产生
+// `ids="[object Object]"` 垃圾属性。
+const inputAttrs = computed(() => {
+  const rest = { ...attrs };
+  delete rest.ids;
+  return rest;
+});
 </script>
 
 <template>
   <ArkDatePicker.Root
+    :ids="rootIds"
     :model-value="modelValue"
     :open="open"
     :locale="locale"
@@ -94,7 +126,7 @@ const rootPositioning = computed(() =>
       :data-invalid="invalid ? '' : undefined"
     >
       <ArkDatePicker.Input
-        v-bind="$attrs"
+        v-bind="inputAttrs"
         :placeholder="placeholder"
         :aria-invalid="invalid || undefined"
         class="bg-transparent h-full w-full min-w-0 flex-1 px-3 text-sm tabular-nums outline-none"

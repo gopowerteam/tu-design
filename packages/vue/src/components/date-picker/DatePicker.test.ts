@@ -1,4 +1,5 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
+import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import { mount } from "@vue/test-utils";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { DatePicker } from "./index";
@@ -366,6 +367,27 @@ describe("DatePicker", () => {
       expect([...el.classList], `祖先 ${el.tagName} 不得含 group`).not.toContain("group");
       el = el.parentElement;
     }
+    w.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：8 个字符串覆盖口齐全，input 无垃圾 ids 属性", async () => {
+    const w = await openPicker();
+    const ids = w.findComponent(ArkDatePicker.Root)!.props("ids") as Record<string, string>;
+    for (const part of [
+      "root",
+      "content",
+      "clearTrigger",
+      "control",
+      "trigger",
+      "positioner",
+      "monthSelect",
+      "yearSelect",
+    ]) {
+      expect(typeof ids[part]).toBe("string");
+      expect(ids[part]).not.toContain(":");
+    }
+    const input = document.body.querySelector<HTMLInputElement>('[data-scope="date-picker"] input');
+    expect(input?.hasAttribute("ids")).toBe(false);
     w.unmount();
   });
 });

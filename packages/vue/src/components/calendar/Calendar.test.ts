@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import { Calendar } from "./index";
 
 afterEach(() => {
@@ -291,5 +292,24 @@ describe("Calendar（standalone）", () => {
     expect(unavailableDot?.className).toContain("group-data-[unavailable]:line-through");
     expect(dot?.className).not.toContain("group-data-[outside-range]:opacity-30");
     expect(dot?.className).toContain("group-data-[outside-view]:opacity-30");
+  });
+
+  it("ids 全量覆盖（无冒号）：standalone Root 的 8 个字符串口派生自 useId", async () => {
+    const w = await openCalendar();
+    const ids = w.findComponent(ArkDatePicker.Root).props("ids") as Record<string, string>;
+    for (const part of [
+      "root",
+      "content",
+      "clearTrigger",
+      "control",
+      "trigger",
+      "positioner",
+      "monthSelect",
+      "yearSelect",
+    ]) {
+      expect(typeof ids[part]).toBe("string");
+      expect(ids[part]).not.toContain(":");
+    }
+    w.unmount();
   });
 });

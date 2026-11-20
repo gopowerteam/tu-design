@@ -2,9 +2,10 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useAttrs } from "vue";
 import { cn } from "@/lib/utils";
 import { CALENDAR_IN_PICKER, formatIsoDate, parseIsoDate } from "../date-shared/shared";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import CalendarBody from "./CalendarBody.vue";
 
 const props = defineProps({
@@ -58,6 +59,27 @@ function handleValueUpdate(next: DateValue[]) {
   internalValue.value = value;
   emit("update:modelValue", value);
 }
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。仅 standalone 形态自建 Root；该形态恒
+// :open="true" 且只渲染 Content，machine 的 open effect（trackDismissableElement /
+// trackPositioning）会在挂载期查询未渲染的 control/trigger/clearTrigger/positioner，
+// 翻月期 startValue track 再查未渲染的 monthSelect/yearSelect，缺省冒号 id 必 miss
+// 刷警告（wujie 2.1.0 实测复现，挂载即 +7）；覆盖后落到合法选择器静默 null。
+// embedded 形态（Picker 弹层内）由宿主 Root 供能，不渲染 Root，ids 自然不生效。
+const { ids: standaloneIds } = useOverlayIds(useAttrs(), {
+  primary: "root",
+  parts: [
+    "root",
+    "content",
+    "clearTrigger",
+    "control",
+    "trigger",
+    "positioner",
+    "monthSelect",
+    "yearSelect",
+  ],
+});
 </script>
 
 <template>
@@ -69,6 +91,7 @@ function handleValueUpdate(next: DateValue[]) {
   -->
   <div v-if="standalone" :class="cn('w-fit', $attrs.class)">
     <ArkDatePicker.Root
+      :ids="standaloneIds"
       :model-value="rootValue"
       :open="true"
       :num-of-months="props.numOfMonths"

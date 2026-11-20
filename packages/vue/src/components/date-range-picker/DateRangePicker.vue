@@ -2,7 +2,7 @@
 import type { DateValue } from "@ark-ui/vue/date-picker";
 import { DatePicker as ArkDatePicker } from "@ark-ui/vue/date-picker";
 import type { PropType } from "vue";
-import { computed, provide, shallowRef, watch } from "vue";
+import { computed, provide, shallowRef, useAttrs, watch } from "vue";
 import { cn } from "@/lib/utils";
 import { Calendar as TCalendar } from "../calendar";
 import CalendarIcon from "../icon-shared/CalendarIcon.vue";
@@ -16,6 +16,7 @@ import {
   parseIsoRange,
 } from "../date-shared/shared";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { useSandboxTeleportTarget, withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import { useTuProvider } from "../overlay-shared/config";
 import type { PickerPositioning } from "../date-shared/positioning";
@@ -131,6 +132,37 @@ const rootPositioning = computed(() =>
   withSandboxStrategy(props.positioning, { ...props.positioning }, tuProvider),
 );
 
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。与 date-shared/PickerShell 同构覆盖
+// machine 全部直接 getById 查询点（trigger/content/clearTrigger/control/positioner
+// 与 monthSelect/yearSelect）及间接路径（getInputEls 经 getControlEl）。range 形态
+// 恒渲染 Control/Trigger/ClearTrigger 与 Positioner，但 mount 期 open effect 与
+// 翻月期 startValue track 仍会查询未渲染的 monthSelect/yearSelect，缺省冒号 id 必
+// miss 刷警告（wujie 2.1.0 实测复现）；覆盖后落到合法选择器静默 null。函数型口
+// （label/table/cellTrigger/prev/next/viewTrigger/input）无 getById 查询点，不进
+// parts，user 经 attrs.ids 直传保留。
+const attrs = useAttrs();
+const { ids: rootIds } = useOverlayIds(attrs, {
+  primary: "root",
+  parts: [
+    "root",
+    "content",
+    "clearTrigger",
+    "control",
+    "trigger",
+    "positioner",
+    "monthSelect",
+    "yearSelect",
+  ],
+});
+// Input 转发前剔除 ids：ids 已由 Root :ids 消费，直传会在真实 input 上产生
+// `ids="[object Object]"` 垃圾属性。
+const inputAttrs = computed(() => {
+  const rest = { ...attrs };
+  delete rest.ids;
+  return rest;
+});
+
 // 点击/键盘 ↓ 输入框即开弹层（zag 默认仅 Trigger 开，openOnClick prop 默认关闭；
 // 显式驱动保证各环境行为一致并显式走受控 emit）
 function openFromInput() {
@@ -143,6 +175,7 @@ function openFromInput() {
   <!-- outside-day-selectable：zag getDayTableCellState 的 getUnitDuration 把 months 强制置 1，
        多月视图下第二月起所有当月格被误判 outside-range 而禁用；此开关对冲（见 calendar/CalendarBody 注释） -->
   <ArkDatePicker.Root
+    :ids="rootIds"
     :model-value="rootValue"
     selection-mode="range"
     :num-of-months="props.numOfMonths"
@@ -166,7 +199,7 @@ function openFromInput() {
       :data-invalid="props.invalid ? '' : undefined"
     >
       <ArkDatePicker.Input
-        v-bind="$attrs"
+        v-bind="inputAttrs"
         :index="0"
         :placeholder="props.placeholder"
         :aria-invalid="props.invalid || undefined"
