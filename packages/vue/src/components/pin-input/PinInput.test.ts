@@ -79,6 +79,25 @@ describe("PinInput", () => {
     w.unmount();
   });
 
+  it("ids 全量覆盖（无冒号）：root id 派生自 useId；cell 保留 zag 缺省 id 属预期（不经 getById 查询）", () => {
+    const w = mount(PinInput, { props: { modelValue: [] }, attachTo: document.body });
+    expect(rootEl()!.id).toBeTruthy();
+    expect(rootEl()!.id).not.toContain(":");
+    w.unmount();
+  });
+
+  it("用户函数型 ids.input 直传生效（cell id 生成接管），且 ids 不直透为垃圾属性", () => {
+    const w = mount(PinInput, {
+      props: { modelValue: [] },
+      attrs: { ids: { input: (id: string) => `cell-${id}` } },
+      attachTo: document.body,
+    });
+    expect(inputEls()[0]!.id).toMatch(/^cell-/);
+    expect(inputEls()[1]!.id).toMatch(/^cell-/);
+    expect(inputEls()[0]!.hasAttribute("ids")).toBe(false);
+    w.unmount();
+  });
+
   it("invalid=true 时 root 带 data-invalid", () => {
     const w = mount(PinInput, {
       props: { modelValue: [], invalid: true },

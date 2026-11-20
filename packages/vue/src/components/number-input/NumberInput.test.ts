@@ -1,5 +1,7 @@
 import { mount } from "@vue/test-utils";
+import { defineComponent, h, nextTick, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { NumberInput as ArkNumberInput } from "@ark-ui/vue/number-input";
 import { NumberInput, numberOrNull } from "./index";
 
 const rootEl = () =>
@@ -86,6 +88,53 @@ describe("NumberInput", () => {
     });
     expect(inputEl()!.id).toBe("age-input");
     expect(inputEl()!.getAttribute("aria-describedby")).toBe("age-msg");
+    w.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：root/input id 派生自 useId，规避 wujie 冒号炸点", () => {
+    const w = mount(NumberInput, { props: { modelValue: 0 }, attachTo: document.body });
+    expect(rootEl()!.id).toBeTruthy();
+    expect(rootEl()!.id).not.toContain(":");
+    expect(inputEl()!.id).not.toContain(":");
+    w.unmount();
+  });
+
+  it("attrs.id 同步为 ids.input 缺省覆盖（machine 查询与真实 DOM 一致）", () => {
+    const w = mount(NumberInput, {
+      props: { modelValue: 0 },
+      attrs: { id: "age-input" },
+      attachTo: document.body,
+    });
+    const rootIds = w.findComponent(ArkNumberInput.Root)!.props("ids") as Record<string, string>;
+    expect(rootIds.input).toBe("age-input");
+    expect(rootIds.root).not.toContain(":");
+    w.unmount();
+  });
+
+  it("用户显式 ids.input 优先于 attrs.id，且 ids 不直透为垃圾属性", () => {
+    const w = mount(NumberInput, {
+      props: { modelValue: 0 },
+      attrs: { id: "attr-id", ids: { input: "explicit-in" } },
+      attachTo: document.body,
+    });
+    const rootIds = w.findComponent(ArkNumberInput.Root)!.props("ids") as Record<string, string>;
+    expect(rootIds.input).toBe("explicit-in");
+    expect(inputEl()!.hasAttribute("ids")).toBe(false);
+    w.unmount();
+  });
+
+  it("ids 映射响应式跟随动态 attrs.id 变化（setup 期快照展开的回归保护）", async () => {
+    const id = ref("id-a");
+    const Harness = defineComponent({
+      setup: () => () => h(NumberInput, { modelValue: 0, id: id.value }),
+    });
+    const w = mount(Harness, { attachTo: document.body });
+    const rootIds = () =>
+      w.findComponent(ArkNumberInput.Root)!.props("ids") as Record<string, string>;
+    expect(rootIds().input).toBe("id-a");
+    id.value = "id-b";
+    await nextTick();
+    expect(rootIds().input).toBe("id-b");
     w.unmount();
   });
 

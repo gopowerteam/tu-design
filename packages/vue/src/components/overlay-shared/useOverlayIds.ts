@@ -4,7 +4,8 @@ import { computed, useId } from "vue";
 export type OverlayIds = Record<string, string | ((value: string) => string)>;
 
 /**
- * 浮层组件 ids 全量覆盖（无冒号化）。
+ * zag 组件 ids 全量覆盖（无冒号化）。适用于 machine 经 getById 查询 DOM 的所有
+ * 组件：浮层类（Dialog/Popover 等）与表单类（NumberInput/PinInput 等）。
  *
  * 背景：zag 缺省 id 惯例形如 `popover:{scope.id}:title`（各包 *.dom.js get*Id
  * 兜底分支），而部分 part 元素并不总是渲染（title/description/anchor/clearTrigger/

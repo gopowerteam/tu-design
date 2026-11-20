@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { PropType } from "vue";
-import { computed, ref } from "vue";
+import { computed, ref, useAttrs } from "vue";
 import { NumberInput as ArkNumberInput } from "@ark-ui/vue/number-input";
 import { cn } from "@/lib/utils";
+import { useOverlayIds, type OverlayIds } from "../overlay-shared/useOverlayIds";
 import { numberOrNull } from "./utils";
 
 const props = defineProps({
@@ -22,6 +23,32 @@ const emit = defineEmits<{ "update:modelValue": [value: number | null] }>();
 
 // attrs（id/aria-*）转发给内部真实 input，保证 TLabel/TFormControl 关联
 defineOptions({ inheritAttrs: false });
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。scrubber/label 本库不渲染，覆盖后 miss
+// 落到合法选择器静默 null；getCursorId 为 zag 硬编码无覆盖口，本库未渲染 Scrubber
+// 不可达。
+const attrs = useAttrs();
+const { ids: baseIds } = useOverlayIds(attrs, {
+  primary: "root",
+  parts: ["root", "input", "incrementTrigger", "decrementTrigger", "scrubber", "label"],
+});
+// $attrs.id 落在真实 input（见模板转发）：同步为 ids.input 缺省覆盖，保证 machine
+// getById 与真实 DOM 一致（trackFormControl 表单联动依赖）；用户显式 ids.input 优先。
+// computed 合并保持 attrs 响应式（Select 同款契约，勿用 setup 期快照展开）。
+const rootIds = computed(() => {
+  const id = attrs.id;
+  const explicit = (attrs.ids as OverlayIds | undefined)?.input;
+  if (typeof id !== "string" || explicit != null) return baseIds.value;
+  return { ...baseIds.value, input: id };
+});
+// $attrs 转发 Input 前剔除 ids：ids 已由 Root :ids 消费，直传会在真实 input 上
+// 产生 `ids="[object Object]"` 垃圾属性。
+const inputAttrs = computed(() => {
+  const rest = { ...attrs };
+  delete rest.ids;
+  return rest;
+});
 
 // 对 Ark Root 恒走受控模式，非受控语义由内部 ref 实现（Checkbox 同款）
 const internalValue = ref<number | null>(null);
@@ -47,6 +74,7 @@ function handleValueChange(details: { value: string; valueAsNumber: number }) {
 
 <template>
   <ArkNumberInput.Root
+    :ids="rootIds"
     :model-value="arkValue"
     :min="props.min"
     :max="props.max"
@@ -81,7 +109,7 @@ function handleValueChange(details: { value: string; valueAsNumber: number }) {
       </slot>
     </ArkNumberInput.DecrementTrigger>
     <ArkNumberInput.Input
-      v-bind="$attrs"
+      v-bind="inputAttrs"
       :class="'bg-transparent flex-1 min-w-0 px-1 text-center text-sm outline-none disabled:cursor-not-allowed'"
     />
     <ArkNumberInput.IncrementTrigger
