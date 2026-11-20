@@ -267,7 +267,7 @@ function onReset() {
 | `showSizeSelect` | `boolean`               | `false`  | 条/页 select                                                                                |
 | `navMode`        | `"text" \| "icon"`      | `"text"` | 上一页/下一页形态：文字按钮或 chevron 图标                                                  |
 
-事件：`update:page-index` / `update:page-size`——两种模式恒触发（动作幂等，重复回调无害）。组件根为 `flex justify-between p-2` 布局，**不带** `border-t`（位置样式归使用方，`TableRender` 内置使用处自行补边框）。
+事件：`update:page-index` / `update:page-size`——两种模式恒触发（动作幂等，重复回调无害）。组件根为 `flex justify-between p-2` 布局，**不带** `border-t`（位置样式归使用方；表格与分页条之间的分隔线由表格底线承担：`bordered` 外框 / `bottom-bordered`）。
 
 模式语义：`definition` 与手动 props 同传时 definition 优先并 DEV 警告；仅手动时 `pageIndex` / `pageSize` / `total` 齐备才渲染（缺关键项 DEV 警告），且恒渲染、可见性由使用方控制。
 
@@ -514,6 +514,37 @@ import { provide } from "vue";
 provide("tu-design:page-table-fill", true);
 </script>
 ```
+
+## 边框与条纹
+
+正交边框模型（词汇与语义对齐 naive-ui data-table）：`bordered` 仅控制外框，网格线由 `single-column` / `single-line` 独立开关，属性间零耦合、零优先级规则。所有边框线画在单元格（`th`/`td`）与 `table` 元素上——`border-collapse: collapse` 与 `border-separate`（fill/virtual sticky 表头）两种边框模型均渲染，`tr` 上不画线。
+
+| 属性              | 默认    | 说明                                                                                    |
+| ----------------- | ------- | --------------------------------------------------------------------------------------- |
+| `bordered`        | `true`  | 表格外框。默认开启为 0.6.0 起的观感变化，`:bordered="false"` 可关闭                     |
+| `bottom-bordered` | `true`  | 表格底部边框（仅 `bordered: false` 时有意义；`bordered` 外框已含底边）                  |
+| `single-column`   | `false` | `true` 时不设定行的分割线（单元格无下边线）；表头底线不受影响（可读性硬底线）           |
+| `single-line`     | `true`  | `true` 时不设定列的分割线（单元格无右边线）；全网格 = `:single-line="false"`            |
+| `striped`         | `false` | 斑马线条纹，按**行模型索引**奇偶——虚拟滚动窗口滑动不漂移；sticky 列同步换不透明条纹底色 |
+
+### 画线落位纪律
+
+- **行线**：`td` 的 `border-b`，末行经 `tbody` 选择器置 0；**底线**：`table` 的 `border-b`（或外框含底边）——表格与内置分页条之间的分隔线由底线承担，分页条不再自带 `border-t`，像素位置重合；
+- **列线**：`th`/`td` 的 `border-r`，行末排除（右缘归外框）；多级表头分组格的分隔线是**结构性硬边界**，不受 `single-line` 影响；
+- **外框**：`table` 的 `border`；与固定列 sticky 交界线协同——列线开启时交界线由统一列线绘制，不会出现双线；
+- **条纹**：`tr` 层 `bg-muted/30`，sticky 列单元格换 `color-mix` 不透明固色（保持防滚动透出）；
+- **骨架行**：跟随行线/列线开关（默认形态骨架行有行线）；空态/错误态 colspan 单格由外框与底线在 `table` 层闭合。
+
+### 已知限制
+
+- 横向滚动时外框左右边随内容滚出视口（外框画在 `table` 元素上）；
+- `fillHeight` + 稀疏内容时，分页条与表格底线之间留有空隙（底线贴内容而非贴分页条）。
+
+### 迁移说明（自 0.6.0）
+
+默认形态变化：① 表格默认新增外框；② 无分页/单页自隐藏时底部新增闭合线；③ 骨架行新增行线；④ 底线归属从分页条 `border-t` 转移到表格底线（分页条可见场景像素位置重合）。**主回退配方：`:bordered="false"`**——分页条可见场景逐像素还原旧观感；无分页场景会多一条底部线，可再加 `:bottom-bordered="false"` 去除（此时分页场景将以无分隔线呈现，二者不可兼得）。外置 `TTablePagination` 的使用方建议传 `:bottom-bordered="false"` 避免与表格底线叠成双线。
+
+<DemoPreview file="table-render/BorderTableDemo.vue" />
 
 ## 树形数据
 
@@ -1156,6 +1187,11 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 | `showSearch`                                                                                                                                                   | `boolean`               | —          | `false` 关闭内置搜索区；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                       |
 | `showPagination`                                                                                                                                               | `boolean`               | —          | `false` 关闭内置分页条；缺省时单页自动隐藏不变，见下方组合式布局节                                                                                                     |
 | `fillHeight`                                                                                                                                                   | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节   |
+| `bordered`                                                                                                                                                     | `boolean`               | `true`     | 表格外框；网格线由 `single-column` / `single-line` 独立控制（正交模型），见上方 [边框与条纹](#边框与条纹) 节                                                           |
+| `bottomBordered`                                                                                                                                               | `boolean`               | `true`     | 表格底部边框（仅 `bordered: false` 时有意义）                                                                                                                          |
+| `singleColumn`                                                                                                                                                 | `boolean`               | `false`    | `true` 不设定行的分割线（单元格无下边线）；表头底线保留                                                                                                                |
+| `singleLine`                                                                                                                                                   | `boolean`               | `true`     | `true` 不设定列的分割线（单元格无右边线）；全网格配方 `:single-line="false"`                                                                                           |
+| `striped`                                                                                                                                                      | `boolean`               | `false`    | 斑马线条纹（按行模型索引奇偶，虚拟滚动安全）                                                                                                                           |
 | `rowSelection` / `virtual` / `height` / `tree` / `draggable` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` / `draggable` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
 
 ### Events

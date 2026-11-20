@@ -113,7 +113,7 @@ const pages = computed<(number | string)[]>(() => {
 </script>
 
 <template>
-  <!-- 不带 border-t（布局归使用方，TableRender 内置使用处显式补）；左区缺省时页码靠右 -->
+  <!-- 不带 border-t（布局归使用方；表格与分页条之间的分隔线由表格底线承担：bordered 外框 / bottom-bordered）；左区缺省时页码靠右 -->
   <div
     v-if="visible"
     :class="

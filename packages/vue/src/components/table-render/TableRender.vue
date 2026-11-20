@@ -92,6 +92,16 @@ const props = defineProps({
    * 显式 prop 优先于布局 provide（key: "tu-design:page-table-fill"）；显式传 false 可强制关闭。
    * 纯布局属性，不进 defineTable/definition（virtual/height 例外），setup 期定版不支持运行时切换。 */
   fillHeight: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 是否显示表格边框（仅外框）；网格线由 single-column / single-line 独立控制（正交模型，词汇对齐 naive-ui） */
+  bordered: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 表格底部是否有边框；bordered: true 时外框已含底边，此参数冗余无害 */
+  bottomBordered: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 是否不设定行的分割线；true 时单元格没有下边线 */
+  singleColumn: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 是否不设定列的分割线；true 时单元格没有右边线 */
+  singleLine: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 斑马线条纹（按行模型索引奇偶，虚拟滚动窗口安全）；纯样式属性，setup 期定版不支持运行时切换 */
+  striped: { type: Boolean as PropType<boolean | undefined>, default: undefined },
 });
 
 // ---- 填充模式（fillHeight）---------------------------------------------------
@@ -695,18 +705,16 @@ function headerRowStyle(rowIndex: number) {
 }
 
 /**
- * 表头单元格的视觉规约：分组格与其后单元格之间加竖向分隔线。
- *
- * 横向底边线沿用既有机制（非 sticky 走 thead 行级 `[&_tr]:border-b`；
- * sticky 走 `theadThClass` 的 `border-b`），此处**不重复绘制**；
- * 单级表头（无分组）直接返回空，保证扁平列 DOM 零变化。
+ * 表头列线：分组格分隔线是结构性硬边界（多行表头分组界恒画，不受列线开关影响）；
+ * 叶子格受列线开关控制（single-line: false 时开启）。行末排除，右缘归外框。
+ * 横向底线不在此绘制（恒挂 theadLineClass 承担，thead 行级 border 已退役）。
  * @param cell - 表头单元格
  * @param isLastInRow - 是否为本行最后一个单元格
  * @returns class 列表
  */
 function headerCellClass(cell: HeaderCell, isLastInRow: boolean) {
-  if (maxDepth.value === 1) return [];
-  return cell.isGroup && !isLastInRow ? ["border-r border-border"] : [];
+  if (cell.isGroup) return isLastInRow ? [] : ["border-r border-border"];
+  return columnLinesOn && !isLastInRow ? ["border-r border-border"] : [];
 }
 
 /**
@@ -960,14 +968,38 @@ const scrollStyle = computed(() => {
   if (fill || !virtualEnabled) return undefined;
   return { height: scrollHeight.value, overflowY: "auto" as const };
 });
+
+// ---- 边框与条纹（正交模型）---------------------------------------------------
+// 词汇与语义对齐 naive-ui data-table：bordered 仅控制外框，网格线由 single-* 独立开关，
+// 属性间零耦合、零优先级规则；网格线全部落在单元格/table（#8 纪律），collapse/separate 均渲染。
+const bordered = props.bordered ?? true;
+const bottomBordered = props.bottomBordered ?? true;
+const singleColumn = props.singleColumn ?? false;
+const singleLine = props.singleLine ?? true;
+const striped = props.striped ?? false;
+/** 行分割线开关（single-column 关闭） */
+const rowLinesOn = !singleColumn;
+/** 列分割线开关（single-line 关闭；bordered 不隐含列线，全网格 = :single-line="false"） */
+const columnLinesOn = !singleLine;
+/** 表头/骨架 stickyClass 开关：仅列线抑制（条纹语义仅在表体行，按行奇偶在 TableBodyRow 收敛） */
+const stickyOpts = { columnLines: columnLinesOn };
+
 /** sticky 表头普通列类：不透明底防行内容透出；分隔线归 th（thead 行级 border 会随行滚走）；
  * z-20 高于表体 fixed 列（--z-sticky: 10），纵向滚动行滑过表头时不穿透；
  * 表头 fixed 列的 z 由 stickyStyle inline style（var(--z-sticky-head)）提供，inline 优先级天然覆盖此处 class */
-const theadThClass = theadSticky ? "sticky top-0 z-20 border-b border-border bg-background" : "";
+const theadThClass = theadSticky ? "sticky top-0 z-20 bg-background" : "";
+/** 表头底线恒挂 th：两种边框模型均渲染（thead 行级 border 已退役）；不受任何开关作用——
+ * 表头/表体分隔线是可读性硬底线，与行分割线（single-column）语义无关 */
+const theadLineClass = "border-b border-border";
 /** sticky 态 table 改分离边框：preflight 为 border-collapse: collapse，
  * 折叠边框几何归属 table，Chrome 下 sticky th 粘住后自身 border-b 渲染丢失；
- * separate + spacing-0 恢复单元格边框。普通模式保持 collapse，零回归。 */
-const tableClass = theadSticky ? "border-separate border-spacing-0" : "";
+ * separate + spacing-0 恢复单元格边框。普通模式保持 collapse，零回归。
+ * 外框（bordered）与底线（非 bordered 且 bottom-bordered）画在 table 元素，两种边框模型均渲染。 */
+const tableClass = [
+  theadSticky ? "border-separate border-spacing-0" : "",
+  bordered ? "border border-border" : "",
+  !bordered && bottomBordered ? "border-b border-border" : "",
+];
 
 const scrollEl = ref<HTMLElement | null>(null);
 const theadEl = ref<HTMLElement | null>(null);
@@ -1254,7 +1286,7 @@ defineExpose({
         :class="tableClass"
         :style="tableMinWidth > 0 ? { minWidth: `${tableMinWidth}px` } : undefined"
       >
-        <thead ref="theadEl" :class="theadSticky ? undefined : '[&_tr]:border-b'">
+        <thead ref="theadEl">
           <tr
             v-for="(cells, rowIndex) in headerRows"
             :key="rowIndex"
@@ -1267,7 +1299,12 @@ defineExpose({
               scope="col"
               :rowspan="headerRows.length"
               class="h-10 w-12 px-2 text-center align-middle font-medium text-muted-foreground"
-              :class="[stickyClass(stickyOf, SELECTION_CELL), theadThClass]"
+              :class="[
+                stickyClass(stickyOf, SELECTION_CELL, stickyOpts),
+                theadThClass,
+                theadLineClass,
+                columnLinesOn ? 'border-r border-border' : '',
+              ]"
               :style="[
                 { width: `${selection.width}px` },
                 stickyStyle(stickyOf, SELECTION_CELL, true),
@@ -1286,7 +1323,12 @@ defineExpose({
               scope="col"
               :rowspan="headerRows.length"
               class="h-10 px-1 text-center align-middle font-medium text-muted-foreground"
-              :class="[stickyClass(stickyOf, DRAG_CELL), theadThClass]"
+              :class="[
+                stickyClass(stickyOf, DRAG_CELL, stickyOpts),
+                theadThClass,
+                theadLineClass,
+                columnLinesOn ? 'border-r border-border' : '',
+              ]"
               :style="[{ width: `${dragWidth}px` }, stickyStyle(stickyOf, DRAG_CELL, true)]"
             >
               <span class="sr-only">拖拽排序</span>
@@ -1299,8 +1341,9 @@ defineExpose({
               :rowspan="cell.rowSpan > 1 ? cell.rowSpan : undefined"
               class="h-10 px-2 align-middle font-medium text-muted-foreground"
               :class="[
-                cell.isGroup ? undefined : stickyClass(stickyOf, cell.key),
+                cell.isGroup ? undefined : stickyClass(stickyOf, cell.key, stickyOpts),
                 theadThClass,
+                theadLineClass,
                 headerCellClass(cell, cellIndex === cells.length - 1),
               ]"
               :style="[
@@ -1337,7 +1380,11 @@ defineExpose({
               <td
                 v-if="hasSelection"
                 class="p-2 text-center align-middle"
-                :class="stickyClass(stickyOf, SELECTION_CELL)"
+                :class="[
+                  rowLinesOn ? 'border-b border-border' : '',
+                  columnLinesOn ? 'border-r border-border' : '',
+                  stickyClass(stickyOf, SELECTION_CELL, stickyOpts),
+                ]"
                 :style="stickyStyle(stickyOf, SELECTION_CELL, false)"
               >
                 <Skeleton class="size-4" />
@@ -1345,16 +1392,26 @@ defineExpose({
               <td
                 v-if="dragEnabled"
                 class="p-1 text-center align-middle"
-                :class="stickyClass(stickyOf, DRAG_CELL)"
+                :class="[
+                  rowLinesOn ? 'border-b border-border' : '',
+                  columnLinesOn ? 'border-r border-border' : '',
+                  stickyClass(stickyOf, DRAG_CELL, stickyOpts),
+                ]"
                 :style="stickyStyle(stickyOf, DRAG_CELL, false)"
               >
                 <Skeleton class="size-4" />
               </td>
               <td
-                v-for="column in visibleColumns"
+                v-for="(column, colIndex) in visibleColumns"
                 :key="column.key"
                 class="p-2 align-middle"
-                :class="stickyClass(stickyOf, column.key)"
+                :class="[
+                  rowLinesOn ? 'border-b border-border' : '',
+                  columnLinesOn && colIndex < visibleColumns.length - 1
+                    ? 'border-r border-border'
+                    : '',
+                  stickyClass(stickyOf, column.key, stickyOpts),
+                ]"
                 :style="[
                   { textAlign: column.align ?? 'center' },
                   stickyStyle(stickyOf, column.key, false),
@@ -1390,6 +1447,10 @@ defineExpose({
               :ref="measureRow"
               :data-index="item.row.index"
               :line="item.line"
+              :class="striped && item.line.index % 2 === 1 ? 'bg-muted/30' : undefined"
+              :row-lines="rowLinesOn"
+              :column-lines="columnLinesOn"
+              :striped="striped"
               :columns="visibleColumns"
               :selection="hasSelection ? selection.type : undefined"
               :selected="selectedKeys.has(item.line.key)"
@@ -1421,6 +1482,10 @@ defineExpose({
               v-for="line in displayBody"
               :key="line.key"
               :line="line"
+              :class="striped && line.index % 2 === 1 ? 'bg-muted/30' : undefined"
+              :row-lines="rowLinesOn"
+              :column-lines="columnLinesOn"
+              :striped="striped"
               :columns="visibleColumns"
               :selection="hasSelection ? selection.type : undefined"
               :selected="selectedKeys.has(line.key)"
@@ -1454,10 +1519,11 @@ defineExpose({
       </table>
     </div>
 
-    <!-- 手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；显式补 border-t 与 size select 保持现状 -->
+    <!-- 手动接线（须经 onPageIndex/onPageSize 包装器保留受控去重）；size select 保持现状。
+         分页条不再补 border-t——分隔线由 table 底线承担（bordered 外框 / bottom-bordered） -->
     <TablePagination
       v-if="showPaginationBar"
-      :class="cn('border-t', fill && 'shrink-0')"
+      :class="cn(fill && 'shrink-0')"
       :page-index="instance.page.pageIndex"
       :page-size="instance.page.pageSize"
       :page-size-opts="instance.page.pageSizeOpts"

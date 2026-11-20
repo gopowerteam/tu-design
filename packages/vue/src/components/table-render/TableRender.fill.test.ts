@@ -57,7 +57,7 @@ function scrollEl(wrapper: ReturnType<typeof mount>): HTMLElement {
   return wrapper.find("table").element.parentElement as HTMLElement;
 }
 
-/** 分页条元素（TableRender 根容器的末位子元素；border-t 由 TableRender 显式补，作定位锚点） */
+/** 分页条元素（TableRender 根容器的末位子元素；分隔线已由 table 底线承担，此处仅作定位锚点） */
 function paginationEl(wrapper: ReturnType<typeof mount>): HTMLElement {
   return wrapper.element.lastElementChild as HTMLElement;
 }
@@ -76,11 +76,13 @@ describe("TableRender fillHeight 默认模式（零回归）", () => {
     expect(scrollEl(wrapper).style.height).toBe("");
   });
 
-  it("th 无 sticky 类；thead 保留行级 border-b；table 保持 collapse（无分离边框类）", () => {
+  it("th 无 sticky 类；表头底线归 th（thead 行级 border-b 已退役）；table 保持 collapse（无分离边框类）", () => {
     const { wrapper } = makeTableRender();
     expect(wrapper.find("thead th").classes()).not.toContain("sticky");
     expect(wrapper.find("thead th").classes()).not.toContain("top-0");
-    expect(wrapper.find("thead").classes().join(" ")).toContain("[&_tr]:border-b");
+    expect(wrapper.find("thead").classes().join(" ")).not.toContain("border-b");
+    expect(wrapper.find("thead th").classes()).toContain("border-b");
+    expect(wrapper.find("thead th").classes()).toContain("border-border");
     expect(wrapper.find("table").classes()).not.toContain("border-separate");
   });
 
@@ -95,11 +97,12 @@ describe("TableRender fillHeight 默认模式（零回归）", () => {
     expect(wrapper.find("tbody").classes()).toContain("[&>tr:last-child>td]:border-b-0");
   });
 
-  it("分页条渲染但无 shrink-0", () => {
+  it("分页条渲染但无 shrink-0；分隔线由 table 底线承担（border-t 已退役）", () => {
     const { wrapper } = makeTableRender();
     const pagination = paginationEl(wrapper);
-    expect(pagination.className).toContain("border-t");
+    expect(pagination.className).not.toContain("border-t");
     expect(pagination.className).not.toContain("shrink-0");
+    expect(wrapper.find("table").classes()).toContain("border");
   });
 });
 
@@ -129,8 +132,9 @@ describe("TableRender fillHeight 显式 prop", () => {
     expect(th).toContain("bg-background");
   });
 
-  it("thead 行级 border-b 让位；table 切分离边框防 collapse 下 sticky 边框丢失", () => {
+  it("thead 行级 border-b 退役；table 切分离边框防 collapse 下 sticky 边框丢失", () => {
     const { wrapper } = makeTableRender({}, { fillHeight: true });
+    expect(wrapper.find("thead").classes().join(" ")).not.toContain("border-b");
     expect(wrapper.find("thead").classes().join(" ")).not.toContain("[&_tr]:border-b");
     expect(wrapper.find("table").classes()).toContain("border-separate");
     expect(wrapper.find("table").classes()).toContain("border-spacing-0");
@@ -144,11 +148,12 @@ describe("TableRender fillHeight 显式 prop", () => {
     expect(tr.find("td").classes()).toContain("border-border");
   });
 
-  it("分页条获得 shrink-0 防压缩", () => {
+  it("分页条获得 shrink-0 防压缩；分隔线由 table 外框承担", () => {
     const { wrapper } = makeTableRender({}, { fillHeight: true });
     const pagination = paginationEl(wrapper);
-    expect(pagination.className).toContain("border-t");
+    expect(pagination.className).not.toContain("border-t");
     expect(pagination.className).toContain("shrink-0");
+    expect(wrapper.find("table").classes()).toContain("border");
   });
 
   it("fill 与 height 同传：以 fill 优先（滚动区无固定 height，交给 flex 分配）", () => {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PropType, VNodeChild } from "vue";
-import { cloneVNode, h, isVNode } from "vue";
+import { cloneVNode, computed, h, isVNode } from "vue";
 import { Checkbox } from "@/components/checkbox";
 import { Tooltip } from "@/components/tooltip";
 import { DRAG_CELL, SELECTION_CELL } from "./constants";
@@ -29,6 +29,12 @@ const props = defineProps({
   dragDisabled: { type: Boolean, default: false },
   /** 本行正在被拖拽（占位态：半透明 + 虚线描边，实时让位预览中即落点提示） */
   dragging: { type: Boolean, default: false },
+  /** 行分割线开关（single-column 关闭）：td 的 border-b（末行由 tbody 选择器置 0） */
+  rowLines: { type: Boolean, default: true },
+  /** 列分割线开关（single-line: false 开启）：非行末 td 的 border-r（选择/把手列恒非行末） */
+  columnLines: { type: Boolean, default: false },
+  /** 斑马纹开关（父层传入；奇偶按行模型索引在内部收敛，供 sticky 单元格换不透明固色） */
+  striped: { type: Boolean, default: false },
 });
 
 const emit = defineEmits<{
@@ -51,6 +57,12 @@ function cellText(line: TableBodyLine, index: number): string {
   const value = line.cells[index];
   return isVNode(value) ? "" : String(value ?? "");
 }
+
+/** stickyClass 行为开关：列线抑制 + 奇数条纹固色（与父层 tr 条纹同一奇偶口径，行模型索引） */
+const stickyOpts = computed(() => ({
+  columnLines: props.columnLines,
+  striped: props.striped && props.line.index % 2 === 1,
+}));
 
 /**
  * ellipsis: "tooltip" 的单元格内容：默认插槽承载截断内容（触发元素本体，不额外包裹），content 显示完整文本。
@@ -81,8 +93,12 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <!-- 选择单元格：阻断冒泡避免触发行 row-click；radio 为原生控件 -->
     <td
       v-if="props.selection"
-      class="w-12 p-2 text-center align-middle border-b border-border"
-      :class="stickyClass(props.sticky, SELECTION_CELL)"
+      class="w-12 p-2 text-center align-middle"
+      :class="[
+        props.rowLines ? 'border-b border-border' : '',
+        props.columnLines ? 'border-r border-border' : '',
+        stickyClass(props.sticky, SELECTION_CELL, stickyOpts),
+      ]"
       :style="stickyStyle(props.sticky, SELECTION_CELL, false)"
       @click.stop
     >
@@ -106,8 +122,12 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <!-- 拖拽把手单元格：仅把手可起拖（draggable 在按钮上，整行不可拖）；阻断冒泡避免触发行 row-click -->
     <td
       v-if="props.dragColumn"
-      class="p-1 text-center align-middle border-b border-border"
-      :class="stickyClass(props.sticky, DRAG_CELL)"
+      class="p-1 text-center align-middle"
+      :class="[
+        props.rowLines ? 'border-b border-border' : '',
+        props.columnLines ? 'border-r border-border' : '',
+        stickyClass(props.sticky, DRAG_CELL, stickyOpts),
+      ]"
       :style="stickyStyle(props.sticky, DRAG_CELL, false)"
       @click.stop
     >
@@ -127,9 +147,11 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <td
       v-for="(value, index) in props.line.cells"
       :key="props.columns[index].key"
-      class="p-2 align-middle border-b border-border"
+      class="p-2 align-middle"
       :class="[
-        stickyClass(props.sticky, props.columns[index].key),
+        props.rowLines ? 'border-b border-border' : '',
+        props.columnLines && index < props.line.cells.length - 1 ? 'border-r border-border' : '',
+        stickyClass(props.sticky, props.columns[index].key, stickyOpts),
         { truncate: props.columns[index].ellipsis === true },
       ]"
       :title="props.columns[index].ellipsis === true ? cellText(props.line, index) : undefined"
