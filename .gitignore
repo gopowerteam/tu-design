@@ -41,3 +41,5 @@ apps/docs/.vitepress/cache
 .playwright-mcp/
 *.tgz
 .learnings/
+
+.codegraph/
