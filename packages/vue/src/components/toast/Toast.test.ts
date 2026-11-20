@@ -1,3 +1,6 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { mount } from "@vue/test-utils";
 import { h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
@@ -188,5 +191,31 @@ describe("ToastProvider store 生命周期", () => {
     w2.unmount();
     expect(__getToastHostCount()).toBe(0);
     warn.mockRestore();
+  });
+});
+
+// 连接样式守卫（issue #7）：jsdom 测不了布局位移，源码级断言是唯一自动化防线。
+// 防两类回归：① 格式化/重构误删 <style> 消费块（多条 toast 重叠遮挡复发）；
+// ② 回潮叠加 tw-animate keyframes（双动画引擎位移冲突）。
+describe("Toast 连接样式（Zag CSS 变量消费）", () => {
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "ToastProvider.vue"),
+    "utf8",
+  );
+
+  it.each([
+    "translate: var(--x) var(--y)",
+    "scale: var(--scale)",
+    "z-index: var(--z-index)",
+    "height: var(--height)",
+    "opacity: var(--opacity)",
+    '[data-state="closed"]',
+  ])("包含消费片段 %s", (fragment) => {
+    expect(src).toContain(fragment);
+  });
+
+  it("rootBase 不残留 tw-animate 入退场类", () => {
+    expect(src).not.toMatch(/animate-(in|out)/);
+    expect(src).not.toMatch(/slide-(in|out)-from|slide-out-to/);
   });
 });

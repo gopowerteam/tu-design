@@ -48,8 +48,10 @@ const typeClass: Record<string, string> = {
   default: "bg-background text-foreground border-border",
 };
 
+// 入退场/堆叠/层级动画全部由下方 <style> 的 Zag 连接样式驱动（translate/scale/opacity
+// transition 消费 machine 注入的 CSS 变量），不再叠加 tw-animate keyframes，避免双引擎位移冲突。
 const rootBase =
-  "flex w-[22rem] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-md border p-4 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0 data-[placement*=top]:data-[state=open]:slide-in-from-top-2 data-[placement*=top]:data-[state=closed]:slide-out-to-top-2 data-[placement*=bottom]:data-[state=open]:slide-in-from-bottom-2 data-[placement*=bottom]:data-[state=closed]:slide-out-to-bottom-2";
+  "flex w-[22rem] max-w-[calc(100vw-2rem)] items-start gap-3 rounded-md border p-4 shadow-lg";
 
 const rootClass = computed(
   () => (type: string) => cn(rootBase, typeClass[type] ?? typeClass.default),
@@ -155,3 +157,34 @@ const rootClass = computed(
     </Toast.Root>
   </Toaster>
 </template>
+
+<!--
+  Zag 1.47 toast 连接样式（官方 Styling guide 要求）：machine 给每条 root 内联注入
+  --x/--y/--z-index/--scale/--height/--opacity 等变量，堆叠位移、层级、退场折叠全靠
+  CSS 消费；不消费则多条 toast 全部重叠在同一位置且新条被旧条盖住（issue #7）。
+  非 scoped + data-scope/data-part 双重限定，只作用于 Toast.Root，无跨组件污染。
+  变量缺省时（单条 / frontmost 态）各属性回退 initial，无副作用。
+-->
+<style>
+[data-scope="toast"][data-part="root"] {
+  translate: var(--x) var(--y);
+  scale: var(--scale);
+  z-index: var(--z-index);
+  height: var(--height);
+  opacity: var(--opacity);
+  will-change: translate, opacity, scale;
+  transition:
+    translate 400ms,
+    scale 400ms,
+    opacity 400ms;
+  transition-timing-function: cubic-bezier(0.21, 1.02, 0.73, 1);
+}
+
+[data-scope="toast"][data-part="root"][data-state="closed"] {
+  transition:
+    translate 400ms,
+    scale 400ms,
+    opacity 200ms;
+  transition-timing-function: cubic-bezier(0.06, 0.71, 0.55, 1);
+}
+</style>
