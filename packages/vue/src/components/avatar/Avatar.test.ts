@@ -73,4 +73,14 @@ describe("Avatar", () => {
     await nextTick();
     expect(w.find("img").attributes("src")).toBe("b.png");
   });
+
+  it("ids 全量覆盖（无冒号）：root/image/fallback 派生自 useId", () => {
+    const w = mount(Avatar, { props: { src: "a.png" } });
+    const ids = w.findComponent(ArkAvatar.Root).props("ids") as Record<string, string>;
+    for (const part of ["root", "image", "fallback"]) {
+      expect(typeof ids[part]).toBe("string");
+      expect(ids[part]).not.toContain(":");
+    }
+    w.unmount();
+  });
 });

@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { ImgHTMLAttributes } from "vue";
-import { computed, inject, ref } from "vue";
+import { computed, inject, ref, useAttrs } from "vue";
 import { Avatar as ArkAvatar, type AvatarStatusChangeDetails } from "@ark-ui/vue/avatar";
 import { cn } from "@/lib/utils";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { avatarGroupKey, avatarVariants, type AvatarVariants } from "./index";
 
 interface Props {
@@ -62,10 +63,20 @@ const variantClass = computed(() =>
     ? avatarVariants({ shape: props.shape })
     : avatarVariants({ size: sizeValue.value, shape: props.shape }),
 );
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。machine 挂载 entry checkImageStatus 查询
+// getImageEl、effect trackImageRemoval 查询 getRootEl（首绘时 id 属性未回灌 → miss
+// 刷警告，wujie 2.1.0 实测复现）；覆盖后 miss 落到合法选择器静默 null，与原生行为一致。
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "root",
+  parts: ["root", "image", "fallback"],
+});
 </script>
 
 <template>
   <ArkAvatar.Root
+    :ids="rootIds"
     :class="cn(variantClass, props.class)"
     :style="sizeStyle"
     @status-change="handleStatusChange"
