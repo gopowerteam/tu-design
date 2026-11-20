@@ -2,6 +2,7 @@ import { mount } from "@vue/test-utils";
 import type { FunctionalComponent } from "vue";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { Menu as ArkMenu } from "@ark-ui/vue/menu";
 import { DropdownMenu } from "./index";
 import type { MenuItemOption } from "./types";
 
@@ -189,6 +190,27 @@ describe("DropdownMenu", () => {
     const w = mountMenu({ items: [{ type: "item", value: "edit", label: "编辑" }] });
     await openMenu(w);
     expect(items()[0]?.textContent?.trim()).toBe("编辑");
+    w.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：content/arrow/positioner + trigger/contextTrigger 函数默认填充", () => {
+    const w = mountMenu();
+    const ids = w.findComponent(ArkMenu.Root)!.props("ids") as Record<string, unknown>;
+    for (const part of ["content", "arrow", "positioner"]) {
+      expect(String(ids[part])).not.toContain(":");
+    }
+    const trigger = ids.trigger as (value?: string) => string;
+    expect(trigger(undefined)).not.toContain(":");
+    expect(trigger("a")).not.toBe(trigger("b"));
+    w.unmount();
+  });
+
+  it("用户显式 ids.trigger 优先，且 ids 不直透为面板垃圾属性", async () => {
+    const w = mountMenu({ menuProps: { ids: { trigger: (v?: string) => `t-${v ?? "root"}` } } });
+    const ids = w.findComponent(ArkMenu.Root)!.props("ids") as Record<string, unknown>;
+    expect((ids.trigger as (v?: string) => string)("x")).toBe("t-x");
+    await openMenu(w);
+    expect(content()!.hasAttribute("ids")).toBe(false);
     w.unmount();
   });
 });

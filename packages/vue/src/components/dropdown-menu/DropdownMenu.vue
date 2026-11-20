@@ -5,6 +5,7 @@ import { Menu as ArkMenu } from "@ark-ui/vue/menu";
 import type { MenuRootProps } from "@ark-ui/vue/menu";
 import { cn } from "@/lib/utils";
 import { useControlledBoolean } from "../overlay-shared/useControlledBoolean";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import { withSandboxStrategy } from "../overlay-shared/useSandboxOverlay";
 import { useTuProvider } from "../overlay-shared/config";
 import MenuItems from "./MenuItems.vue";
@@ -42,6 +43,39 @@ const emit = defineEmits<{
 // attrs 转发到面板元素（Root 不渲染 DOM，避免 fallthrough 警告）
 const attrs = useAttrs();
 
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。menu 无 zag root 口（dom 无 getRootId），
+// primary 取 content（Select 同款）；开合期 dismissable/positioning 查询
+// getContextTriggerEl（DropdownMenu 不渲染 ContextTrigger）与 getTriggerEl
+// （ContextMenu 不渲染 Trigger）缺省冒号 id 必 miss 刷警告（wujie 2.1.0 实测复现）；
+// 覆盖后 miss 落到合法选择器静默 null。trigger/contextTrigger 为 string|function
+// 双模式口：以函数默认填充保 per-value 唯一（多触发器不撞号），user 显式 attrs.ids
+// 优先。group/groupLabel 函数口不进 parts，user 直传保留。边界：getItemId 为
+// `${ctx.id}/${id}` 硬编码无覆盖口，唯一调用点 invokeOnSelect 选中已渲染 item 首查
+// 必命中，实际不可达 miss，无风险留档。
+const { ids, resolveId } = useOverlayIds(attrs, {
+  primary: "content",
+  parts: ["content", "arrow", "positioner"],
+});
+const rootIds = computed(() => {
+  const merged = { ...ids.value };
+  const stem = resolveId("content");
+  if (merged.trigger == null)
+    merged.trigger = (value?: string) =>
+      value == null ? `${stem}-trigger` : `${stem}-trigger-${value}`;
+  if (merged.contextTrigger == null)
+    merged.contextTrigger = (value?: string) =>
+      value == null ? `${stem}-ctx-trigger` : `${stem}-ctx-trigger-${value}`;
+  return merged;
+});
+// Content 转发前剔除 ids：ids 已由 Root :ids 消费，直传会在面板元素上产生
+// `ids="[object Object]"` 垃圾属性。
+const contentAttrs = computed(() => {
+  const rest = { ...attrs };
+  delete rest.ids;
+  return rest;
+});
+
 // 对 Root 恒走受控模式，非受控语义由内部 ref 实现（Dialog/DatePicker 同款）
 const { isOpen, setOpen } = useControlledBoolean({
   controlled: () => props.open,
@@ -69,6 +103,7 @@ const contentCls =
 
 <template>
   <ArkMenu.Root
+    :ids="rootIds"
     :open="isOpen"
     :lazy-mount="props.lazyMount"
     :unmount-on-exit="props.unmountOnExit"
@@ -82,7 +117,7 @@ const contentCls =
     </ArkMenu.Trigger>
 
     <ArkMenu.Positioner class="z-[var(--z-overlay)]">
-      <ArkMenu.Content v-bind="attrs" :class="cn(contentCls, props.contentClass)">
+      <ArkMenu.Content v-bind="contentAttrs" :class="cn(contentCls, props.contentClass)">
         <MenuItems :items="props.items">
           <template v-if="$slots.item" #item="slotProps">
             <slot name="item" v-bind="slotProps" />

@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, h } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { Menu as ArkMenu } from "@ark-ui/vue/menu";
 import { ContextMenu } from "./index";
 // items 类型与 dropdown-menu 同构，直接复用其定义
 import type { MenuItemOption } from "../dropdown-menu/types";
@@ -136,6 +137,22 @@ describe("ContextMenu", () => {
     // a11y：ark menu 的 role=menu 语义保留在面板上
     await openByContextMenu(w);
     expect(content()?.getAttribute("role")).toBe("menu");
+    w.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：content/arrow/positioner + trigger/contextTrigger 函数默认填充", () => {
+    const w = mount(ContextMenu, {
+      props: { items: baseItems },
+      slots: { default: () => h("button", "右键我") },
+      attachTo: document.body,
+    });
+    const ids = w.findComponent(ArkMenu.Root)!.props("ids") as Record<string, unknown>;
+    for (const part of ["content", "arrow", "positioner"]) {
+      expect(String(ids[part])).not.toContain(":");
+    }
+    const ctxTrigger = ids.contextTrigger as (value?: string) => string;
+    expect(ctxTrigger(undefined)).not.toContain(":");
+    expect(ctxTrigger("a")).not.toBe(ctxTrigger("b"));
     w.unmount();
   });
 });
