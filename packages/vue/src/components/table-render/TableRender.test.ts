@@ -2310,3 +2310,245 @@ describe("TableRender 内置搜索区按钮预设适配（D4）", () => {
     wrapper.unmount();
   });
 });
+
+// ---- rowKey 告警与行身份/选择快照重构（A–J 组） --------------------------------
+// 目标：单批查重（跨 reload 不误报）、签名去重、窗口索引 + 仅选中行投影、
+// 事件仅在选中键集变化时发出、严格行对象引用。
+
+/** 每批返回全新对象副本的服务端取数（验证跨批次对象刷新不报警且投影拿到新对象） */
+function freshBatch(page: number, size = 10) {
+  return USERS.slice((page - 1) * size, page * size).map((user) => ({ ...user }));
+}
+
+describe("TableRender rowKey 告警与行身份（rowKey 重构）", () => {
+  let warn: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    warn.mockRestore();
+  });
+
+  it("A：服务端 + 无 rowSelection，同页 reload×2 → 0 告警且选择集为空", async () => {
+    const onLoad = vi.fn(({ update, page }: any) => update(freshBatch(page.pageIndex), 100));
+    const { def } = makeServerRender(onLoad);
+    await flushPromises();
+
+    def().reload();
+    await flushPromises();
+    def().reload();
+    await flushPromises();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(def().selection.value).toHaveLength(0);
+  });
+
+  it("B：服务端 + 无 rowSelection + 同批重复 id → 1 次告警且含「重复」", async () => {
+    const duplicated = [
+      { id: 1, name: "重复A", age: 1 },
+      { id: 1, name: "重复B", age: 2 },
+    ];
+    const onLoad = vi.fn(({ update }: any) => update(duplicated, 2));
+    makeServerRender(onLoad);
+    await flushPromises();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("重复"));
+  });
+
+  it("C：服务端 + rowSelection reload×2 → 0 告警、选中保留、行对象为新引用且非桩", async () => {
+    const onLoad = vi.fn(({ update, page }: any) => update(freshBatch(page.pageIndex), 100));
+    const { def } = makeServerRender(onLoad, { rowSelection: "checkbox" });
+    await flushPromises();
+
+    def().setSelection([1]);
+    await flushPromises();
+    const before = def().selection.value[0]!;
+    expect(before.name).toBe("用户1");
+
+    def().reload();
+    await flushPromises();
+    def().reload();
+    await flushPromises();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    const after = def().selection.value[0]!;
+    expect(after).not.toBe(before);
+    expect(after).toEqual(before);
+    expect(after.name).toBe("用户1");
+
+    // 跨页后 reload：选中行仍在（非桩对象）
+    def().setPageIndex(2);
+    await flushPromises();
+    def().reload();
+    await flushPromises();
+    const cross = def().selection.value[0]!;
+    expect(cross.name).toBe("用户1");
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it("D：签名去重 → 同批重复 reload 不变 1 次，换新重复集 2 次", async () => {
+    let batch = 0;
+    const onLoad = vi.fn(({ update }: any) => {
+      batch += 1;
+      const id = batch <= 2 ? 1 : 2;
+      update(
+        [
+          { id, name: `A${id}`, age: 1 },
+          { id, name: `B${id}`, age: 2 },
+        ],
+        2,
+      );
+    });
+    const { def } = makeServerRender(onLoad);
+    await flushPromises();
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    def().reload();
+    await flushPromises();
+    expect(warn).toHaveBeenCalledTimes(1);
+
+    def().reload();
+    await flushPromises();
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("E：拆分式 + 静态 data 首勾 → selection-change 载荷为原始行对象引用", async () => {
+    const wrapper = mount(TableRender, {
+      props: { rowKey: "id", columns: baseColumns(), data: USERS, rowSelection: "checkbox" },
+      attachTo: document.body,
+    });
+    await wrapper.find("tbody tr [data-part='control']").trigger("click");
+
+    const payload = wrapper.emitted("selection-change")!.at(-1)![0] as User[];
+    expect(payload).toHaveLength(1);
+    expect(payload[0]).toBe(USERS[0]);
+    wrapper.unmount();
+  });
+
+  it("F：选中 1 行后 reload×2 → selection-change / update:selected-keys 各 1 次", async () => {
+    const { wrapper, def } = makeTableRender({ rowSelection: "checkbox" });
+    await flushPromises();
+    def().setSelection([1]);
+    await flushPromises();
+
+    def().reload();
+    await flushPromises();
+    def().reload();
+    await flushPromises();
+
+    const table = wrapper.findComponent(TableRender);
+    expect(table.emitted("selection-change")).toHaveLength(1);
+    expect(table.emitted("update:selected-keys")).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  it("G：服务端第 2 页 setSelection(历史未选中 id) → 桩对象且不被 selectable 拦截", async () => {
+    const pageOne = [{ id: 99, name: "历史行", age: 1 }, ...USERS.slice(0, 9)];
+    const onLoad = vi.fn(({ update, page }: any) =>
+      update(page.pageIndex === 1 ? pageOne : USERS.slice(10, 20), 100),
+    );
+    const { def } = makeServerRender(onLoad, {
+      rowSelection: { type: "checkbox", selectable: (r: User) => r.id !== 99 },
+    });
+    await flushPromises();
+
+    def().setPageIndex(2);
+    await flushPromises();
+    def().setSelection([99]);
+    await flushPromises();
+
+    expect(def().selectedKeys.value).toEqual(new Set(["99"]));
+    expect(def().selection.value).toEqual([{ id: "99" }]);
+  });
+
+  it("H：树形子行重复 id → 告警命中子 id；折叠态 setSelection(子行 id) → 完整对象", async () => {
+    const tree = [
+      {
+        id: 1,
+        name: "总部",
+        age: 40,
+        children: [
+          { id: 9, name: "子A", age: 1 },
+          { id: 9, name: "子B", age: 2 },
+        ],
+      },
+    ];
+    const { def } = makeTableRender({
+      data: tree,
+      pageSize: 100,
+      tree: {},
+      rowSelection: "checkbox",
+    });
+    await flushPromises();
+
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining("重复"));
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('"9"'));
+
+    def().setSelection([9]);
+    await flushPromises();
+    expect(def().selectedKeys.value).toEqual(new Set(["9"]));
+    expect(def().selection.value).toEqual([{ id: 9, name: "子B", age: 2 }]);
+  });
+
+  it("I：聚合式受控 selectedKeys（rowKey 由组件 prop 回填前应用）→ selection.value 为完整对象", async () => {
+    const selectedKeys = ref<Array<string | number>>(["1"]);
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          data: USERS,
+          rowSelection: "checkbox",
+          selectedKeys,
+        });
+        return () => h(TableRender, { rowKey: "id", definition: box.def });
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    expect(box.def!.selectedKeys.value).toEqual(new Set(["1"]));
+    expect(box.def!.selection.value).toEqual([USERS[0]]);
+    wrapper.unmount();
+  });
+
+  it("J：服务端跨页往返（稳定行对象）→ 0 告警且选中保留", async () => {
+    const onLoad = vi.fn(({ update, page }: any) =>
+      update(USERS.slice((page.pageIndex - 1) * 10, page.pageIndex * 10), 100),
+    );
+    const { def } = makeServerRender(onLoad, { rowSelection: "checkbox" });
+    await flushPromises();
+
+    def().setSelection([1]);
+    await flushPromises();
+    def().setPageIndex(2);
+    await flushPromises();
+    def().setPageIndex(1);
+    await flushPromises();
+
+    expect(warn).not.toHaveBeenCalled();
+    expect(def().selectedKeys.value).toEqual(new Set(["1"]));
+    expect(def().selection.value).toEqual([USERS[0]]);
+  });
+
+  it("J2：服务端 reserveOnPageChange:false + update() 同页重载 → 选中集清空", async () => {
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 10), 100));
+    const { def } = makeServerRender(onLoad, {
+      rowSelection: { type: "checkbox", reserveOnPageChange: false },
+    });
+    await flushPromises();
+
+    def().setSelection([1]);
+    await flushPromises();
+    expect(def().selectedKeys.value.size).toBe(1);
+
+    def().reload();
+    await flushPromises();
+    expect(def().selectedKeys.value.size).toBe(0);
+  });
+});

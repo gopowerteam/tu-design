@@ -369,7 +369,7 @@ onMounted(() => {
 行为细则：
 
 - **静态模式**：`data` 在 setup 阶段已就绪，`onMounted` 里 `setSelection` 即可生效，表头三态与 `selection-change` 都会正确联动
-- **服务端模式**：首屏数据由 `onLoad` 异步回写，预置须等数据到达后执行——在 `onLoad` 的 `update` 回调里判断“仅首次”后调用 `setSelection`（此时快照已含该页行对象，`selection.value` 拿到完整行）
+- **服务端模式**：首屏数据由 `onLoad` 异步回写，预置须等数据到达后执行——在 `onLoad` 的 `update` 回调里判断“仅首次”后调用 `setSelection`（键先落选中集，窗口索引刷新后 `selection.value` 解析为完整行）
 
 ```ts
 let primed = false;
@@ -387,17 +387,27 @@ const table = defineTable<User>({
 });
 ```
 
-- `setSelection` 允许传入当前数据中不存在的 key（进入待定集，数据出现后自动关联行对象）；`selectable` 过滤范围内的不可选行会被直接忽略
+- `setSelection` 允许传入当前数据中不存在的 key：既不在当前窗口也未驻留的 key 收窄为桩对象（`{ [rowKey]: key }`），**不参与 `selectable` 过滤**；`selectable` 只过滤能解析到行对象的 key
 - radio 型预置多个 key 时只有最后一个生效（单选互斥）
 
 行为细则（S 系列，编号对应设计文档 `docs/plans/table-selection-plan.md`）：
 
 - **rowKey 是硬依赖**：rowSelection 启用但 rowKey 无效时 DEV 警告并禁用选择——组件内部以 `String(row[rowKey])` 作为行 id，缺失会跨页串选，不做索引兜底
 - **全选是本页语义**：表头 checkbox 三态（全选/半选/未选）只作用于当前页的可选行，不选中未加载的行
-- **跨页保留**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 从内置快照返回完整行对象——**跨页行可能是过期数据**（数据源已更新时），行对象再次出现会以新数据覆盖快照
+- **跨页保留**：`reserveOnPageChange: true`（默认）时翻页/`update()` 重载不清空选中；`selection.value` 的行对象按 **当前数据窗口 → 已驻留的选中行 → 桩对象** 三级解析——窗口内的行取最新数据，跨页行沿用驻留对象（**可能是过期数据**），既不在窗口也未驻留的 key 返回仅含 rowKey 的桩对象（`{ [rowKey]: key }`）
 - **radio 默认可取消**：再点已选行取消选中；`cancelable: false` 时该交互为空操作（程序化 `clearSelection` 不受限）
-- **选择不冒泡**：点击选择控件不会触发行 `row-click`；`selection-change` 只在选中集变化时发一次，排序/翻页不触发
-- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key、并过滤不可选行
+- **选择不冒泡**：点击选择控件不会触发行 `row-click`；`selection-change` / `update:selected-keys` 仅在选中键集变化时发出，排序/翻页/同页重载（键集不变）不触发，`selection.value` 仍随数据刷新
+- **受控**：`update:selected-keys` 事件支持外部回写选中集；程序化出口 `setSelection(keys)` 允许暂不存在的 key（桩对象语义）、并过滤不可选行
+
+### rowKey 重复告警
+
+行标识与行选择以 `rowKey` 为准，重复值会让两行争用同一身份。DEV 下按**单批（单次数据窗口）**查重：
+
+- 只在同一批数据内比对重复（覆盖树形子行，递归 `childrenKey`），**不做跨批次/跨页比对**——服务端分页视野独立，跨加载比对必然误报
+- 同一重复集只上报一次（按重复集签名去重）：reload/翻页返回相同重复值时不刷屏，重复集变化才再次提示
+- 告警文案：`[tu-design] <TableRender> rowKey "id" 存在重复值（2 条，例如 "1"、"2"），行标识与行选择以后出现的记录为准。`（最多列举前 3 个）
+- 生产构建静默；未启用 `rowSelection` 时仍做批内查重（数据身份问题与选择无关）
+- 缺 `rowKey` 字段的记录不参与查重，也不进入窗口索引（行选择场景下退化为桩对象）
 
 ## 固定列
 
@@ -1250,24 +1260,24 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 
 返回 `TableRenderDefinition<T>`：
 
-| 字段                                      | 说明                                                                              |
-| ----------------------------------------- | --------------------------------------------------------------------------------- |
-| `columns`                                 | 扁平叶子列配置（下游消费口径）                                                    |
-| `columnTree`                              | 原始列节点树（表头矩阵与面板树形结构来源；手工构造定义为可选）                    |
-| `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                            |
-| `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`                  |
-| `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                        |
-| `loading`                                 | 只读布尔（内部取数中）                                                            |
-| `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                            |
-| `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                              |
-| `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                           |
-| `selection`                               | 只读选中行快照 `{ value: T[], enabled, type, width }`；含跨页保留行               |
-| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`                                               |
-| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集                                                             |
-| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束                                            |
-| `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区          |
-| `draggable`                               | 解析后的行拖拽配置（冲突被忽略时为 `undefined`）                                  |
-| `reorderRows(from, to)`                   | 页内重排动作（0-based 页内索引）；返回 `drag-sort` 载荷，守卫不通过时 `undefined` |
+| 字段                                      | 说明                                                                                                                    |
+| ----------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `columns`                                 | 扁平叶子列配置（下游消费口径）                                                                                          |
+| `columnTree`                              | 原始列节点树（表头矩阵与面板树形结构来源；手工构造定义为可选）                                                          |
+| `table`                                   | TanStack 表格实例（逃逸舱口：列聚合、rowSelection 等）                                                                  |
+| `page`                                    | 只读投影 `{ pageIndex(1-based), pageSize, total, pageSizeOpts }`                                                        |
+| `sort`                                    | 只读投影 `{ key, direction } \| undefined`                                                                              |
+| `loading`                                 | 只读布尔（内部取数中）                                                                                                  |
+| `reload(resetPage?)`                      | 重新取数/重同步数据源；`resetPage` 为真时先回到第 1 页                                                                  |
+| `toggleSort(key)`                         | 排序三态切换：无 → asc → desc → 取消                                                                                    |
+| `setPageIndex(n)` / `setPageSize(n)`      | 1-based 页码；改每页条数会归位到第 1 页                                                                                 |
+| `selection`                               | 只读选中行投影 `{ value: T[], enabled, type, width }`；行对象按「当前窗口 → 已驻留选中行 → 桩对象」解析（含跨页保留行） |
+| `selectedKeys`                            | 只读选中主键集合 `Ref<Set<string>>`                                                                                     |
+| `setSelection(keys)` / `clearSelection()` | 程序化设置/清空选中集                                                                                                   |
+| `toggleRowSelected(key, checked)`         | 行控件切换；radio 受 `cancelable` 约束                                                                                  |
+| `search`                                  | 校验后的搜索表单定义（未配置或被忽略时为 `undefined`），供组件渲染搜索区                                                |
+| `draggable`                               | 解析后的行拖拽配置（冲突被忽略时为 `undefined`）                                                                        |
+| `reorderRows(from, to)`                   | 页内重排动作（0-based 页内索引）；返回 `drag-sort` 载荷，守卫不通过时 `undefined`                                       |
 
 辅助函数 `defineColumns<T>(columns)`：可选的类型辅助（便于把列配置抽到独立文件），入参为列节点树（叶子或分组），纯类型推导、原样返回——裸数组同样可直接传给 `defineTable`。
 

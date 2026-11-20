@@ -15,6 +15,7 @@ import type {
   UseTableRenderOptions,
 } from "./types";
 import type { FormRenderDefinition } from "../form-render";
+import { scanRows, toRowId, type ScanResult } from "./row-index";
 
 const DEFAULT_PAGE_SIZE_OPTS = [10, 20, 50, 100];
 
@@ -181,22 +182,46 @@ export function useTableRender<T extends DataRecord>(
   const selectionEnabled = computed(() => selectionConfig !== undefined && !!rowKey.value);
   const selectedKeys = ref(new Set<string | number>()) as Ref<Set<string | number>>;
   const selectionRows = shallowRef<T[]>([]);
-  /** key → 最近一次出现的行对象；跨页选中行由此返回快照 */
-  const selectionSnapshot = new Map<string, T>();
-  /** 选中但当前数据中不存在的 key（reserveOnPageChange 语义） */
-  const dirtyKeys = new Set<string>();
+  /** 当前数据窗口：行 id → 行对象（仅启用行选择时维护，缺 rowKey 记录不入索引） */
+  let windowIndex = new Map<string, T>();
+  /** 仅选中行：行 id → 行对象（投影重建时剪枝，跨页选中行由此驻留） */
+  let selectedRows = new Map<string, T>();
+  /** 已上报的重复集签名：同批重复 reload 不变则不刷屏 */
+  let reportedDuplicateSignature: string | undefined;
+  /** 缺 rowKey 字段的 DEV 告警只发一次 */
+  let missingRowKeyWarned = false;
   /** 受控选择状态：单一真相源，onRowSelectionChange 只通知不落盘（避免 setRowSelection 回环） */
   const rowSelectionState = ref<RowSelectionState>({});
 
-  function selectionEmitSafe() {
-    // 选择集变化 → 替换新 Set 触发依赖；rows 从快照解析（含跨页）
-    const keys = new Set<string | number>();
-    for (const key of Object.keys(rowSelectionState.value))
-      if (rowSelectionState.value[key]) keys.add(key);
-    selectedKeys.value = keys;
-    selectionRows.value = [...keys].map(
-      (key) => selectionSnapshot.get(String(key)) ?? ({ [rowKey.value!]: key } as T),
-    );
+  /**
+   * 桩对象：行对象既不在当前窗口也未驻留时，仅携带 rowKey 字段的占位
+   * @param key - 行 id
+   * @returns 携带 rowKey 字段（无 rowKey 时为空对象）的占位行
+   */
+  function stubRow(key: string): T {
+    const field = rowKey.value;
+    return (field ? { [field]: key } : {}) as T;
+  }
+
+  /**
+   * 重建对外选择投影：键集 = 受控 rowSelectionState 的 truthy 键
+   *
+   * 行解析优先级：当前窗口 → 已驻留选中行 → 桩对象。先解析写入新 Map 再整体替换
+   * （禁止先清后读，否则跨页行退化为桩）；键集内容与现 selectedKeys 等值时复用旧 Set
+   * 引用，仅刷新行投影——事件因此只在选中键集变化时发出。
+   */
+  function rebuildSelectionProjection() {
+    const keys = Object.keys(rowSelectionState.value).filter((key) => rowSelectionState.value[key]);
+    const nextRows = new Map<string, T>();
+    for (const key of keys) {
+      nextRows.set(key, windowIndex.get(key) ?? selectedRows.get(key) ?? stubRow(key));
+    }
+    selectedRows = nextRows;
+    const current = selectedKeys.value;
+    const sameKeys = nextRows.size === current.size && keys.every((key) => current.has(key));
+    // 行投影始终刷新（数据窗口刷新后选中行对象随之更新）
+    selectionRows.value = [...nextRows.values()];
+    if (!sameKeys) selectedKeys.value = new Set(keys);
   }
 
   /**
@@ -205,42 +230,63 @@ export function useTableRender<T extends DataRecord>(
    */
   function applyRowSelection(next: RowSelectionState) {
     rowSelectionState.value = next;
-    selectionEmitSafe();
+    rebuildSelectionProjection();
   }
 
   /**
-   * 行主键 → TanStack row id；rowKey 缺失时退化为索引（仅非选择场景可达）
+   * 重复 id 上报（DEV 门控 + 重复集签名去重）
+   * @param duplicates - 当前数据窗口内的重复 id（批内去重、首次发现序）
+   */
+  function reportDuplicates(duplicates: string[]) {
+    if (!import.meta.env.DEV || duplicates.length === 0) return;
+    const signature = JSON.stringify(duplicates);
+    if (signature === reportedDuplicateSignature) return;
+    reportedDuplicateSignature = signature;
+    const sample = duplicates
+      .slice(0, 3)
+      .map((id) => `"${id}"`)
+      .join("、");
+    warn(
+      `rowKey "${rowKey.value}" 存在重复值（${duplicates.length} 条，例如 ${sample}），行标识与行选择以后出现的记录为准。`,
+    );
+  }
+
+  /**
+   * 数据窗口扫描：一次 DFS 双消费（窗口索引 + 批内查重）
+   *
+   * 索引仅在启用行选择且 rowKey 就绪时维护（未启用选择零开销）；查重只在 DEV 生效。
+   */
+  function syncRowsState() {
+    const withIndex = !!(selectionConfig && rowKey.value);
+    const { index, duplicates }: ScanResult<T> = scanRows(rows.value, rowKey.value, childrenKey, {
+      withIndex,
+      withDuplicates: import.meta.env.DEV,
+    });
+    if (withIndex) {
+      windowIndex = index;
+      if (selectedKeys.value.size > 0) rebuildSelectionProjection();
+    }
+    reportDuplicates(duplicates);
+  }
+
+  /**
+   * 行主键 → TanStack row id；rowKey 缺失时退化为索引（DEV 告警一次）
    * @param record - 行记录
    * @param index - 行索引（rowKey 缺失时的退化 id 来源）
    * @returns 稳定的行标识字符串
    */
   function rowIdOf(record: T, index: number): string {
     const key = rowKey.value;
-    const value = key ? record[key] : undefined;
-    return value === undefined || value === null ? `index-${index}` : String(value);
-  }
-
-  /** 数据窗口变化时刷新快照中已存在 key 的行对象（后写覆盖） */
-  function refreshSnapshot() {
-    const key = rowKey.value;
-    if (!key) return;
-    let collisionWarned = false;
-    for (const record of rows.value) {
-      const value = record[key];
-      if (value === undefined || value === null) continue;
-      const id = String(value);
-      if (selectionSnapshot.has(id) && !collisionWarned && import.meta.env.DEV) {
-        // 撞 key 属数据问题，只提示一次
-        if (selectionSnapshot.get(id) !== record) {
-          collisionWarned = true;
-          warn(`rowKey "${key}" 存在重复值，行选择快照以后出现的记录为准。`);
-        }
+    if (!key) return `index-${index}`;
+    const value = record[key];
+    if (value === undefined || value === null) {
+      if (!missingRowKeyWarned && import.meta.env.DEV) {
+        missingRowKeyWarned = true;
+        warn(`部分记录缺少 rowKey 字段 "${key}"，已退化为按行索引标识。`);
       }
-      selectionSnapshot.set(id, record);
-      dirtyKeys.delete(id);
+      return `index-${index}`;
     }
-    // 选中行对象可能刚被刷新：重建投影
-    if (selectedKeys.value.size > 0) selectionEmitSafe();
+    return toRowId(record, key, index);
   }
 
   // ---- 引擎组装 -------------------------------------------------------------
@@ -300,6 +346,10 @@ export function useTableRender<T extends DataRecord>(
       applyRowSelection(next);
     },
   });
+
+  // 构造期数据窗口扫描：受控 selectedKeys 的 immediate watch 在此之后注册，
+  // 需先备好窗口索引，setSelection 才能解析到完整行对象
+  syncRowsState();
 
   watch(
     () => table.atoms.pagination.get(),
@@ -575,17 +625,18 @@ export function useTableRender<T extends DataRecord>(
   // ---- 行选择动作与联动（S 系列） -------------------------------------------
 
   /**
-   * 程序化设置选中集；不存在的 key 保留进入 dirtyKeys；不可选行被过滤
+   * 程序化设置选中集；既不在当前窗口也未驻留的 key 收窄为桩对象（不参与 selectable 过滤），
+   * 当前窗口/已驻留行按 selectable 谓词过滤
    * @param keys - 目标选中行的 key 列表（整体替换现有选中集）
    */
   function setSelection(keys: Array<string | number>) {
     const next: RowSelectionState = {};
     for (const key of keys) {
-      const row = selectionSnapshot.get(String(key));
-      // 快照中存在的行按 selectable 谓词过滤；待定 key（尚无行对象）无法判定的不拦
+      const id = String(key);
+      const row = windowIndex.get(id) ?? selectedRows.get(id);
+      // 已知行按 selectable 谓词过滤；待定 key（无行对象）无法判定的不拦
       if (row && selectionConfig?.selectable && !selectionConfig.selectable(row)) continue;
-      next[String(key)] = true;
-      if (!row) dirtyKeys.add(String(key));
+      next[id] = true;
     }
     applyRowSelection(next);
   }
@@ -619,15 +670,25 @@ export function useTableRender<T extends DataRecord>(
   function setRowKey(key: string | undefined) {
     if (rowKey.value === key) return;
     rowKey.value = key;
-    // 聚合式下数据窗口早于 rowKey 就绪（pre-flush 先于子组件 setup），补建快照
-    refreshSnapshot();
+    // 幂等重置：重复告警按新 rowKey 重新计签，两个行 Map 作废后按新口径重建
+    reportedDuplicateSignature = undefined;
+    windowIndex = new Map();
+    selectedRows = new Map();
+    syncRowsState();
   }
 
-  // 数据窗口变化（翻页或数据替换）：刷新快照；reserveOnPageChange: false 时清空选中
-  watch([rows, () => page.pageIndex], () => {
-    refreshSnapshot();
+  /** 数据窗口变化且配置 reserveOnPageChange: false 时清空选中（双清空幂等） */
+  function maybeClearSelection() {
     if (selectionConfig && selectionConfig.reserveOnPageChange === false) clearSelection();
+  }
+
+  // 数据窗口变化（翻页或数据替换）：先重扫窗口/查重，再按配置清空选中
+  watch(rows, () => {
+    syncRowsState();
+    maybeClearSelection();
   });
+  // 服务端翻页：新数据到达前先按页码清空（与上方 rows 清空幂等）
+  watch(() => page.pageIndex, maybeClearSelection);
 
   return {
     columns,

@@ -732,7 +732,7 @@ function headerCellAlign(cell: HeaderCell) {
 
 /** 表头全选三态：本页可选行与选中集求交派生（TanStack getter 追踪不稳，自算） */
 const selectableKeys = computed(() =>
-  rows.value.filter((row) => row.getCanSelect()).map((row) => rowKeyOf(row.original, row.index)),
+  rows.value.filter((row) => row.getCanSelect()).map((row) => row.id),
 );
 const headerChecked = computed(
   () =>
@@ -776,7 +776,7 @@ const body = computed<TableBodyLine[]>(() => {
   return rows.value.map((row) => ({
     /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded */
     row,
-    key: rowKeyOf(row.original, row.index),
+    key: row.id,
     index: row.index,
     record: row.original,
     /** 行级可选过滤：selectable 谓词交由引擎 enableRowSelection 判定 */
@@ -795,28 +795,6 @@ const body = computed<TableBodyLine[]>(() => {
 // 引擎是唯一解析点（无效配置已 warn 并忽略，回传 undefined）；tree 为 undefined 时不渲染缩进与 caret
 const tree = instance.tree;
 const treeIndent = tree?.indentSize ?? 16;
-
-let missingRowKeyWarned = false;
-
-/**
- * 行主键：rowKey 字段缺失时以行索引兜底
- * @param record - 行记录
- * @param index - 行索引（兜底来源）
- * @returns 稳定的行主键字符串
- */
-function rowKeyOf(record: DataRecord, index: number): string {
-  const value = record[props.rowKey];
-  if (value === undefined || value === null) {
-    if (!missingRowKeyWarned && import.meta.env.DEV) {
-      missingRowKeyWarned = true;
-      console.warn(
-        `[tu-design] <TableRender> 部分记录缺少 rowKey 字段 "${props.rowKey}"，已退化为按行索引标识。`,
-      );
-    }
-    return `index-${index}`;
-  }
-  return String(value);
-}
 
 // ---- 虚拟滚动 / 填充模式 ------------------------------------------------------
 // definition 优先于 prop（配置定版，不支持运行时切换）
@@ -1037,7 +1015,7 @@ const virtualizerRef = virtualEnabled
         getScrollElement: () => scrollEl.value,
         estimateSize: () => 40,
         overscan: 8,
-        getItemKey: (index: number) => rowKeyOf(rows.value[index]!, index), // rowKey 作为虚拟行 key
+        getItemKey: (index: number) => rows.value[index]!.id, // 行 id 作为虚拟行 key
         scrollMargin: theadOffset.value, // thead 在滚动容器内的 offset 前缀
       })),
     )
