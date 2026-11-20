@@ -75,9 +75,10 @@ const { loading, handleConfirm, handleCancel } = useConfirmPending({
 });
 
 // 面板样式：复用 Dialog 的内容面板类（含 --dialog 模态表面位，issue #2），宽度收窄为 sm:max-w-md 的确认弹窗尺度
+// 进出场动画与 Dialog.vue 保持同款（fade + zoom-95 + 上方 8px 落位，200ms，进 ease-out 出 ease-in）
 const contentClass = computed(() =>
   cn(
-    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-md",
+    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 data-[state=closed]:ease-in data-[state=open]:ease-out sm:max-w-md",
   ),
 );
 
@@ -95,7 +96,7 @@ const preventScroll = overlayPreventScroll();
     @update:open="handleUpdate"
   >
     <ArkDialog.Backdrop
-      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:ease-in data-[state=open]:ease-out"
     />
     <ArkDialog.Positioner
       class="fixed inset-0 z-[var(--z-modal,60)] flex items-center justify-center p-4"

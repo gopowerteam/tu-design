@@ -5,7 +5,7 @@ description: 模态确认弹窗一体式单组件，确认/取消双按钮，支
 
 # AlertDialog
 
-确认弹窗：基于 Ark UI Dialog 原语的**单组件**——内置标题、描述与「取消 / 确认」双按钮，`v-model:open` 控制显隐，`@confirm` / `@cancel` 处理确认与取消。焦点圈定、进出场动画与遮罩样式均与 Dialog 一致，内容节点为 `role="alertdialog"` 语义。
+确认弹窗：基于 Ark UI Dialog 原语的**单组件**——内置标题、描述与「取消 / 确认」双按钮，`v-model:open` 控制显隐，`@confirm` / `@cancel` 处理确认与取消。焦点圈定、进出场动画与遮罩样式均与 Dialog 一致（淡入淡出 + 95% 缩放 + 自上方 8px 落位，200ms），内容节点为 `role="alertdialog"` 语义。
 
 ::: tip 与 Dialog 的关系
 AlertDialog 是 Dialog 的确认场景薄壳变体：收起触发器插槽与右上角关闭按钮，内置操作按钮与确认流程语义。需要自定义表单、复杂内容时请使用 `TDialog` + `#footer` 插槽。

@@ -5,7 +5,7 @@ description: 模态对话框单组件，内置焦点圈定、Escape / 遮罩点�
 
 # Dialog
 
-模态对话框：基于 Ark UI Dialog 原语的**单组件**——`#trigger` 插槽放触发元素（asChild 语义，不额外包裹元素），`title` / `description` props 或 `#title` / `#description` 插槽提供标题与描述文案，默认插槽是弹层内容区，`#footer="{ close }"` 放底部操作。焦点圈定与还原、Escape / 遮罩点击关闭、滚动锁定与 `tw-animate-css` 进出场动画均已内建。
+模态对话框：基于 Ark UI Dialog 原语的**单组件**——`#trigger` 插槽放触发元素（asChild 语义，不额外包裹元素），`title` / `description` props 或 `#title` / `#description` 插槽提供标题与描述文案，默认插槽是弹层内容区，`#footer="{ close }"` 放底部操作。焦点圈定与还原、Escape / 遮罩点击关闭、滚动锁定与 `tw-animate-css` 进出场动画均已内建。进出场效果：淡入淡出 + 95% 缩放 + 自上方 8px 落位（退场对称回退），时长 200ms，进场 `ease-out`、退场 `ease-in`，遮罩与面板节奏一致。
 
 ::: tip 单组件改造说明
 原 `TDialogTrigger` / `TDialogContent` / `TDialogHeader` / `TDialogTitle` / `TDialogDescription` / `TDialogFooter` 子组件已全部收编进 `TDialog`；原 `TDialogClose` 由 `#footer` 作用域插槽注入的 `close` 函数替代——按钮的 `@click="close"` 即关闭，等价旧的关闭触发器语义。

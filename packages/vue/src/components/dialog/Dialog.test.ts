@@ -236,3 +236,46 @@ describe("Dialog 面板底色 token --dialog", () => {
     w.unmount();
   });
 });
+
+// —— 进出场动画：fade + zoom + 8px 落位 + 统一 200ms（防类名回退删除） ——
+describe("Dialog 进出场动画类", () => {
+  it("Content 含 fade/zoom/slide/ease 全量进出场类", async () => {
+    const w = mountDialog({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    const cls = content()!.className;
+    for (const c of [
+      "data-[state=open]:animate-in",
+      "data-[state=closed]:animate-out",
+      "data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0",
+      "data-[state=open]:zoom-in-95",
+      "data-[state=closed]:zoom-out-95",
+      "data-[state=open]:slide-in-from-top-2",
+      "data-[state=closed]:slide-out-to-top-2",
+      "data-[state=open]:ease-out",
+      "data-[state=closed]:ease-in",
+      "duration-200",
+    ]) {
+      expect(cls).toContain(c);
+    }
+    w.unmount();
+  });
+
+  it("Backdrop 含 fade + duration-200 + ease（与面板节奏统一）", async () => {
+    const w = mountDialog({ defaultOpen: true });
+    await vi.waitFor(() => expect(content()?.dataset.state).toBe("open"));
+    const cls = backdrop()!.className;
+    for (const c of [
+      "data-[state=open]:animate-in",
+      "data-[state=closed]:animate-out",
+      "data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0",
+      "data-[state=open]:ease-out",
+      "data-[state=closed]:ease-in",
+      "duration-200",
+    ]) {
+      expect(cls).toContain(c);
+    }
+    w.unmount();
+  });
+});

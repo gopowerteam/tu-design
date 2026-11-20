@@ -68,9 +68,11 @@ const preventScroll = overlayPreventScroll();
 
 // 面板样式：内置类 + contentClass 合并（twMerge 自动去冲突，后者优先）。
 // 面板底色走 --dialog 模态表面位（issue #2）：--background 是页面画布语义，画布带色的主题下面板不被染色。
+// 进出场：fade + zoom-95 + 自上方 8px 落位（退场对称回退），200ms 进 ease-out 出 ease-in；
+// slide 走 transform 通道，与 -translate-x/y-1/2 居中的 translate 属性通道互不覆盖。
 const contentClass = computed(() =>
   cn(
-    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-lg",
+    "bg-dialog text-dialog-foreground data-[state=open]:animate-in data-[state=closed]:animate-out fixed left-1/2 top-1/2 z-[var(--z-modal,60)] grid w-full max-w-[calc(100%-2rem)] -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border p-6 shadow-lg duration-200 data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 data-[state=closed]:ease-in data-[state=open]:ease-out sm:max-w-lg",
     props.contentClass,
   ),
 );
@@ -91,7 +93,7 @@ const contentClass = computed(() =>
     </ArkDialog.Trigger>
 
     <ArkDialog.Backdrop
-      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      class="fixed inset-0 z-[var(--z-modal,60)] bg-black/50 duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:ease-in data-[state=open]:ease-out"
     />
     <ArkDialog.Positioner
       class="fixed inset-0 z-[var(--z-modal,60)] flex items-center justify-center p-4"

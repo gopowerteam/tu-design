@@ -253,3 +253,49 @@ describe("AlertDialog 面板底色 token --dialog", () => {
     r.w.unmount();
   });
 });
+
+// —— 进出场动画：与 Dialog 同款（fade + zoom + 8px 落位 + 统一 200ms，防类名回退删除） ——
+describe("AlertDialog 进出场动画类", () => {
+  it("Content 含 fade/zoom/slide/ease 全量进出场类", async () => {
+    const r = mountOpen({});
+    await waitOpen();
+    const cls = content()!.className;
+    for (const c of [
+      "data-[state=open]:animate-in",
+      "data-[state=closed]:animate-out",
+      "data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0",
+      "data-[state=open]:zoom-in-95",
+      "data-[state=closed]:zoom-out-95",
+      "data-[state=open]:slide-in-from-top-2",
+      "data-[state=closed]:slide-out-to-top-2",
+      "data-[state=open]:ease-out",
+      "data-[state=closed]:ease-in",
+      "duration-200",
+    ]) {
+      expect(cls).toContain(c);
+    }
+    r.w.unmount();
+  });
+
+  it("Backdrop 含 fade + duration-200 + ease（与面板节奏统一）", async () => {
+    const r = mountOpen({});
+    await waitOpen();
+    const backdrop = document.querySelector<HTMLElement>(
+      '[data-scope="dialog"][data-part="backdrop"]',
+    );
+    const cls = backdrop!.className;
+    for (const c of [
+      "data-[state=open]:animate-in",
+      "data-[state=closed]:animate-out",
+      "data-[state=open]:fade-in-0",
+      "data-[state=closed]:fade-out-0",
+      "data-[state=open]:ease-out",
+      "data-[state=closed]:ease-in",
+      "duration-200",
+    ]) {
+      expect(cls).toContain(c);
+    }
+    r.w.unmount();
+  });
+});
