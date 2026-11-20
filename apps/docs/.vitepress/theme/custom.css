@@ -96,3 +96,20 @@ html.dark .shiki span {
   font-size: 0.9em;
   color: var(--vp-c-text-3) !important;
 }
+
+/*
+ * 模态滚动锁防抖（Dialog/Drawer 开合时侧边栏/顶栏抖动、滚动条消失又出现）：
+ * Zag 锁滚动 = 给 body 写 overflow:hidden → 经典滚动条消失 → 视口变宽 →
+ * fixed 元素（.VPSidebar 宽屏下按视口百分比居中）位移，padding 补偿救不了 fixed 元素。
+ * 常占滚动条槽位后布局宽度恒定不跳；Zag 的 hasStableScrollbarGutter() 检测到
+ * stable 会自动跳过 padding-right 补偿，不会双重补偿。
+ * ⚠️ 必须设在 html：body 的 scrollbar-gutter 不传播到视口，设在 body 无效；
+ * 勿改 both-edges：会再吃掉一个 gutter 宽度且改变 fixed 定位基准。
+ * 已知权衡（非 bug）：模态打开时右侧 ~15px 槽位遮罩盖不住（fixed inset:0 不含
+ * gutter），呈页面底色条带，与原生 <dialog> 行为一致。
+ * 兼容：Chromium 94+/Firefox 97+/Safari 18.2+；overlay 滚动条环境（macOS 默认/
+ * 触屏）本就无此问题，属性零效果零副作用；老 Safari 忽略属性、维持现状。
+ */
+html {
+  scrollbar-gutter: stable;
+}
