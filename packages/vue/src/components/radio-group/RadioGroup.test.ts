@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { RadioGroup as ArkRadioGroup } from "@ark-ui/vue/radio-group";
 import { RadioGroup } from "./index";
 
 const items = () => [
@@ -204,6 +205,29 @@ describe("RadioGroup", () => {
     const w2 = mount(RadioGroup, { props: { items: baseItems }, attachTo: document.body });
     const root2 = rootEl()!;
     expect(root2.className).not.toContain("grid-flow-col");
+    w2.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：root/label/indicator 派生自 useId", () => {
+    const w = mountGroup();
+    const ids = w.findComponent(ArkRadioGroup.Root)!.props("ids") as Record<string, string>;
+    for (const part of ["root", "label", "indicator"]) {
+      expect(typeof ids[part]).toBe("string");
+      expect(ids[part]).not.toContain(":");
+    }
+    expect(rootEl()!.id).toBe(ids.root);
+    w.unmount();
+  });
+
+  it("attrs.id 同步为 ids.root 缺省覆盖，用户显式 ids.root 优先", () => {
+    const w1 = mountGroup({ id: "rg-root" });
+    const ids1 = w1.findComponent(ArkRadioGroup.Root)!.props("ids") as Record<string, string>;
+    expect(ids1.root).toBe("rg-root");
+    w1.unmount();
+
+    const w2 = mountGroup({ id: "rg-root-2", ids: { root: "explicit-root" } });
+    const ids2 = w2.findComponent(ArkRadioGroup.Root)!.props("ids") as Record<string, string>;
+    expect(ids2.root).toBe("explicit-root");
     w2.unmount();
   });
 });

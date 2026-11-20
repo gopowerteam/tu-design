@@ -1,6 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { Tabs as ArkTabs } from "@ark-ui/vue/tabs";
 import { Tabs } from "./index";
 
 const triggers = () => [
@@ -556,5 +557,22 @@ describe("Tabs", () => {
     const w2 = mountTabs({ props: { defaultValue: "account" } });
     expect(contentBy("账户内容")!.className).not.toContain("tu-tabs-fade-in");
     w2.unmount();
+  });
+
+  it("ids 全量覆盖（无冒号）：root/list/indicator 派生自 useId", () => {
+    const w = mountTabs();
+    const ids = w.findComponent(ArkTabs.Root)!.props("ids") as Record<string, string>;
+    for (const part of ["root", "list", "indicator"]) {
+      expect(typeof ids[part]).toBe("string");
+      expect(ids[part]).not.toContain(":");
+    }
+    w.unmount();
+  });
+
+  it("用户显式 ids.list 覆盖优先", () => {
+    const w = mountTabs({ props: { ids: { list: "my-list" } } });
+    const ids = w.findComponent(ArkTabs.Root)!.props("ids") as Record<string, string>;
+    expect(ids.list).toBe("my-list");
+    w.unmount();
   });
 });

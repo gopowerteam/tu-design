@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, useAttrs } from "vue";
 import { RadioGroup as ArkRadioGroup } from "@ark-ui/vue/radio-group";
 import { cn } from "@/lib/utils";
+import { useOverlayIds, type OverlayIds } from "../overlay-shared/useOverlayIds";
 
 /** 单个选项配置项 */
 interface RadioGroupOption {
@@ -48,10 +49,32 @@ function handleUpdate(value: string | null) {
   internalValue.value = value;
   emit("update:value", value);
 }
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。本库不渲染 Indicator，而 machine 挂载
+// entry syncIndicatorRect 查询 getIndicatorEl → 缺省冒号 id 必 miss 刷警告（wujie
+// 2.1.0 实测复现）；覆盖后 miss 落到合法选择器静默 null，guard 短路后 getRadioEl
+// 不可达（全 machine 仅此一处调用，已核源码）。item/itemHiddenInput/itemControl/
+// itemText 为函数型覆盖口，不进 parts，user 经 attrs.ids 直传保留。
+const attrs = useAttrs();
+const { ids: baseIds } = useOverlayIds(attrs, {
+  primary: "root",
+  parts: ["root", "label", "indicator"],
+});
+// attrs.id 经默认 fallthrough 落在 Root DOM（ark 部件用户 attr 优先，#10 同型）：
+// 同步为 ids.root 缺省覆盖，保证 trackFormControl(getRootEl) 命中真实元素；
+// 用户显式 attrs.ids.root 优先。computed 合并保持响应式（勿用 setup 期快照展开）。
+const rootIds = computed(() => {
+  const id = attrs.id;
+  const explicit = (attrs.ids as OverlayIds | undefined)?.root;
+  if (typeof id !== "string" || explicit != null) return baseIds.value;
+  return { ...baseIds.value, root: id };
+});
 </script>
 
 <template>
   <ArkRadioGroup.Root
+    :ids="rootIds"
     :model-value="currentValue"
     :disabled="props.disabled"
     :name="props.name"

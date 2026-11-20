@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { Tabs as ArkTabs } from "@ark-ui/vue/tabs";
-import { computed, ref, useSlots, watch } from "vue";
+import { computed, ref, useAttrs, useSlots, watch } from "vue";
 import { cn } from "@/lib/utils";
+import { useOverlayIds } from "../overlay-shared/useOverlayIds";
 import type { TabItem } from "./types";
 
 interface Props {
@@ -195,10 +196,21 @@ function isPanelUnmounted(item: TabItem): boolean {
     (!active && !everActivated && !!lazyMount) || (!!unmountOnExit && !active && everActivated)
   );
 }
+
+// ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
+// SyntaxError 刷屏（详注见 useOverlayIds）。machine 挂载 entry syncIndicatorRect 查询
+// getIndicatorEl（首绘时 id 属性未回灌 → miss 刷警告，wujie 2.1.0 实测复现）；覆盖后
+// miss 落到合法选择器静默 null。content/trigger 为函数型覆盖口（per-value），不进
+// parts：nav/setIndicatorRect 期元素已渲染首查命中（实测 Δ=0），user 经 attrs.ids 直传保留。
+const { ids: rootIds } = useOverlayIds(useAttrs(), {
+  primary: "root",
+  parts: ["root", "list", "indicator"],
+});
 </script>
 
 <template>
   <ArkTabs.Root
+    :ids="rootIds"
     :model-value="currentValue ?? undefined"
     :activation-mode="props.activationMode"
     :orientation="effOrientation"
