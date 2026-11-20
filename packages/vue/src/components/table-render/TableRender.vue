@@ -1330,7 +1330,7 @@ defineExpose({
           </tr>
         </thead>
 
-        <tbody class="[&_tr:last-child]:border-0">
+        <tbody class="[&>tr:last-child>td]:border-b-0">
           <!-- 加载态：固定 5 行骨架；选择列一并占位；骨架不虚拟化；loading 判定优先 -->
           <template v-if="loading">
             <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>

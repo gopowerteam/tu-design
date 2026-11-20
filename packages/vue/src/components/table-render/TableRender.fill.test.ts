@@ -84,6 +84,17 @@ describe("TableRender fillHeight 默认模式（零回归）", () => {
     expect(wrapper.find("table").classes()).not.toContain("border-separate");
   });
 
+  it("表体行线画在 td 上（collapse/separate 统一路径）；tr 不再画线", () => {
+    const { wrapper } = makeTableRender();
+    const tr = wrapper.find("tbody tr:not([data-skeleton])");
+    expect(tr.classes()).not.toContain("border-b");
+    for (const td of tr.findAll("td")) {
+      expect(td.classes()).toContain("border-b");
+      expect(td.classes()).toContain("border-border");
+    }
+    expect(wrapper.find("tbody").classes()).toContain("[&>tr:last-child>td]:border-b-0");
+  });
+
   it("分页条渲染但无 shrink-0", () => {
     const { wrapper } = makeTableRender();
     const pagination = paginationEl(wrapper);
@@ -123,6 +134,14 @@ describe("TableRender fillHeight 显式 prop", () => {
     expect(wrapper.find("thead").classes().join(" ")).not.toContain("[&_tr]:border-b");
     expect(wrapper.find("table").classes()).toContain("border-separate");
     expect(wrapper.find("table").classes()).toContain("border-spacing-0");
+  });
+
+  it("sticky 分离边框下 td 行线生效（tr 边框按 CSS 规范在分离模型不渲染）", () => {
+    const { wrapper } = makeTableRender({}, { fillHeight: true });
+    const tr = wrapper.find("tbody tr:not([data-skeleton])");
+    expect(tr.classes()).not.toContain("border-b");
+    expect(tr.find("td").classes()).toContain("border-b");
+    expect(tr.find("td").classes()).toContain("border-border");
   });
 
   it("分页条获得 shrink-0 防压缩", () => {
@@ -184,5 +203,14 @@ describe("TableRender fillHeight × virtual 交互", () => {
     expect(warn).not.toHaveBeenCalled();
     expect(scrollEl(wrapper).style.height).toBe("200px");
     expect(wrapper.find("thead th").classes()).toContain("sticky");
+  });
+
+  it("virtual + height：tbody 末行选择器随迁（td 口径）；pad 行 td 保持 border-0 协同", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const { wrapper } = makeTableRender({}, { virtual: true, height: 200 });
+    expect(warn).not.toHaveBeenCalled();
+    expect(wrapper.find("tbody").classes()).toContain("[&>tr:last-child>td]:border-b-0");
+    // happy-dom 无布局时虚拟窗口可能为空（仅剩 pad 行）；数据行 td 类路径已由 fill 场景断言覆盖
+    expect(wrapper.find("tbody tr[data-virtual-pad] td").classes()).toContain("border-0");
   });
 });

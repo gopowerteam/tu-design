@@ -477,6 +477,8 @@ const table = defineTable<LogEntry>({
 
 **父链需有确定高度**（如页面布局的 `.table-body`）：`h-full` 依赖父链逐级传递高度；无确定高度时安全退化为自然高度（无危害）。
 
+<DemoPreview file="table-render/FillTableDemo.vue" />
+
 ```vue
 <template>
   <div class="flex h-full flex-col">
@@ -490,7 +492,7 @@ const table = defineTable<LogEntry>({
 行为细则：
 
 - **显式 prop 优先于布局 provide**：`fillHeight` 未传时读取布局上下文 provide（见下方协议）；显式传 `false` 可强制关闭 provide 效果
-- **表头 sticky**：th 获得不透明底 + 底部分隔线（钉住后行内容不透出）；表格切换分离边框模型（`border-separate`），规避 `border-collapse: collapse` 下 sticky 表头边框在 Chrome 中丢失的问题；普通模式保持 collapse，DOM 与现状一致
+- **表头 sticky**：th 获得不透明底 + 底部分隔线（钉住后行内容不透出）；表格切换分离边框模型（`border-separate`），规避 `border-collapse: collapse` 下 sticky 表头边框在 Chrome 中丢失的问题；普通模式保持 collapse；表体行分隔线统一画在单元格（`td border-b`）上，分离边框模型下同样生效（tr 边框在分离模型下按 CSS 规范不渲染）
 - **setup 期定版**：不支持运行时切换（与 `virtual` / `search` 同约定）；纯布局属性，不进 `defineTable` 配置
 - **与 `virtual` 同传**：以 fill 优先——滚动区交给 flex 分配高度，`height` 不再生效；且 `virtual` 无需显式 `height`（fill 模式自带真实滚动盒）
 

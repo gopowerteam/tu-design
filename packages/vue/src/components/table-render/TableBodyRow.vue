@@ -67,7 +67,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
 
 <template>
   <tr
-    class="border-b transition-colors hover:bg-muted/50"
+    class="transition-colors hover:bg-muted/50"
     :class="{
       'opacity-50 [&>td]:outline-2 [&>td]:outline-dashed [&>td]:-outline-offset-2 [&>td]:outline-primary/40':
         props.dragging,
@@ -81,7 +81,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <!-- 选择单元格：阻断冒泡避免触发行 row-click；radio 为原生控件 -->
     <td
       v-if="props.selection"
-      class="w-12 p-2 text-center align-middle"
+      class="w-12 p-2 text-center align-middle border-b border-border"
       :class="stickyClass(props.sticky, SELECTION_CELL)"
       :style="stickyStyle(props.sticky, SELECTION_CELL, false)"
       @click.stop
@@ -106,7 +106,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <!-- 拖拽把手单元格：仅把手可起拖（draggable 在按钮上，整行不可拖）；阻断冒泡避免触发行 row-click -->
     <td
       v-if="props.dragColumn"
-      class="p-1 text-center align-middle"
+      class="p-1 text-center align-middle border-b border-border"
       :class="stickyClass(props.sticky, DRAG_CELL)"
       :style="stickyStyle(props.sticky, DRAG_CELL, false)"
       @click.stop
@@ -127,7 +127,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <td
       v-for="(value, index) in props.line.cells"
       :key="props.columns[index].key"
-      class="p-2 align-middle"
+      class="p-2 align-middle border-b border-border"
       :class="[
         stickyClass(props.sticky, props.columns[index].key),
         { truncate: props.columns[index].ellipsis === true },
