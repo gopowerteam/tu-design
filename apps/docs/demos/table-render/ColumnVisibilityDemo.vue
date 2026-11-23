@@ -87,8 +87,8 @@ function onVisibleKeysChange(keys: string[]) {
       @column-visibility-change="onVisibleKeysChange"
     />
     <p class="text-muted-foreground text-xs">
-      右上角「列设置」：隐藏「部门」（fixed 首列）观察 sticky 偏移重算； 隐藏「操作」（fixed-right
-      全组隐藏）；树形展开控件跟随首个可见业务列。 事件
+      顶栏「列设置 n/m」文字链接（默认 `auto ≡ toolbar`）：隐藏「部门」（fixed 首列）观察 sticky
+      偏移重算；隐藏「操作」（fixed-right 全组隐藏）；树形展开控件跟随首个可见业务列。事件
       <code>column-visibility-change</code> 载荷可用于持久化。
     </p>
   </div>

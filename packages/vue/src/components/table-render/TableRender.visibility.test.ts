@@ -1,6 +1,7 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { defineForm, FormRender } from "../form-render";
 import { defineTable } from "./define-table";
 import TableRender from "./TableRender.vue";
 import type { TableColumnOptions, TableRenderDefinition } from "./types";
@@ -470,6 +471,99 @@ describe("TableRender 列显隐（column visibility）", () => {
       const el = popoverContent();
       expect(el === null || el.dataset.state === "closed").toBe(true);
     });
+    wrapper.unmount();
+  });
+
+  it("面板 data-column-item 数 = 全树行数", async () => {
+    // 全树 = 1 分组 + 2 叶子 + 1 独立叶子 = 4 行（分组也占一行：勾选做批量显隐）
+    const { wrapper } = makeTableRender({
+      data: USERS.slice(0, 3),
+      columns: [
+        {
+          title: "基本信息",
+          children: [
+            { key: "name", title: "姓名" },
+            { key: "age", title: "年龄" },
+          ],
+        },
+        { key: "id", title: "ID" },
+      ],
+    });
+    await openColumnSettings(wrapper);
+
+    const items = popoverContent()!.querySelectorAll("[data-column-item]");
+    expect(items).toHaveLength(4);
+    // 分组行可辨识（叶子才有 data-column-key）
+    expect(popoverContent()!.querySelectorAll("[data-column-group]")).toHaveLength(1);
+    expect(popoverContent()!.querySelectorAll("[data-column-key]")).toHaveLength(3);
+    wrapper.unmount();
+  });
+
+  it("双事件同载荷（update:visible-keys / column-visibility-change）", async () => {
+    const { wrapper } = makeTableRender({ data: USERS.slice(0, 3) });
+    await openColumnSettings(wrapper);
+    await clickColumnItem("name");
+    await flushPromises();
+
+    const table = wrapper.findComponent(TableRender);
+    const updates = table.emitted("update:visible-keys")!;
+    const changes = table.emitted("column-visibility-change")!;
+    expect(updates.length).toBeGreaterThan(0);
+    expect(updates).toEqual(changes); // 同一次投影变更 → 两份载荷逐项相等
+    expect(updates.at(-1)).toEqual([["age"]]);
+    wrapper.unmount();
+  });
+
+  it("columnSettingsPlacement=header：表头 ⋮ 为唯一入口", async () => {
+    const wrapper = mount(TableRender, {
+      props: {
+        rowKey: "id",
+        columns: baseColumns(),
+        data: USERS.slice(0, 3),
+        columnSettingsPlacement: "header",
+      },
+      attachTo: document.body,
+    });
+    await flushPromises();
+    expect(wrapper.find('button[data-column-settings][aria-label="列设置"]').exists()).toBe(false);
+    expect(wrapper.findAll('button[aria-label^="列设置："]')).toHaveLength(2);
+    wrapper.unmount();
+  });
+
+  it("入口为文字链接（data-column-settings + aria-label=列设置 + 计数）", async () => {
+    const { wrapper } = makeTableRender({ data: USERS.slice(0, 3) });
+    const entry = wrapper.find('button[aria-label="列设置"]');
+    expect(entry.exists()).toBe(true);
+    expect(entry.attributes("data-column-settings")).toBeDefined();
+    expect(entry.text()).toBe("列设置 2/2");
+    wrapper.unmount();
+  });
+
+  it("showSearch=false 且 columnSettings=true 时搜索区不渲染、入口仍渲染", async () => {
+    const box: { def?: TableRenderDefinition<User> } = {};
+    const Host = defineComponent({
+      setup() {
+        const form = defineForm<User>({
+          items: [{ key: "name", title: "姓名", default: "" }],
+        });
+        box.def = defineTable<User>({
+          columns: baseColumns(),
+          onLoad: () => {},
+          search: form,
+        } as never);
+        return () =>
+          h(TableRender, {
+            rowKey: "id",
+            definition: box.def,
+            showSearch: false,
+          } as never);
+      },
+    });
+    const wrapper = mount(Host, { attachTo: document.body });
+    await flushPromises();
+
+    expect(wrapper.findComponent(FormRender).exists()).toBe(false); // 搜索区整体关闭
+    expect(wrapper.find('button[aria-label="列设置"]').exists()).toBe(true); // 列设置入口不受影响
     wrapper.unmount();
   });
 });

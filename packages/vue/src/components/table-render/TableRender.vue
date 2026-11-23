@@ -2,19 +2,27 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { computed, inject, nextTick, onMounted, ref, watch } from "vue";
+import { computed, inject, ref, watch } from "vue";
+import type { FormRenderDefinition } from "@/components/form-render";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
-import { FormRender, type FormRenderDefinition } from "@/components/form-render";
-import { Popover } from "@/components/popover";
-import { Separator } from "@/components/separator";
 import { Skeleton } from "@/components/skeleton";
-import { Tooltip } from "@/components/tooltip";
 import { cn } from "@/lib/utils";
 import { isColumnGroup } from "./columns";
 import { PAGE_TABLE_FILL_KEY, DRAG_CELL, SELECTION_CELL } from "./constants";
-import { stickyClass, stickyStyle, type StickyMap } from "./sticky";
+import { stickyClass, stickyStyle } from "./sticky";
+import { useStickyLayout } from "./useStickyLayout";
+import { useTableHeaderModel } from "./useTableHeaderModel";
+import type { TableHeaderViewActions, TableHeaderViewModel } from "./useTableHeaderModel";
+import ColumnSettingsPanel from "./ColumnSettingsPanel.vue";
+import TableContextMenu from "./TableContextMenu.vue";
 import TableBodyRow from "./TableBodyRow.vue";
+import TableHeader from "./TableHeader.vue";
+import TableColumnSettings from "./TableColumnSettings.vue";
+import TableToolbar from "./TableToolbar.vue";
+import type { TableContextMenuContext, TableMenuItem } from "./context-menu-types";
+import { useColumnSettingsController } from "./useColumnSettingsController";
+import { useTableContextMenu } from "./useTableContextMenu";
 import TablePagination from "./TablePagination.vue";
 import type {
   ColumnVisibilityOptions,
@@ -83,6 +91,18 @@ const props = defineProps({
   defaultVisibleKeys: { type: Array as PropType<string[]> },
   /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
   columnSettings: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 列设置入口位置：auto/toolbar = 顶栏文字链接；header = 表头叶子 ⋮（opt-in） */
+  columnSettingsPlacement: {
+    type: String as PropType<"auto" | "toolbar" | "header">,
+    default: "auto",
+  },
+  /** 右键命令菜单：false 关闭（默认）；true 用默认项；函数返回业务项 */
+  contextMenu: {
+    type: [Boolean, Function] as unknown as PropType<
+      boolean | ((ctx: TableContextMenuContext<any>) => TableMenuItem<any>[])
+    >,
+    default: false,
+  },
   /** 搜索区渲染开关：false 关闭内置搜索区（组合式外置 FormRender）；数据链路不变 */
   showSearch: { type: Boolean as PropType<boolean | undefined>, default: undefined },
   /** 分页条渲染开关：false 关闭内置分页条（组合式外置 TablePagination）；缺省模式单页自隐藏不变 */
@@ -120,6 +140,10 @@ const emit = defineEmits<{
   "row-dblclick": [record: DataRecord, index: number, event: MouseEvent];
   /** 行右键；不主动 preventDefault */
   "row-contextmenu": [record: DataRecord, index: number, event: MouseEvent];
+  /** 右键菜单已打开（contextMenu 显式开启时） */
+  "context-menu": [ctx: TableContextMenuContext<any>];
+  /** 右键菜单项选中且业务项无 onSelect 时 */
+  "context-menu-select": [value: string, ctx: TableContextMenuContext<any>];
   /** 单元格点击（columnKey 定位列）；冒泡并存——cell-click 触发时 row-click 也会触发 */
   "cell-click": [record: DataRecord, columnKey: string, index: number, event: MouseEvent];
   "selection-change": [rows: DataRecord[]];
@@ -209,9 +233,6 @@ if (props.definition && props.search) {
 // search 不支持运行时切换（与 FormRender definition/form 同款约定），setup 期定版即可
 const search = instance.search;
 
-// 列设置触发器的 Tooltip 受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故手动控制、不嵌套触发器）
-const settingsTipOpen = ref(false);
-
 // ---- 列显隐（column visibility） ------------------------------------
 // 聚合式（columnVisibility.defaultVisibleKeys 经引擎解析回传）与拆分式 prop 同传 → definition 优先。
 // 引擎是唯一解析点；聚合式受控回填经 setVisibleKeys（normalize 等值守卫防回弹）；
@@ -295,224 +316,96 @@ const columnsTree = computed<TableColumnNode<DataRecord>[]>(
   () => (instance.columnTree as TableColumnNode<DataRecord>[]) ?? columns.value,
 );
 
-/** 可见表头树节点：按 visibleKeySet 剪枝后的结构（空分组已被剔除） */
-interface HeaderNodeView {
-  node: TableColumnNode<DataRecord>;
-  isGroup: boolean;
-  /** DFS 索引路径（如 "0-1"）：分组单元格 key 的唯一来源，与 title 解耦 */
-  path: string;
-  children: HeaderNodeView[];
-}
-
-/**
- * 按可见集递归构建表头树：分组子树可见叶子为 0 时整支剔除（与列显隐同口径）。
- * @param nodes - 列节点树（或其子树）
- * @param parentPath - 父级 DFS 索引路径（根为 ""）
- * @returns 剪枝后的可见表头树
- */
-function buildVisibleHeaderTree(
-  nodes: TableColumnNode<DataRecord>[],
-  parentPath: string,
-): HeaderNodeView[] {
-  const views: HeaderNodeView[] = [];
-  nodes.forEach((node, index) => {
-    const path = parentPath === "" ? `${index}` : `${parentPath}-${index}`;
-    if (isColumnGroup(node)) {
-      const children = buildVisibleHeaderTree(node.children, path);
-      if (children.length > 0) views.push({ node, isGroup: true, path, children });
-    } else if (visibleKeySet.value.has(node.key)) {
-      views.push({ node, isGroup: false, path, children: [] });
-    }
-  });
-  return views;
-}
-
-/** 唯一派生源：可见表头树（maxDepth 与表头矩阵同源于此，杜绝口径漂移） */
-const visibleHeaderTree = computed(() => buildVisibleHeaderTree(columnsTree.value, ""));
-
-/** 表头深度（可见树）：无分组时为 1 */
-const maxDepth = computed(() => {
-  const depthOf = (view: HeaderNodeView): number =>
-    view.children.length > 0 ? 1 + Math.max(...view.children.map(depthOf)) : 1;
-  return visibleHeaderTree.value.length > 0 ? Math.max(...visibleHeaderTree.value.map(depthOf)) : 1;
-});
-
-/** 表头单元格：分组跨列、叶子下沉贴底 */
-interface HeaderCell {
-  node: TableColumnNode<DataRecord>;
-  /** Vue 列表 key：叶子用列 key，分组用 DFS 路径（唯一稳定） */
-  key: string;
-  path: string;
-  depth: number;
-  colSpan: number;
-  rowSpan: number;
-  isGroup: boolean;
-  /** 该单元格覆盖的可见叶子列 key（分组为子树全部，叶子为自身） */
-  leafKeys: string[];
-}
-
-/** 表头矩阵：行 × 单元格（叶子 rowSpan = maxDepth - depth，分组 colSpan = 子树可见叶子数） */
-const headerRows = computed<HeaderCell[][]>(() => {
-  const rows: HeaderCell[][] = Array.from({ length: maxDepth.value }, () => []);
-  const collectLeaves = (view: HeaderNodeView): string[] =>
-    view.isGroup
-      ? view.children.flatMap(collectLeaves)
-      : [(view.node as TableColumnOptions<DataRecord>).key];
-
-  const walk = (views: HeaderNodeView[], depth: number) => {
-    for (const view of views) {
-      const leafKeys = collectLeaves(view);
-      if (view.isGroup) {
-        rows[depth]!.push({
-          node: view.node,
-          key: `g:${view.path}`,
-          path: view.path,
-          depth,
-          colSpan: leafKeys.length,
-          rowSpan: 1,
-          isGroup: true,
-          leafKeys,
-        });
-      } else {
-        rows[depth]!.push({
-          node: view.node,
-          key: (view.node as TableColumnOptions<DataRecord>).key,
-          path: view.path,
-          depth,
-          colSpan: 1,
-          rowSpan: maxDepth.value - depth,
-          isGroup: false,
-          leafKeys,
-        });
-      }
-      walk(view.children, depth + 1);
-    }
-  };
-  walk(visibleHeaderTree.value, 0);
-  return rows;
+/** 表头模型：可见树 / 深度 / 表头矩阵统一由 useTableHeaderModel 派生（T02 纯逻辑模块） */
+const { headerRows } = useTableHeaderModel({
+  tree: () => columnsTree.value,
+  visibleKeySet,
 });
 
 /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
 const showColumnSettings = computed(() => props.columnSettings ?? true);
 
-function isColumnVisible(key: string): boolean {
-  return visibleKeySet.value.has(key);
-}
-
-/**
- * 最少一列：唯一可见列不可隐藏
- * @param key - 列 key
- * @returns 是否允许隐藏该列
- */
-function canHideColumn(key: string): boolean {
-  return !(instance.visibleKeys.value.length <= 1 && visibleKeySet.value.has(key));
-}
-
-function toggleColumnVisible(key: string) {
-  if (!canHideColumn(key)) return;
-  instance.setVisibleKeys(
-    isColumnVisible(key)
-      ? instance.visibleKeys.value.filter((k) => k !== key)
-      : [...instance.visibleKeys.value, key],
-  );
-}
-
-const allColumnsVisible = computed(
-  () => columns.value.length > 0 && visibleColumns.value.length === columns.value.length,
+// ---- 列设置面板：controller（开合/锚点）+ 子组件（面板纯内容） ----------------
+const columnSettings = useColumnSettingsController();
+/** 表头 ⋮ 与工具栏入口互斥：placement=header 时顶栏不再渲染列设置入口 */
+const showToolbarColumnSettings = computed(
+  () => showColumnSettings.value && props.columnSettingsPlacement !== "header",
 );
 
-function selectAllColumns() {
-  if (allColumnsVisible.value) return;
-  instance.setVisibleKeys(columns.value.map((column) => column.key));
+// ---- 右键命令菜单（默认关闭；仅 contextMenu 真值挂根级 handler） ----------------
+/**
+ * 在列树中按 DFS 路径查找分组节点
+ * @param nodes - 列节点树
+ * @param path - 形如 "0-1" 的路径
+ * @returns 命中的分组节点；未命中 undefined
+ */
+function findColumnGroup(
+  nodes: TableColumnNode<DataRecord>[],
+  path: string,
+): TableColumnGroupOptions<DataRecord> | undefined {
+  for (const [index, node] of nodes.entries()) {
+    const current = String(index);
+    if (path === current && isColumnGroup(node)) return node;
+    if (path.startsWith(`${current}-`) && isColumnGroup(node)) {
+      const found = findColumnGroup(node.children, path.slice(current.length + 1));
+      if (found) return found;
+    }
+  }
+  return undefined;
 }
 
-function resetColumns() {
-  // 恢复 defaultVisibleKeys；未配置 = 全部可见
-  instance.setVisibleKeys(instance.defaultVisibleKeys ?? columns.value.map((column) => column.key));
-}
-
-// ---- 列设置面板：树形行 ------------------------------------------------
-/** 面板行（全树扁平化，避免模板递归）：分组行为父级三态，叶子行为勾选项 */
-interface PanelRow {
-  node: TableColumnNode<DataRecord>;
-  depth: number;
-  isGroup: boolean;
-  /** 该节点覆盖的叶子 key（分组为子树全部） */
-  leafKeys: string[];
-  path: string;
-  key: string;
-}
-
-/** 面板行派生：以原始列节点树（非可见剪枝）为准，保证隐藏后仍可恢复 */
-const panelRows = computed<PanelRow[]>(() => {
-  const rows: PanelRow[] = [];
-  const collectLeaves = (node: TableColumnNode<DataRecord>): string[] =>
-    isColumnGroup(node) ? node.children.flatMap(collectLeaves) : [node.key];
-  const walk = (nodes: TableColumnNode<DataRecord>[], depth: number, parentPath: string) => {
-    nodes.forEach((node, index) => {
-      const path = parentPath === "" ? `${index}` : `${parentPath}-${index}`;
-      const isGroup = isColumnGroup(node);
-      rows.push({
-        node,
-        depth,
-        isGroup,
-        leafKeys: collectLeaves(node),
-        path,
-        key: isGroup ? `g:${path}` : node.key,
-      });
-      if (isGroup) walk(node.children, depth + 1, path);
-    });
-  };
-  walk(columnsTree.value, 0, "");
-  return rows;
+const contextMenuController = useTableContextMenu({
+  menu: () => props.contextMenu,
+  snapshot: () => ({
+    selection: {
+      keys: [...selectedKeys.value].map(String),
+      rows: body.value
+        .filter((line) => new Set([...selectedKeys.value].map(String)).has(line.key))
+        .map((line) => line.record),
+    },
+    visibleKeys: instance.visibleKeys.value,
+    columns: columns.value,
+  }),
+  defaults: () => ({
+    columnSettingsEnabled: showColumnSettings.value,
+    hasDefaultVisibleKeys: instance.defaultVisibleKeys !== undefined,
+    openColumnSettings: openContextColumnSettings,
+    resetColumns: () =>
+      instance.setVisibleKeys(
+        instance.defaultVisibleKeys ?? columns.value.map((column) => column.key),
+      ),
+    showAllColumns: () => instance.setVisibleKeys(columns.value.map((column) => column.key)),
+  }),
+  meta: () => ({
+    rowOf: (rowKey) => {
+      const line = body.value.find((item) => item.key === rowKey);
+      return line ? { record: line.record, index: line.index } : undefined;
+    },
+    columnOf: (columnKey) => columns.value.find((column) => column.key === columnKey),
+    groupOf: (groupPath) => findColumnGroup(columnsTree.value, groupPath),
+  }),
+  onOpen: (ctx) => emit("context-menu", ctx),
+  onMenuSelect: (value, ctx) => emit("context-menu-select", value, ctx),
 });
 
-/**
- * 分组勾选三态：全部可见 = true，部分可见 = "indeterminate"，全隐 = false
- * @param row - 面板分组行
- * @returns 该分组的三态勾选值
- */
-function groupCheckedState(row: PanelRow): boolean | "indeterminate" {
-  const visibleCount = row.leafKeys.filter((key) => visibleKeySet.value.has(key)).length;
-  if (visibleCount === 0) return false;
-  if (visibleCount === row.leafKeys.length) return true;
-  return "indeterminate";
+/** 打开列设置面板：右键来源为表头/单元格时高亮该列（协议⑤：菜单已在项内先关） */
+function openContextColumnSettings() {
+  const ctx = contextMenuController.context.value;
+  const target = ctx?.target;
+  const columnKey =
+    target?.kind === "header"
+      ? target.columnKey
+      : target?.kind === "cell"
+        ? target.columnKey
+        : undefined;
+  if (ctx) columnSettings.openAt(ctx.event, columnKey);
+  else columnSettings.openAt(document.body, columnKey);
 }
 
-/**
- * 分组批量显隐（最少一列恒按叶子口径）：
- * 隐藏整组会导致 0 列可见时，保留该组最后一枚可见叶子（父级呈 indeterminate）。
- * @param row - 面板分组行
- */
-function toggleGroupVisible(row: PanelRow) {
-  const leafSet = new Set(row.leafKeys);
-  const allVisible = row.leafKeys.every((key) => visibleKeySet.value.has(key));
-  if (!allVisible) {
-    // 显示整组：与当前可见集按 columns 原序合并（normalize 会纠正顺序）
-    instance.setVisibleKeys(
-      columns.value
-        .map((column) => column.key)
-        .filter((key) => visibleKeySet.value.has(key) || leafSet.has(key)),
-    );
-    return;
-  }
-  const remaining = instance.visibleKeys.value.filter((key) => !leafSet.has(key));
-  if (remaining.length === 0) {
-    // 钳制：不得清空可见集，保留最后一枚叶子
-    instance.setVisibleKeys([row.leafKeys[row.leafKeys.length - 1]!]);
-    return;
-  }
-  instance.setVisibleKeys(remaining);
-}
-
-/**
- * 面板行点击（分组批量显隐 / 叶子单列切换）
- * @param row - 面板行（分组或叶子）
- */
-function onPanelRowClick(row: PanelRow) {
-  if (row.isGroup) toggleGroupVisible(row);
-  else toggleColumnVisible(row.key);
-}
+/** 根节点 contextmenu 绑定：默认关闭时不挂 handler（协议①） */
+const contextMenuBindings = computed(() =>
+  props.contextMenu ? { onContextmenu: contextMenuController.onContextMenu } : {},
+);
 
 // 受控/非受控均通知：统一投影变化 → 双事件（载荷 = columns 原序可见 key）
 watch(instance.visibleKeys, (keys) => {
@@ -577,155 +470,6 @@ if (columns.value.length >= 10 && !columns.value.some((c) => typeof c.width === 
     `[tu-design] <TableRender> ${columns.value.length} 列均无数字 width，` +
       `窄容器下不会出现横向滚动；宽表请为列声明数字 width（px）。`,
   );
-}
-
-/** sticky 单元格映射（纯渲染层 computed，不进 TanStack pinning state）：
- * 选择列视作最左 fixed 列参与累计（offset 0）；fixed-left 按列序累加，
- * fixed-right 从最右列反向累计。edge = 该 sticky 组朝滚动方向的交界列（加分隔边框）。
- * 全部基于**可见集**：sticky 组因隐藏变空则无该组输出（不输出边框）。
- */
-const stickyOf = computed<StickyMap>(() => {
-  const map: StickyMap = new Map();
-  // instance.columns 是联合数组（聚合式 any / 拆分式 DataRecord），联合上的 filter
-  // 类型谓词重载解析不可靠，故 map 提取时以断言收窄 width（条件已含 typeof 守卫）
-  const lefts = visibleColumns.value
-    .filter((column) => column.fixed === "left" && typeof column.width === "number")
-    .map((column) => ({ key: column.key, width: column.width as number }));
-  const rights = visibleColumns.value
-    .filter((column) => column.fixed === "right" && typeof column.width === "number")
-    .map((column) => ({ key: column.key, width: column.width as number }));
-
-  let acc = 0;
-  if (hasSelection.value) {
-    map.set(SELECTION_CELL, {
-      side: "left",
-      offset: 0,
-      edge: lefts.length === 0 && !dragEnabled.value,
-    });
-    acc = selection.value.width;
-  }
-  // 把手列紧随选择列（选择列保持 offset 0 视觉锚点），同视作最左固定列参与累计
-  if (dragEnabled.value) {
-    map.set(DRAG_CELL, { side: "left", offset: acc, edge: lefts.length === 0 });
-    acc += dragWidth;
-  }
-  lefts.forEach((left, index) => {
-    map.set(left.key, { side: "left", offset: acc, edge: index === lefts.length - 1 });
-    acc += left.width;
-  });
-
-  let racc = 0;
-  for (let index = rights.length - 1; index >= 0; index--) {
-    const right = rights[index]!;
-    map.set(right.key, { side: "right", offset: racc, edge: index === 0 });
-    racc += right.width;
-  }
-  return map;
-});
-
-// ---- 表格 min-width（列宽硬约束） ----------------------------------------
-// 可见业务列数字 width 之和（含选择列）作为 <table> min-width 下限：
-// 容器不足 → 表格被顶到 Σwidth，auto 布局下列渲染宽度 == 指定宽度，stickyOf 偏移精确成立，
-// 滚动区 overflow-x-auto 横滚；容器充足 → 表格仍 100% 拉伸（有宽列可能被拉伸，
-// sticky 偏移按指定值累计的漂移为既有限制）。
-// 字符串 width 仅渲染提示值，不参与求和（与 stickyOf 口径一致）；和为 0 不挂 style（零回归）。
-const tableMinWidth = computed(() => {
-  let sum = 0;
-  for (const column of visibleColumns.value) {
-    if (typeof column.width === "number" && column.width > 0) sum += column.width;
-  }
-  if (hasSelection.value && selection.value.width > 0) sum += selection.value.width;
-  if (dragEnabled.value && dragWidth > 0) sum += dragWidth;
-  return sum;
-});
-
-/** 列宽 inline style 值：数字补 px 单位——Vue :style 不自动加单位，
- * 裸数字会被浏览器当非法 CSS 值丢弃，列宽即失效；字符串视为已带单位原样输出。
- * @param width - 列宽配置
- * @returns 可直接用于 :style 的 CSS 宽度值；未配置返回 undefined
- */
-function widthOf(width?: number | string) {
-  return typeof width === "number" ? `${width}px` : width;
-}
-
-// ---- 分组表头单元格 ------------------------------------------------
-
-/** 混合固定组警告去重（同名分组仅警告一次） */
-const warnedMixedFixedGroups = new Set<string>();
-
-/**
- * 分组单元格的 sticky 样式：子树可见叶子同侧且连续固定时整格 sticky，
- * 偏移取首个可见叶子；混合侧 → 返回 undefined（降级普通格）并 DEV 警告一次。
- * @param cell - 表头单元格（分组）
- * @returns 分组单元格的 sticky inline style；不适用时返回 undefined
- */
-function groupStickyStyle(cell: HeaderCell) {
-  const sides = new Set(
-    cell.leafKeys
-      .map((key) => columns.value.find((column) => column.key === key)?.fixed)
-      .filter((side): side is "left" | "right" => side !== undefined),
-  );
-  // 混合侧（同时含 left 与 right）：单元格无法部分固定 → 降级普通格
-  if (sides.size > 1) {
-    if (!warnedMixedFixedGroups.has(cell.key)) {
-      warnedMixedFixedGroups.add(cell.key);
-      if (import.meta.env.DEV) {
-        console.warn(
-          `[tu-design] <TableRender> 分组「${(cell.node as TableColumnGroupOptions).title}」内固定方向混合，已降级为普通表头格。`,
-        );
-      }
-    }
-    return undefined;
-  }
-  if (sides.size === 0) return undefined;
-  // 组内固定列不连续（中间夹普通列）时，分组格跨过非固定列会遮挡滚动内容 → 同样降级
-  const fixedLeaves = cell.leafKeys.filter((key) => {
-    const column = columns.value.find((c) => c.key === key);
-    return column?.fixed !== undefined && typeof column.width === "number";
-  });
-  if (fixedLeaves.length !== cell.leafKeys.length) return undefined;
-  const side = [...sides][0]!;
-  const first = stickyOf.value.get(cell.leafKeys[0]!);
-  if (!first) return undefined;
-  return {
-    position: "sticky" as const,
-    [side]: `${first.offset}px`,
-    zIndex: "var(--z-sticky-head)",
-  };
-}
-
-/**
- * 表头行的行级样式：sticky 模式下逐行累积 top 偏移（多行表头），避免顶边重叠。
- * @param rowIndex - 表头行下标
- * @returns 行级 inline style；非 sticky 模式返回 undefined
- */
-function headerRowStyle(rowIndex: number) {
-  if (!theadSticky) return undefined;
-  return { top: `${rowTop.value[rowIndex] ?? rowIndex * HEADER_ROW_FALLBACK}px` };
-}
-
-/**
- * 表头列线：分组格分隔线是结构性硬边界（多行表头分组界恒画，不受列线开关影响）；
- * 叶子格受列线开关控制（single-line: false 时开启）。行末排除，右缘归外框。
- * 横向底线不在此绘制（恒挂 theadLineClass 承担，thead 行级 border 已退役）。
- * @param cell - 表头单元格
- * @param isLastInRow - 是否为本行最后一个单元格
- * @returns class 列表
- */
-function headerCellClass(cell: HeaderCell, isLastInRow: boolean) {
-  if (cell.isGroup) return isLastInRow ? [] : ["border-r border-border"];
-  return columnLinesOn && !isLastInRow ? ["border-r border-border"] : [];
-}
-
-/**
- * 分组单元格水平对齐（分组无 align 以外的能力）
- * @param cell - 表头单元格
- * @returns 对齐值，默认居中
- */
-function headerCellAlign(cell: HeaderCell) {
-  return cell.isGroup
-    ? ((cell.node as TableColumnGroupOptions).align ?? "center")
-    : ((cell.node as TableColumnOptions).align ?? "center");
 }
 
 /** 分组无需排序能力标记（sortable 仅叶子生效，对分组 sortable 警告） */
@@ -812,6 +556,16 @@ const virtualEnabled = virtualRaw === true && (heightRaw !== undefined || fill);
 const dragConfig = instance.draggable;
 const dragEnabled = computed(() => dragConfig !== undefined && !virtualEnabled);
 const dragWidth = dragConfig?.width ?? 32;
+
+/** sticky 布局：sticky 映射 + min-width + 分组表头样式由 useStickyLayout 派生（T02 纯逻辑模块） */
+const { stickyOf, tableMinWidth, groupStickyStyle } = useStickyLayout({
+  visibleColumns,
+  columns,
+  hasSelection,
+  selectionWidth: computed(() => selection.value.width),
+  dragEnabled,
+  dragWidth: () => dragWidth,
+});
 const drag = useRowDrag();
 
 // rowKey 记录级守卫：当前页任一记录缺 rowKey 字段 → 禁用拖拽（索引兜底态下行身份不稳定）
@@ -980,32 +734,8 @@ const tableClass = [
 ];
 
 const scrollEl = ref<HTMLElement | null>(null);
-const theadEl = ref<HTMLElement | null>(null);
-/** 滚动容器内 thead 占据的前缀高度（scrollMargin）；表头内容静态，挂载后测量一次 */
+/** 滚动容器内 thead 占据的前缀高度（scrollMargin）：由 TableHeader 测量回传，父层只写不清零 */
 const theadOffset = ref(0);
-
-// ---- 多行表头测量 --------------------------------------------------
-/** 表头行元素（模板 ref 收集，逐行求高度） */
-const headerRowEls = ref<(HTMLElement | null)[]>([]);
-/** 各行顶部偏移（前缀和）：多行 sticky 表头逐行钉住，避免顶边重叠 */
-const rowTop = ref<number[]>([]);
-/** 行高兜底：表头行 class 为 h-10（2.5rem = 40px）；happy-dom 下 offsetHeight 恒 0 */
-const HEADER_ROW_FALLBACK = 40;
-
-/**
- * 测量所有表头行高度并派生行顶偏移与 thead 总高（唯一测量源）。
- *
- * 两处口径有意区分：
- * - `rowTop`（多行 sticky 逐行 top）用兜底 h-10（40px）——测量不可用时避免表头行重叠；
- * - `theadOffset`（virtual 的 scrollMargin）用**实测原值**，与既有行为一致
- *   （happy-dom 无布局 → 0；真实浏览器 → 真实高度）。
- */
-function measureHeaderRows() {
-  const raw = headerRowEls.value.map((el) => el?.offsetHeight ?? 0);
-  const heights = raw.map((height) => height || HEADER_ROW_FALLBACK);
-  rowTop.value = heights.map((_, index) => heights.slice(0, index).reduce((a, h) => a + h, 0));
-  if (virtualEnabled) theadOffset.value = raw.reduce((a, h) => a + h, 0);
-}
 
 // 仅 virtual: true 且 height 就绪时创建（配置 setup 期定版，顶层条件分支可安全注册生命周期）
 const virtualizerRef = virtualEnabled
@@ -1021,9 +751,41 @@ const virtualizerRef = virtualEnabled
     )
   : null;
 
-onMounted(measureHeaderRows);
-// 可见表头树变化（列显隐）→ 行数/单元格可能变化，DOM 更新后重测
-watch(headerRows, () => void nextTick(measureHeaderRows), { flush: "post" });
+/**
+ * 表头测量回传：virtual 启用时写入 scrollMargin；禁用时保持既有值（父层任何路径不清零）。
+ * @param payload - 子组件测量的 thead 总高
+ */
+function onHeaderMeasure(payload: { theadOffset: number }) {
+  if (virtualEnabled) theadOffset.value = payload.theadOffset;
+}
+
+/** 表头视图模型：必须为 computed（列显隐后子组件依赖 headerRows 引用变化重测） */
+const headerModel = computed<TableHeaderViewModel>(() => ({
+  headerRows: headerRows.value,
+  stickyOf: stickyOf.value,
+  stickyOpts,
+  sort: instance.sort.value,
+  theadSticky,
+  columnLinesOn,
+  theadThClass,
+  theadLineClass,
+  hasSelection: hasSelection.value,
+  selectionType: selection.value.type,
+  selectionWidth: selection.value.width,
+  headerChecked: headerChecked.value,
+  headerIndeterminate: headerIndeterminate.value,
+  dragEnabled: dragEnabled.value,
+  dragWidth,
+  columnSettingsEntry: props.columnSettingsPlacement === "header" && showColumnSettings.value,
+}));
+
+/** 表头交互动作（父层提供，子组件纯调用） */
+const headerActions: TableHeaderViewActions = {
+  toggleAll: (checked) => onHeaderSelect(checked),
+  sort: (key) => onSort(key),
+  openColumnSettings: (event, columnKey) => columnSettings.openAt(event, columnKey),
+  groupStickyStyle: (cell) => groupStickyStyle(cell),
+};
 
 const virtualRows = computed(() => (virtualizerRef ? virtualizerRef.value.getVirtualItems() : []));
 const virtualTotal = computed(() => (virtualizerRef ? virtualizerRef.value.getTotalSize() : 0));
@@ -1044,21 +806,6 @@ const padBottom = computed(() => {
 function measureRow(node: Element | ComponentPublicInstance | null) {
   const el = node instanceof Element ? node : (node?.$el as Element | undefined);
   if (el instanceof Element) virtualizerRef?.value.measureElement(el);
-}
-
-/**
- * aria-sort 仅在该列当前被排序时标注
- * @param column - 列配置
- * @returns 当前排序方向对应的 aria-sort 值；未排序返回 undefined
- */
-function ariaSort(column: TableColumnOptions): "ascending" | "descending" | undefined {
-  if (instance.sort.value?.key !== column.key) return undefined;
-  return instance.sort.value.direction === "asc" ? "ascending" : "descending";
-}
-
-function sortMark(column: TableColumnOptions): string {
-  const direction = instance.sort.value?.key === column.key ? instance.sort.value.direction : "";
-  return direction === "asc" ? "↑" : direction === "desc" ? "↓" : "";
 }
 
 function onSort(key: string) {
@@ -1140,118 +887,44 @@ defineExpose({
 </script>
 
 <template>
-  <div :class="cn('w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)">
-    <!-- 搜索区 + 列设置触发器：同行右对齐（items-end）；无搜索时触发器位于表格上方（showSearch=false 关闭搜索区） -->
-    <div
-      v-if="showSearchArea || showColumnSettings"
-      :class="cn('mb-2 flex items-end justify-between gap-2', fill && 'shrink-0')"
+  <div
+    :class="cn('w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)"
+    v-bind="contextMenuBindings"
+  >
+    <!-- 顶栏（搜索表单 + 列设置文字入口）与列设置单例宿主（根级、滚动容器外） -->
+    <TableToolbar
+      :class="cn(fill && 'shrink-0')"
+      :search="search"
+      :searchable="search?.actions ? undefined : true"
+      :show-search-area="showSearchArea"
+      :show-column-settings="showToolbarColumnSettings"
+      :visible-count="visibleColumns.length"
+      :total-count="columns.length"
+      @search="onSearch"
+      @reset="onReset"
+      @open-column-settings="columnSettings.openAt($event)"
+    />
+    <TableColumnSettings
+      :open="columnSettings.open.value"
+      :anchor-style="columnSettings.anchorStyle.value"
+      @update:open="(next: boolean) => (columnSettings.open.value = next)"
     >
-      <FormRender
-        v-if="showSearchArea"
-        class="min-w-0 flex-1"
-        :definition="search"
-        :searchable="search?.actions ? undefined : true"
-        @search="onSearch"
-        @reset="onReset"
+      <ColumnSettingsPanel
+        :columns="columns"
+        :column-tree="columnsTree"
+        :visible-keys="instance.visibleKeys.value"
+        :default-visible-keys="instance.defaultVisibleKeys"
+        :highlight-key="columnSettings.highlightKey.value"
+        @update:visible-keys="instance.setVisibleKeys"
       />
-
-      <!-- 列设置：Popover 面板（最少一列 / 重置 / 不含选择列）；
-           触发钮 Tooltip 手动受控开合（Tooltip 与 Popover 触发器嵌套会吞点击，故并列渲染、不走 hover 自动触发） -->
-      <template v-if="showColumnSettings">
-        <Popover align="end" content-class="w-56 p-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-label="列设置"
-            aria-haspopup="true"
-            @pointerenter="settingsTipOpen = true"
-            @pointerleave="settingsTipOpen = false"
-          >
-            <!-- lucide Settings2（内联 SVG，跟随项目图标现状） -->
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              class="size-4"
-              aria-hidden="true"
-            >
-              <path d="M20 7h-9" />
-              <path d="M14 17H5" />
-              <circle cx="17" cy="17" r="3" />
-              <circle cx="7" cy="7" r="3" />
-            </svg>
-          </Button>
-          <template #content>
-            <div class="flex items-center justify-end gap-3 px-3 py-2">
-              <button
-                type="button"
-                class="text-muted-foreground hover:text-foreground cursor-pointer text-xs disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="allColumnsVisible"
-                @click="selectAllColumns"
-              >
-                全选
-              </button>
-              <button
-                type="button"
-                class="text-muted-foreground hover:text-foreground cursor-pointer text-xs"
-                @click="resetColumns"
-              >
-                重置
-              </button>
-            </div>
-            <Separator />
-            <div class="max-h-64 overflow-y-auto py-1">
-              <div
-                v-for="row in panelRows"
-                :key="row.key"
-                data-column-item
-                :data-column-key="row.isGroup ? undefined : row.key"
-                :data-column-group="row.isGroup ? row.path : undefined"
-                class="hover:bg-accent/50 flex h-8 cursor-pointer items-center gap-2 px-3"
-                :style="{ paddingLeft: `${12 + row.depth * 12}px` }"
-                @click="onPanelRowClick(row)"
-              >
-                <Checkbox
-                  :checked="row.isGroup ? groupCheckedState(row) : isColumnVisible(row.key)"
-                  :disabled="row.isGroup ? false : !canHideColumn(row.key)"
-                  @update:checked="onPanelRowClick(row)"
-                  @click.stop
-                />
-                <span class="min-w-0 flex-1 truncate">{{ row.node.title }}</span>
-                <!-- 有效 fixed 列（数字 width）标识：仅叶子 -->
-                <svg
-                  v-if="
-                    !row.isGroup &&
-                    (row.node as TableColumnOptions).fixed !== undefined &&
-                    typeof (row.node as TableColumnOptions).width === 'number'
-                  "
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  class="text-muted-foreground size-3 shrink-0"
-                  aria-hidden="true"
-                >
-                  <path d="M12 17v5" />
-                  <path
-                    d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1z"
-                  />
-                </svg>
-              </div>
-            </div>
-          </template>
-        </Popover>
-        <!-- 纯受控气泡（无默认插槽，不渲染触发器）：开合由触发钮 pointerenter/leave 驱动 -->
-        <Tooltip :open="settingsTipOpen" content="列设置" />
-      </template>
-    </div>
+    </TableColumnSettings>
+    <TableContextMenu
+      :open="contextMenuController.open.value"
+      :items="contextMenuController.items.value"
+      :anchor-style="contextMenuController.anchorStyle.value"
+      @update:open="(next: boolean) => (contextMenuController.open.value = next)"
+      @select="contextMenuController.onSelect"
+    />
 
     <!-- 滚动容器：横向滚动时 fixed 列 sticky 生效；virtual/fill 模式兼任纵向滚动（分页条不参与滚动） -->
     <div
@@ -1264,97 +937,12 @@ defineExpose({
         :class="tableClass"
         :style="tableMinWidth > 0 ? { minWidth: `${tableMinWidth}px` } : undefined"
       >
-        <thead ref="theadEl">
-          <tr
-            v-for="(cells, rowIndex) in headerRows"
-            :key="rowIndex"
-            :ref="(el) => (headerRowEls[rowIndex] = el as HTMLElement | null)"
-            :style="headerRowStyle(rowIndex)"
-          >
-            <!-- 选择列：checkbox 型表头为本页全选三态；radio 型占位；视作最左固定列 -->
-            <th
-              v-if="hasSelection && rowIndex === 0"
-              scope="col"
-              :rowspan="headerRows.length"
-              class="h-10 w-12 px-2 text-center align-middle font-medium text-muted-foreground"
-              :class="[
-                stickyClass(stickyOf, SELECTION_CELL, stickyOpts),
-                theadThClass,
-                theadLineClass,
-                columnLinesOn ? 'border-r border-border' : '',
-              ]"
-              :style="[
-                { width: `${selection.width}px` },
-                stickyStyle(stickyOf, SELECTION_CELL, true),
-              ]"
-            >
-              <Checkbox
-                v-if="selection.type === 'checkbox'"
-                :checked="headerIndeterminate ? 'indeterminate' : headerChecked"
-                :aria-label="'全选本页'"
-                @update:checked="onHeaderSelect"
-              />
-            </th>
-            <!-- 拖拽把手列表头：占位（对齐 radio 选择列范式）；视作最左固定列（紧随选择列） -->
-            <th
-              v-if="dragEnabled && rowIndex === 0"
-              scope="col"
-              :rowspan="headerRows.length"
-              class="h-10 px-1 text-center align-middle font-medium text-muted-foreground"
-              :class="[
-                stickyClass(stickyOf, DRAG_CELL, stickyOpts),
-                theadThClass,
-                theadLineClass,
-                columnLinesOn ? 'border-r border-border' : '',
-              ]"
-              :style="[{ width: `${dragWidth}px` }, stickyStyle(stickyOf, DRAG_CELL, true)]"
-            >
-              <span class="sr-only">拖拽排序</span>
-            </th>
-            <th
-              v-for="(cell, cellIndex) in cells"
-              :key="cell.key"
-              :scope="cell.isGroup ? 'colgroup' : 'col'"
-              :colspan="cell.colSpan > 1 ? cell.colSpan : undefined"
-              :rowspan="cell.rowSpan > 1 ? cell.rowSpan : undefined"
-              class="h-10 px-2 align-middle font-medium text-muted-foreground"
-              :class="[
-                cell.isGroup ? undefined : stickyClass(stickyOf, cell.key, stickyOpts),
-                theadThClass,
-                theadLineClass,
-                headerCellClass(cell, cellIndex === cells.length - 1),
-              ]"
-              :style="[
-                cell.isGroup
-                  ? { textAlign: headerCellAlign(cell) }
-                  : {
-                      width: widthOf((cell.node as TableColumnOptions).width),
-                      textAlign: headerCellAlign(cell),
-                    },
-                cell.isGroup ? groupStickyStyle(cell) : stickyStyle(stickyOf, cell.key, true),
-              ]"
-              :aria-sort="cell.isGroup ? undefined : ariaSort(cell.node as TableColumnOptions)"
-            >
-              <button
-                v-if="!cell.isGroup && (cell.node as TableColumnOptions).sortable"
-                type="button"
-                class="inline-flex items-center gap-1 hover:text-foreground"
-                @click="onSort((cell.node as TableColumnOptions).key)"
-              >
-                {{ (cell.node as TableColumnOptions).title }}
-                <span aria-hidden="true" class="text-xs">{{
-                  sortMark(cell.node as TableColumnOptions)
-                }}</span>
-              </button>
-              <template v-else>{{ cell.node.title }}</template>
-            </th>
-          </tr>
-        </thead>
+        <TableHeader :model="headerModel" :actions="headerActions" @measure="onHeaderMeasure" />
 
         <tbody class="[&>tr:last-child>td]:border-b-0">
           <!-- 加载态：固定 5 行骨架；选择列一并占位；骨架不虚拟化；loading 判定优先 -->
           <template v-if="loading">
-            <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton>
+            <tr v-for="row in SKELETON_ROWS" :key="row" data-skeleton data-table-skeleton>
               <td
                 v-if="hasSelection"
                 class="p-2 text-center align-middle"
@@ -1402,7 +990,7 @@ defineExpose({
 
           <!-- 错误态：error 优先于正常数据；插槽可自定义（slot props { error, retry }） -->
           <template v-else-if="showError">
-            <tr data-error>
+            <tr data-error data-table-error>
               <td :colspan="columnCount" class="p-8 text-center text-muted-foreground">
                 <slot name="error" :error="loadError" :retry="retry">
                   <div class="flex flex-col items-center gap-3">
@@ -1488,7 +1076,7 @@ defineExpose({
           </template>
 
           <!-- 空态：横跨全列的单单元格，不虚拟化；错误态优先 -->
-          <tr v-if="!loading && !showError && body.length === 0" data-empty>
+          <tr v-if="!loading && !showError && body.length === 0" data-empty data-table-empty>
             <td :colspan="columnCount" class="p-8 text-center text-muted-foreground">
               <slot name="empty">{{ emptyText ?? "暂无数据" }}</slot>
             </td>

@@ -79,6 +79,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
 
 <template>
   <tr
+    :data-row-key="props.line.key"
     class="transition-colors hover:bg-muted/50"
     :class="{
       'opacity-50 [&>td]:outline-2 [&>td]:outline-dashed [&>td]:-outline-offset-2 [&>td]:outline-primary/40':
@@ -147,6 +148,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
     <td
       v-for="(value, index) in props.line.cells"
       :key="props.columns[index].key"
+      :data-column-key="props.columns[index].key"
       class="p-2 align-middle"
       :class="[
         props.rowLines ? 'border-b border-border' : '',

@@ -31,3 +31,9 @@ export type {
   TreeOptions,
   UseTableRenderOptions,
 } from "./types";
+export { defaultTableMenuItems } from "./context-menu-types";
+export type {
+  TableContextMenuContext,
+  TableContextTarget,
+  TableMenuItem,
+} from "./context-menu-types";

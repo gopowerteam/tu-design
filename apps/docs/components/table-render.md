@@ -719,7 +719,7 @@ const table = defineTable<User>({
 
 ## 列显隐
 
-`columnSettings`（默认开启）在表格右上角提供「列设置」触发器（Popover 面板）：勾选控制列的显隐、支持**最少一列**、「重置」恢复默认可见集。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys。
+`columnSettings`（默认开启）提供「列设置」单例面板（工具栏 / 表头 ⋮ / 右键菜单三处共用同一实例）：勾选控制列的显隐、支持**最少一列**、「重置」恢复默认可见集。入口由 `columnSettingsPlacement` 决定：`auto` / `toolbar`（默认，**`auto ≡ toolbar`**）渲染为顶栏「列设置 n/m」文字链接；`header` 为 **opt-in**，改为表头叶子列右侧 `⋮`（`aria-label="列设置：<title>"`，多级表头只在叶子渲染），此时顶栏入口关闭。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys。
 
 <DemoPreview file="table-render/ColumnVisibilityDemo.vue" />
 
@@ -771,6 +771,31 @@ const visibleKeys = ref(["name", "lead"]);
 - **受控空数组**：钳制为首列可见 + DEV 警告一次；未知 key 静默忽略
 - **面板 a11y**：Tab 遍历 + Space 切换（Checkbox 原生语义）；Esc 关闭（Ark 内建）后焦点归还触发器
 - **不做**：列顺序拖拽调整、显隐持久化（业务用 `column-visibility-change` 自存）、列宽调整
+
+## 右键命令菜单
+
+`contextMenu` **默认关闭**（不挂根节点 `contextmenu` handler，右键行为零变化）。显式传入 `true` 启用默认项，或传函数返回业务菜单项：
+
+```vue
+<TTableRender
+  :definition="table"
+  row-key="id"
+  :context-menu="
+    (ctx) => [
+      { value: 'detail', label: '查看详情', onSelect: () => openDetail(ctx.target) },
+      { type: 'separator' },
+      { value: 'export', label: '导出该行' },
+    ]
+  "
+  @context-menu-select="(value, ctx) => handleSelect(value, ctx)"
+/>
+```
+
+- **target 九态**：`table` / `empty` / `error` / `skeleton` / `pagination` / `header`（叶子带 `columnKey`、分组带 `groupPath`）/ `row` / `cell`（`rawValue = record[columnKey]`，不是渲染 VNode）
+- **协议**：业务 `event.preventDefault()` 后不接管；`input` / `textarea` / `[contenteditable]` / `[data-no-table-menu]` / 菜单内部（`[data-scope="menu"]`）不接管；菜单项为空 → 不打开、不 emit；选中项**先关闭菜单再执行** `onSelect`
+- **默认项**：列设置… / 重置列（仅配置了 `defaultVisibleKeys`）/ 显示全部列；`columnSettings: false` 时列相关项全部过滤
+- **与 `row-contextmenu` 并存**：默认项路径不改 `defaultPrevented`，行右键事件照常发出；业务自行 `preventDefault` 可阻止菜单
+- **类型导出**：`TableContextMenuContext` / `TableContextTarget` / `TableMenuItem` / `defaultTableMenuItems`（可用于完全自管菜单项构建）
 
 ## 表头分组
 
@@ -1182,27 +1207,29 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 
 ### Props
 
-| prop                                                                                                                                                           | 类型                    | 默认       | 说明                                                                                                                                                                   |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `definition`                                                                                                                                                   | `TableRenderDefinition` | —          | 聚合式内核（优先于其余 props）                                                                                                                                         |
-| `rowKey`                                                                                                                                                       | `string`                | **必填**   | 行主键字段名                                                                                                                                                           |
-| `columns`                                                                                                                                                      | `TableColumnOptions[]`  | —          | 拆分式列配置                                                                                                                                                           |
-| `onLoad`                                                                                                                                                       | 见上                    | —          | 拆分式数据源                                                                                                                                                           |
-| `data`                                                                                                                                                         | `T[]`                   | —          | 拆分式静态数据源                                                                                                                                                       |
-| `autoLoad`                                                                                                                                                     | `boolean`               | `true`     | 同 config                                                                                                                                                              |
-| `pageSize` / `pageSizeOpts`                                                                                                                                    | `number` / `number[]`   | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                                          |
-| `loading`                                                                                                                                                      | `boolean`               | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                    |
-| `emptyText`                                                                                                                                                    | `string`                | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                          |
-| `search`                                                                                                                                                       | `FormRenderDefinition`  | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                             |
-| `showSearch`                                                                                                                                                   | `boolean`               | —          | `false` 关闭内置搜索区；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                       |
-| `showPagination`                                                                                                                                               | `boolean`               | —          | `false` 关闭内置分页条；缺省时单页自动隐藏不变，见下方组合式布局节                                                                                                     |
-| `fillHeight`                                                                                                                                                   | `boolean`               | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节   |
-| `bordered`                                                                                                                                                     | `boolean`               | `true`     | 表格外框；网格线由 `single-column` / `single-line` 独立控制（正交模型），见上方 [边框与条纹](#边框与条纹) 节                                                           |
-| `bottomBordered`                                                                                                                                               | `boolean`               | `true`     | 表格底部边框（仅 `bordered: false` 时有意义）                                                                                                                          |
-| `singleColumn`                                                                                                                                                 | `boolean`               | `false`    | `true` 不设定行的分割线（单元格无下边线）；表头底线保留                                                                                                                |
-| `singleLine`                                                                                                                                                   | `boolean`               | `true`     | `true` 不设定列的分割线（单元格无右边线）；全网格配方 `:single-line="false"`                                                                                           |
-| `striped`                                                                                                                                                      | `boolean`               | `false`    | 斑马线条纹（按行模型索引奇偶，虚拟滚动安全）                                                                                                                           |
-| `rowSelection` / `virtual` / `height` / `tree` / `draggable` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config               | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` / `draggable` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
+| prop                                                                                                                                                           | 类型                                  | 默认       | 说明                                                                                                                                                                   |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `definition`                                                                                                                                                   | `TableRenderDefinition`               | —          | 聚合式内核（优先于其余 props）                                                                                                                                         |
+| `rowKey`                                                                                                                                                       | `string`                              | **必填**   | 行主键字段名                                                                                                                                                           |
+| `columns`                                                                                                                                                      | `TableColumnOptions[]`                | —          | 拆分式列配置                                                                                                                                                           |
+| `onLoad`                                                                                                                                                       | 见上                                  | —          | 拆分式数据源                                                                                                                                                           |
+| `data`                                                                                                                                                         | `T[]`                                 | —          | 拆分式静态数据源                                                                                                                                                       |
+| `autoLoad`                                                                                                                                                     | `boolean`                             | `true`     | 同 config                                                                                                                                                              |
+| `pageSize` / `pageSizeOpts`                                                                                                                                    | `number` / `number[]`                 | 同 config  | 同 config；**仅初始值生效**，运行期调整用实例的 `setPageSize`                                                                                                          |
+| `loading`                                                                                                                                                      | `boolean`                             | —          | 外部受控加载态，与内部 loading 取或                                                                                                                                    |
+| `emptyText`                                                                                                                                                    | `string`                              | `暂无数据` | 空态文案（`#empty` 插槽优先）                                                                                                                                          |
+| `search`                                                                                                                                                       | `FormRenderDefinition`                | —          | 搜索表单（defineForm 返回值）；拆分式直接传，聚合式请在 defineTable 配置（definition 优先，同传 DEV 警告）                                                             |
+| `showSearch`                                                                                                                                                   | `boolean`                             | —          | `false` 关闭内置搜索区；数据链路不变（`onLoad` 的 `form` 仍携带表单值），`search` / `reset` 事件随之无触发源，见下方组合式布局节                                       |
+| `showPagination`                                                                                                                                               | `boolean`                             | —          | `false` 关闭内置分页条；缺省时单页自动隐藏不变，见下方组合式布局节                                                                                                     |
+| `columnSettingsPlacement`                                                                                                                                      | `"auto" \| "toolbar" \| "header"`     | `auto`     | 列设置入口位置：`auto`/`toolbar` = 顶栏文字链接（`auto ≡ toolbar`）；`header` = 表头叶子 ⋮（opt-in）                                                                   |
+| `contextMenu`                                                                                                                                                  | `boolean \| (ctx) => TableMenuItem[]` | `false`    | 右键命令菜单；`true` 用默认项（列设置…/重置列/显示全部列），函数返回业务项；默认关闭不挂 handler，协议见[右键命令菜单](#右键命令菜单)                                  |
+| `fillHeight`                                                                                                                                                   | `boolean`                             | —          | 填充模式：填满外部容器、内部滚动、表头 sticky 钉住；显式 prop > 布局 provide（key `tu-design:page-table-fill`）> `false`，见上方 [填充模式](#填充模式-fillheight) 节   |
+| `bordered`                                                                                                                                                     | `boolean`                             | `true`     | 表格外框；网格线由 `single-column` / `single-line` 独立控制（正交模型），见上方 [边框与条纹](#边框与条纹) 节                                                           |
+| `bottomBordered`                                                                                                                                               | `boolean`                             | `true`     | 表格底部边框（仅 `bordered: false` 时有意义）                                                                                                                          |
+| `singleColumn`                                                                                                                                                 | `boolean`                             | `false`    | `true` 不设定行的分割线（单元格无下边线）；表头底线保留                                                                                                                |
+| `singleLine`                                                                                                                                                   | `boolean`                             | `true`     | `true` 不设定列的分割线（单元格无右边线）；全网格配方 `:single-line="false"`                                                                                           |
+| `striped`                                                                                                                                                      | `boolean`                             | `false`    | 斑马线条纹（按行模型索引奇偶，虚拟滚动安全）                                                                                                                           |
+| `rowSelection` / `virtual` / `height` / `tree` / `draggable` / `pageIndex` / `sort` / `selectedKeys` / `visibleKeys` / `defaultVisibleKeys` / `columnSettings` | 同 config                             | —          | 拆分式直传，语义见上方 `defineTable` 配置表与对应特性小节；`rowSelection` / `draggable` 仅拆分式生效——聚合式请在 `defineTable` 配置，同传时 definition 优先并 DEV 警告 |
 
 ### Events
 
@@ -1220,6 +1247,8 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 | `load-error`                                       | `(error)`                              | 服务端模式 `onLoad` 抛错或 rejects；下一次 load 开始时错误清除                            |
 | `update:visible-keys` / `column-visibility-change` | `(keys)`                               | 列显隐；前者支持 v-model，后者受控/非受控均触发供持久化                                   |
 | `drag-sort`                                        | `(payload: TableDragSortPayload)`      | 行拖拽成功落位（取消路径不发）；`{ from, to, record, rows }`，见[行拖拽排序](#行拖拽排序) |
+| `context-menu`                                     | `(ctx: TableContextMenuContext)`       | 右键菜单已打开（`contextMenu` 显式开启时）；`ctx.target` 为九态判别联合                   |
+| `context-menu-select`                              | `(value, ctx)`                         | 业务菜单项无 `onSelect` 时点击的通知出口                                                  |
 
 ### Slots
 
