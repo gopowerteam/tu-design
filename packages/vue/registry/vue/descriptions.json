@@ -1,7 +1,7 @@
 {
   "$schema": "https://ui.shadcn.com/schema/registry-item.json",
   "name": "descriptions",
-  "version": "0.5.17",
+  "version": "0.5.18",
   "type": "registry:ui",
   "description": "描述列表：数据驱动 items 渲染标签/内容对，支持标签上下/左右布局、跨列 span、响应式列数、带边框表格样式与尺寸。",
   "registryDependencies": ["utils"],
