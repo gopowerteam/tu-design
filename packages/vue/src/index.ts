@@ -12,6 +12,7 @@ export * from "./components/checkbox";
 export * from "./components/currency-input";
 export * from "./components/date-picker";
 export * from "./components/date-range-picker";
+export * from "./components/descriptions";
 export * from "./components/dialog";
 export * from "./components/dropdown-menu";
 export * from "./components/form";

@@ -21,6 +21,7 @@ export const COMPONENT_NAMES = [
   "CurrencyInput",
   "DatePicker",
   "DateRangePicker",
+  "Descriptions",
   "Dialog",
   "Drawer",
   "DropdownMenu",

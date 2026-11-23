@@ -108,6 +108,13 @@
       "description": "日期家族共享模块：ISO 值域解析（日期/月/年/区间）、日历样式常量与单值选择器外壳（PickerShell/usePickerBridge）。"
     },
     {
+      "name": "descriptions",
+      "version": "0.5.17",
+      "title": "Descriptions",
+      "type": "registry:ui",
+      "description": "描述列表：数据驱动 items 渲染标签/内容对，支持标签上下/左右布局、跨列 span、响应式列数、带边框表格样式与尺寸。"
+    },
+    {
       "name": "dialog",
       "version": "0.5.17",
       "title": "Dialog",

@@ -18,6 +18,7 @@ tu-design 按用途将组件分为四类：**基础组件**、**表单组件**�
 [**Button** 按钮<br><span>带变体与尺寸，支持 `as` 与 `asChild` 组合。</span>](/components/button)
 [**Calendar** 日历<br><span>紧凑日历卡，standalone / embedded 双形态。</span>](/components/calendar)
 [**Card** 卡片<br><span>卡片容器族：Header/Title/Description/Content/Footer。</span>](/components/card)
+[**Descriptions** 描述列表<br><span>描述列表：数据驱动 items 渲染标签/内容对，支持上下/左右布局、跨列、响应式列数与带边框表格样式。</span>](/components/descriptions)
 [**Empty** 空状态<br><span>空状态占位，含默认插画与描述文案。</span>](/components/empty)
 [**Progress** 进度条<br><span>基于 Ark UI Progress 原语，支持语义色、标签与百分比显示、不确定态。</span>](/components/progress)
 [**Separator** 分隔线<br><span>分隔线，支持水平与垂直方向。</span>](/components/separator)

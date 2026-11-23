@@ -201,6 +201,10 @@ export default defineConfig({
             { text: "日历 <span class='sidebar-en'>Calendar</span>", link: "/components/calendar" },
             { text: "卡片 <span class='sidebar-en'>Card</span>", link: "/components/card" },
             {
+              text: "描述列表 <span class='sidebar-en'>Descriptions</span>",
+              link: "/components/descriptions",
+            },
+            {
               text: "分隔线 <span class='sidebar-en'>Separator</span>",
               link: "/components/separator",
             },
