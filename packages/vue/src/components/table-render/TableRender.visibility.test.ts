@@ -539,6 +539,21 @@ describe("TableRender 列显隐（column visibility）", () => {
     wrapper.unmount();
   });
 
+  it("面板锚点写根相对 absolute 坐标，且面板留在表格根节点内（portal=false）", async () => {
+    const { wrapper } = makeTableRender({ data: USERS.slice(0, 3) });
+    await wrapper.find('button[aria-label="列设置"]').trigger("click");
+    await vi.waitFor(() =>
+      expect(wrapper.find("[data-column-settings-panel]").exists()).toBe(true),
+    );
+    const anchor = wrapper.find("[data-column-settings-anchor]").element as HTMLElement;
+    expect(anchor.style.position).toBe("absolute");
+    // 面板不在 body 直属（未被 Teleport），而是落在表格根节点内
+    expect(wrapper.element.contains(wrapper.find("[data-column-settings-panel]").element)).toBe(
+      true,
+    );
+    wrapper.unmount();
+  });
+
   it("showSearch=false 且 columnSettings=true 时搜索区不渲染、入口仍渲染", async () => {
     const box: { def?: TableRenderDefinition<User> } = {};
     const Host = defineComponent({

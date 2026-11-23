@@ -733,6 +733,8 @@ const table = defineTable<User>({
 
 `auto` 与 `toolbar` 等价（`auto ≡ toolbar`）：即使没有任何顶栏/搜索区，也不自动改走表头入口——需要表头 `⋮` 请显式传 `columnSettingsPlacement="header"`。
 
+面板以表格根节点为定位基准（`absolute`），页面滚动时随表格移动；表体滚动容器一滚动面板自动关闭。iframe 沙箱下退化为视口固定定位（与右键菜单同一策略）。
+
 <DemoPreview file="table-render/ColumnSettingsPlacementDemo.vue" />
 
 ### 受控可见集与持久化
@@ -797,6 +799,25 @@ const visibleKeys = ref(["name", "lead"]);
 
 `contextMenu` **默认关闭**（不挂根节点 `contextmenu` handler，右键行为零变化，不影响业务自己的右键逻辑）。显式传入 `true` 启用默认项，或传函数返回业务菜单项。整个表格只有一个菜单宿主（放在滚动容器外），不为每行/每列实例化。
 
+### 接管与原生菜单
+
+启用 `contextMenu` 即**接管表格区域的右键**：内置菜单会打开时同时 `preventDefault()`，浏览器原生菜单不再叠加弹出；即使菜单项为空（自定义函数返回 `[]`、或 `columnSettings: false` 导致默认项为空），该区域右键也被接管（仅屏蔽原生菜单，DEV 下警告一次）。
+
+| 区域                                                           | 行为                                             |
+| -------------------------------------------------------------- | ------------------------------------------------ |
+| 表格元素内（行 / 单元格 / 表头 / 空态 / 错误态 / 骨架 / 空白） | 接管并屏蔽原生菜单                               |
+| 分页条 `[data-table-pagination]`                               | 接管并屏蔽原生菜单                               |
+| 表格外（工具栏、列设置面板内部等）                             | **不接管**，保留原生菜单                         |
+| `input` / `textarea` / `select` / `[contenteditable]`          | **不接管**，保留原生菜单（搜索框可正常使用右键） |
+| `[data-no-table-menu]`                                         | **不接管**，逐块豁免口                           |
+| 菜单自身 / 列设置面板                                          | **不接管**，防止面板内右键二次打开               |
+
+### 定位
+
+- 菜单以**表格根节点为坐标基准**做绝对定位（锚点 `position: absolute`），页面滚动时随表格一起移动，不会悬停在视口原处
+- 表体滚动容器（横向 / `fillHeight` 纵向 / `virtual` 纵向）一滚动即**关闭**菜单与列设置面板——锚点会与滚动内容脱节，关闭比错位更可靠
+- iframe 沙箱（`TuProvider` 判定为 iframe realm）下 absolute 包含块会错位，自动回退 `position: fixed` + 视口坐标
+
 ### 默认项
 
 `:context-menu="true"` 使用内置命令菜单，并按九态 `target` 自动分派：
@@ -845,7 +866,7 @@ function onMenuOpen(ctx: TableContextMenuContext<Order>) {
 
 <DemoPreview file="table-render/ContextMenuCustomDemo.vue" />
 
-- **items 为空**（返回 `[]`）→ 不打开菜单、不 emit `context-menu`：常用于「只在行/单元格上给菜单，表头与空白处保持原生」
+- **items 为空**（返回 `[]`）→ 不打开菜单、不 emit `context-menu`，但该区域右键仍被接管（原生菜单已屏蔽）。需要某区域保留原生菜单，请用 `data-no-table-menu` 豁免，或让该区域落在表格元素之外
 - **`disabled`**：置灰但仍占位；**`label` / `group` / `separator`** 用于分组与说明行
 - **业务数据**：`ctx.target` 携带 `record` / `rowKey` / `index`；`cell` 额外带 `columnKey` 与 `rawValue`（取自 `record[columnKey]`，不是渲染 VNode）；`ctx.selection` 是当前页选中快照
 
@@ -853,18 +874,18 @@ function onMenuOpen(ctx: TableContextMenuContext<Order>) {
 
 判定自上而下、命中即停；`cell` 优先于 `row`（同一 `tr` 内）：
 
-| 优先级 | 命中条件                                                                       | `target.kind`                  | 关键字段                                                 |
-| ------ | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------- |
-| 1      | `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` | **不接管**（返回 `undefined`） | —                                                        |
-| 2      | `event.defaultPrevented` 为真                                                  | **不接管**                     | 业务已接管，内置菜单不打开                               |
-| 3      | 菜单自身 `[data-scope="menu"]`                                                 | **不接管**                     | 防止菜单内右键二次打开                                   |
-| 4      | `tr[data-row-key]` + `td[data-column-key]`                                     | `cell`                         | `record` / `rowKey` / `index` / `columnKey` / `rawValue` |
-| 5      | `tr[data-row-key]`                                                             | `row`                          | `record` / `rowKey` / `index`                            |
-| 6      | `th[data-column-key]`                                                          | `header`（叶子）               | `columnKey` / `node`                                     |
-| 7      | `th[data-column-group]`                                                        | `header`（分组）               | `groupPath` / `node`                                     |
-| 8      | `[data-table-empty]` / `[data-table-error]` / `[data-table-skeleton]`          | `empty` / `error` / `skeleton` | —                                                        |
-| 9      | `[data-table-pagination]`                                                      | `pagination`                   | —                                                        |
-| 10     | 兜底（表格内）                                                                 | `table`                        | —                                                        |
+| 优先级 | 命中条件                                                                                    | `target.kind`                  | 关键字段                                                 |
+| ------ | ------------------------------------------------------------------------------------------- | ------------------------------ | -------------------------------------------------------- |
+| 1      | `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` / 列设置面板 | **不接管**（返回 `undefined`） | —                                                        |
+| 2      | `event.defaultPrevented` 为真                                                               | **不接管**                     | 业务已接管，内置菜单不打开                               |
+| 3      | 菜单自身 `[data-scope="menu"]`                                                              | **不接管**                     | 防止菜单内右键二次打开                                   |
+| 4      | `tr[data-row-key]` + `td[data-column-key]`                                                  | `cell`                         | `record` / `rowKey` / `index` / `columnKey` / `rawValue` |
+| 5      | `tr[data-row-key]`                                                                          | `row`                          | `record` / `rowKey` / `index`                            |
+| 6      | `th[data-column-key]`                                                                       | `header`（叶子）               | `columnKey` / `node`                                     |
+| 7      | `th[data-column-group]`                                                                     | `header`（分组）               | `groupPath` / `node`                                     |
+| 8      | `[data-table-empty]` / `[data-table-error]` / `[data-table-skeleton]`                       | `empty` / `error` / `skeleton` | —                                                        |
+| 9      | `[data-table-pagination]`                                                                   | `pagination`                   | —                                                        |
+| 10     | 兜底：**`table` 元素内**                                                                    | `table`                        | 表格外（工具栏/面板）返回 `undefined`，不接管            |
 
 依赖的 DOM 钩子（也是业务自建菜单/自动化测试的稳定选择器）：
 
@@ -926,7 +947,9 @@ function buildMenu(ctx: TableContextMenuContext<Order>): TableMenuItem<Order>[] 
 
 ### 限制
 
-- **无 Teleport**：菜单宿主挂在表格根节点、滚动容器外，但表格若嵌在 `overflow: hidden` 的弹窗内仍可能被裁剪（后续计划补 portal），此场景请优先使用工具栏/表头入口
+- **无 Teleport**：菜单与列设置面板都挂在表格根节点内（列设置 `portal=false`，为的是随表格滚动），表格若嵌在 `overflow: hidden` 的弹窗内可能被裁剪（后续计划补 portal），此场景请优先使用工具栏/表头入口
+- **接管即屏蔽原生菜单**：启用 `contextMenu` 后表格区域内不再出现浏览器原生菜单；需要局部恢复请在目标元素标 `data-no-table-menu`
+- **内层滚动关闭**：表体滚动容器一滚动，菜单与列设置面板都会关闭（避免锚点与内容错位）
 - **鼠标隐藏功能**：不做触屏（长按）与键盘（ContextMenu 键）专项适配
 - **不持久化**：菜单选择结果由业务自行处理（写 store / 请求接口）
 
@@ -1553,10 +1576,12 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 - **外置了查询按钮但点击没反应？** —— `show-search="false"` 后内置 `search` / `reset` 事件不再触发（二者由内置搜索区发出）；外层按钮请直接调 `table.reload(true)`（需校验时用 `await table.search.submit()`）。
 - **`TTablePagination` 的 `definition` 和手动 props 同时传了？** —— definition 优先并 DEV 警告；混传没有意义，二选一。
 - **金额带千分位但想要 `1,234.50`（无货币符号）？** —— `currency` 固定走货币格式；纯千分位请自定义 `render` 用 `Intl.NumberFormat({ style: "decimal" })`。
-- **右键没有出现命令菜单？** —— 先确认 `contextMenu` 已显式开启（默认 `false`）；再看是否在 `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` 区域内（这些区域一律不接管），或业务行处理器已 `event.preventDefault()`；自定义函数返回 `[]` 时也不会打开。
+- **右键没有出现命令菜单？** —— 先确认 `contextMenu` 已显式开启（默认 `false`）；再看是否在 `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` 区域内（这些区域一律不接管），或业务行处理器已 `event.preventDefault()`；自定义函数返回 `[]`、或 `contextMenu: true` 且 `columnSettings: false` 时不会打开菜单（DEV 下会警告一次）。
+- **原生右键菜单怎么不见了？** —— 启用 `contextMenu` 后表格区域右键由组件接管（含 items 为空的区域），原生菜单被屏蔽。需要对某些单元格/区域恢复原生菜单，请在其元素上标 `data-no-table-menu`；表单控件区内始终保留原生菜单。
+- **页面滚动后菜单为什么还贴着原来的行？** —— 这是预期行为：菜单以表格根节点为基准绝对定位，随表格滚动；表体滚动容器滚动时则直接关闭菜单与列设置面板。
 - **表头 `⋮` 找不到？** —— 需显式 `columnSettingsPlacement="header"`；`⋮` 平时按 `group-hover` / `focus-visible` 显示（触屏设备常显），且只在叶子表头渲染。
 - **列显隐怎么持久化？** —— 监听 `column-visibility-change`（受控/非受控都触发）写入 localStorage/后端；恢复时作为 `visibleKeys` 或 `defaultVisibleKeys` 传入。`update:visible-keys` 配对回写即 `v-model:visible-keys`。
-- **右键菜单在 Dialog/Drawer 里被裁掉？** —— 当前菜单宿主无 Teleport，嵌在 `overflow: hidden` 的浮层内可能被裁剪；此场景请改用工具栏/表头入口，或把 `contextMenu` 关闭由业务自建浮层。
+- **右键菜单在 Dialog/Drawer 里被裁掉？** —— 菜单与列设置面板都无 Teleport（面板为随表格滚动而 `portal=false`），嵌在 `overflow: hidden` 的浮层内可能被裁剪；此场景请改用工具栏/表头入口，或把 `contextMenu` 关闭由业务自建浮层。
 
 ## 注意事项
 

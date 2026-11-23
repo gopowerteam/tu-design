@@ -68,7 +68,8 @@ function isFixedLeaf(row: { isGroup: boolean; node: TableColumnNode }) {
 </script>
 
 <template>
-  <div data-column-settings-panel :class="cn(contentClass)">
+  <!-- data-no-table-menu：面板内右键不属于表格菜单管辖；prevent 掉原生菜单（面板是应用 UI） -->
+  <div data-column-settings-panel data-no-table-menu :class="cn(contentClass)" @contextmenu.prevent>
     <div v-if="panel.showSearch.value" class="px-3 pt-3">
       <input
         v-model="query"

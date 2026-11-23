@@ -9,11 +9,11 @@ const popoverContent = () =>
   document.querySelector<HTMLElement>('[data-scope="popover"][data-part="content"]');
 
 describe("TableColumnSettings 单例宿主", () => {
-  it("open=true：渲染 default 插槽内容，锚点内联 fixed 坐标", async () => {
+  it("open=true：渲染 default 插槽内容，锚点为 absolute 根相对坐标", async () => {
     const wrapper = mount(TableColumnSettings, {
       props: {
         open: false,
-        anchorStyle: { position: "fixed", width: "0", height: "0", left: "12px", top: "34px" },
+        anchorStyle: { position: "absolute", width: "0", height: "0", left: "12px", top: "34px" },
       },
       slots: { default: () => h("div", { id: "panel-content" }, "面板内容") },
       attachTo: document.body,
@@ -28,7 +28,7 @@ describe("TableColumnSettings 单例宿主", () => {
 
     const anchor = wrapper.find("[data-column-settings-anchor]");
     expect(anchor.exists()).toBe(true);
-    expect((anchor.element as HTMLElement).style.position).toBe("fixed");
+    expect((anchor.element as HTMLElement).style.position).toBe("absolute");
     expect((anchor.element as HTMLElement).style.left).toBe("12px");
     expect((anchor.element as HTMLElement).style.top).toBe("34px");
     wrapper.unmount();
@@ -38,7 +38,7 @@ describe("TableColumnSettings 单例宿主", () => {
     const wrapper = mount(TableColumnSettings, {
       props: {
         open: true,
-        anchorStyle: { position: "fixed", width: "0", height: "0", left: "0px", top: "0px" },
+        anchorStyle: { position: "absolute", width: "0", height: "0", left: "0px", top: "0px" },
       },
       slots: { default: () => h("div", { id: "panel-content" }, "面板内容") },
       attachTo: document.body,

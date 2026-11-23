@@ -1,13 +1,17 @@
 import type { Ref } from "vue";
 import { ref } from "vue";
+import { buildAnchorStyle, toRootPoint } from "./anchor-point";
+import type { OverlayAnchorPosition, OverlayAnchorStyle } from "./anchor-point";
 
-/** 面板锚点坐标（fixed 定位；恒含 0 尺寸宽高） */
-export interface ColumnSettingsAnchorStyle extends Record<string, string> {
-  position: "fixed";
-  width: "0";
-  height: "0";
-  left: string;
-  top: string;
+/** 面板锚点坐标（absolute = 根节点相对；fixed = 视口坐标；恒含 0 尺寸宽高） */
+export type ColumnSettingsAnchorStyle = OverlayAnchorStyle;
+
+/** 列设置控制器选项 */
+export interface ColumnSettingsControllerOptions {
+  /** 表格根节点（absolute 定位基准；缺失时退视口坐标） */
+  getRoot?: () => HTMLElement | undefined;
+  /** 定位策略：iframe 沙箱返回 fixed（默认 absolute） */
+  anchorPosition?: () => OverlayAnchorPosition;
 }
 
 /** 列设置开合控制器 */
@@ -31,17 +35,20 @@ export interface ColumnSettingsController {
 
 /**
  * 默认锚点样式：左上角，0 尺寸
- * @returns 初始 fixed 锚点样式
+ * @returns 初始锚点样式（absolute 根相对 0,0）
  */
 function initialAnchor(): ColumnSettingsAnchorStyle {
-  return { position: "fixed", width: "0", height: "0", left: "0px", top: "0px" };
+  return buildAnchorStyle({ left: 0, top: 0 }, "absolute");
 }
 
 /**
  * 列设置面板开合控制：受控开放状态 + 锚点坐标计算（纯逻辑，不持有 DOM）。
+ * @param options - 根节点与定位策略（沙箱回退 fixed）
  * @returns 开合状态、高亮 key、锚点样式与动作
  */
-export function useColumnSettingsController(): ColumnSettingsController {
+export function useColumnSettingsController(
+  options?: ColumnSettingsControllerOptions,
+): ColumnSettingsController {
   const open = ref(false);
   const highlightKey = ref<string | undefined>(undefined);
   const anchorStyle = ref<ColumnSettingsAnchorStyle>(initialAnchor());
@@ -75,15 +82,13 @@ export function useColumnSettingsController(): ColumnSettingsController {
    * @param columnKey - 可选来源列 key
    */
   function openAt(target: MouseEvent | HTMLElement, columnKey?: string) {
-    const { left, top } = resolvePoint(target);
+    const position = options?.anchorPosition?.() ?? "absolute";
+    const point = resolvePoint(target);
     highlightKey.value = columnKey;
-    anchorStyle.value = {
-      position: "fixed",
-      width: "0",
-      height: "0",
-      left: `${Math.round(left)}px`,
-      top: `${Math.round(top)}px`,
-    };
+    anchorStyle.value = buildAnchorStyle(
+      position === "fixed" ? point : toRootPoint(options?.getRoot?.(), point.left, point.top),
+      position,
+    );
     open.value = true;
   }
 

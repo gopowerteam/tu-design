@@ -361,3 +361,153 @@ describe("TableRender 右键命令菜单", () => {
     wrapper.unmount();
   });
 });
+
+// ---- 接管语义：屏蔽原生菜单 / 根相对定位 / 滚动关闭 -------------------------------
+
+/** 挂载启用 contextMenu 的表格（默认可见集：重置项可用） */
+function mountMenu(
+  contextMenu: boolean | ((ctx: never) => unknown),
+  extra: Record<string, unknown> = {},
+) {
+  return mount(TableRender, {
+    props: {
+      rowKey: "id",
+      columns: baseColumns(),
+      data: USERS,
+      contextMenu,
+      defaultVisibleKeys: ["name", "age"],
+      ...extra,
+    } as never,
+    attachTo: document.body,
+  });
+}
+
+describe("TableRender 右键接管语义", () => {
+  it("启用后行 / 单元格 / 表头 / 表格空白右键均屏蔽原生菜单", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+
+    const rowEvent = fireContextMenu(wrapper.findAll("tbody tr")[0]!.element);
+    expect(rowEvent.defaultPrevented).toBe(true);
+
+    const cellEvent = fireContextMenu(wrapper.findAll("tbody tr")[0]!.findAll("td")[0]!.element);
+    expect(cellEvent.defaultPrevented).toBe(true);
+
+    const headerEvent = fireContextMenu(wrapper.find("thead th").element);
+    expect(headerEvent.defaultPrevented).toBe(true);
+
+    const tableEvent = fireContextMenu(wrapper.find("table").element);
+    expect(tableEvent.defaultPrevented).toBe(true);
+
+    wrapper.unmount();
+  });
+
+  it("items 为空：仍屏蔽原生菜单但不打开、不 emit", async () => {
+    const onContextMenu = vi.fn();
+    const wrapper = mountMenu(() => [] as never, { onContextMenu } as never);
+    await flushPromises();
+
+    const event = fireContextMenu(wrapper.findAll("tbody tr")[0]!.element);
+    await flushPromises();
+    expect(event.defaultPrevented).toBe(true);
+    expect(menuRoot()).toBeNull();
+    expect(onContextMenu).not.toHaveBeenCalled();
+    wrapper.unmount();
+  });
+
+  it("排除区：data-no-table-menu 与 input 保留原生菜单", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+
+    const exempt = document.createElement("span");
+    exempt.setAttribute("data-no-table-menu", "");
+    exempt.textContent = "豁免";
+    wrapper.element.appendChild(exempt);
+    expect(fireContextMenu(exempt).defaultPrevented).toBe(false);
+
+    const input = document.createElement("input");
+    wrapper.element.appendChild(input);
+    expect(fireContextMenu(input).defaultPrevented).toBe(false);
+    expect(menuRoot()).toBeNull();
+    wrapper.unmount();
+  });
+
+  it("表格外区域（工具栏等）不接管", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+
+    const button = document.createElement("button");
+    button.textContent = "工具栏";
+    wrapper.element.appendChild(button);
+    expect(fireContextMenu(button).defaultPrevented).toBe(false);
+    expect(menuRoot()).toBeNull();
+    wrapper.unmount();
+  });
+
+  it("锚点为 absolute 根相对坐标", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+    wrapper.element.getBoundingClientRect = () =>
+      ({
+        left: 100,
+        top: 50,
+        width: 400,
+        height: 300,
+        right: 500,
+        bottom: 350,
+        x: 100,
+        y: 50,
+        toJSON: () => ({}),
+      }) as DOMRect;
+
+    fireContextMenu(wrapper.findAll("tbody tr")[0]!.element, { clientX: 128, clientY: 74 });
+    await vi.waitFor(() => expect(menuRoot()).not.toBeNull());
+
+    const anchor = wrapper.find("[data-table-menu-anchor]").element as HTMLElement;
+    expect(anchor.style.position).toBe("absolute");
+    expect(anchor.style.left).toBe("28px");
+    expect(anchor.style.top).toBe("24px");
+    wrapper.unmount();
+  });
+
+  it("页面滚动不关闭（浮层随表格移动）；表体滚动关闭", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+    fireContextMenu(wrapper.findAll("tbody tr")[0]!.element);
+    await vi.waitFor(() => expect(menuRoot()).not.toBeNull());
+
+    window.dispatchEvent(new Event("scroll"));
+    await flushPromises();
+    expect(menuRoot()).not.toBeNull();
+
+    const scrollEl = wrapper.element.querySelector(".overflow-x-auto")!;
+    scrollEl.dispatchEvent(new Event("scroll"));
+    await flushPromises();
+    expect(menuRoot()).toBeNull();
+    wrapper.unmount();
+  });
+
+  it("表体滚动同时关闭列设置面板", async () => {
+    const wrapper = mountMenu(true as never);
+    await flushPromises();
+    const trigger = wrapper.find("[data-column-settings]");
+    expect(trigger.exists()).toBe(true);
+    await trigger.trigger("click");
+    await flushPromises();
+    await vi.waitFor(() =>
+      expect(document.querySelector("[data-column-settings-panel]")).not.toBeNull(),
+    );
+    expect(
+      document.querySelector<HTMLElement>("[data-column-settings-panel]")!.closest("[hidden]"),
+    ).toBeNull();
+
+    const scrollEl = wrapper.element.querySelector(".overflow-x-auto")!;
+    scrollEl.dispatchEvent(new Event("scroll"));
+    await vi.waitFor(() =>
+      expect(
+        document.querySelector<HTMLElement>("[data-column-settings-panel]")!.closest("[hidden]"),
+      ).not.toBeNull(),
+    );
+    wrapper.unmount();
+  });
+});

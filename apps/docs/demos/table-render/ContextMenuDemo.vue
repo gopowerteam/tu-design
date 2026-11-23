@@ -78,8 +78,9 @@ function onOpen(ctx: TableContextMenuContext<Order>) {
     </p>
     <p class="text-muted-foreground text-xs">
       `:context-menu="true"` 启用默认项——列设置… / 重置列（已配置 defaultVisibleKeys 时才出现）/
-      显示全部列。在表头、行、单元格、空白处、分页条上右键可看到 `ctx.target` 的 kind 变化；在
-      内置搜索框上右键不接管原生菜单。
+      显示全部列。在表头、行、单元格、空白处、分页条上右键可看到 `ctx.target` 的 kind
+      变化；表格区域内的
+      原生右键菜单已被屏蔽，内置搜索框上右键仍保留原生菜单。
     </p>
   </div>
 </template>

@@ -92,8 +92,8 @@ function onSelect(value: string, ctx: TableContextMenuContext<Task>) {
     <p class="text-muted-foreground text-xs">{{ message }}</p>
     <p class="text-muted-foreground text-xs">
       传函数 = 完全自定义菜单项：无 `onSelect` 的项走 `context-menu-select`
-      事件；返回空数组则不打开菜单（表头/空白处即如此）。「备注」列用 `data-no-table-menu`
-      标记豁免区，右键回到浏览器原生菜单。
+      事件；返回空数组则不弹菜单（表头/空白处即如此，且该区域原生菜单同样被屏蔽）。「备注」列用
+      `data-no-table-menu` 标记豁免区，右键回到浏览器原生菜单。
     </p>
   </div>
 </template>

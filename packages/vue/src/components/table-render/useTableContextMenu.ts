@@ -1,6 +1,8 @@
 import type { Ref } from "vue";
 import { ref, shallowRef } from "vue";
 import type { MenuItemOption } from "../dropdown-menu/types";
+import { buildAnchorStyle, toRootPoint } from "./anchor-point";
+import type { OverlayAnchorPosition } from "./anchor-point";
 import { defaultTableMenuItems } from "./context-menu-types";
 import type {
   DefaultTableMenuOptions,
@@ -17,9 +19,9 @@ export interface ContextTargetMeta<T extends DataRecord = DataRecord> {
   groupOf: (groupPath: string) => TableColumnGroupOptions<T> | undefined;
 }
 
-/** 不接管的元素（表单内 / 显式豁免 / 菜单自身） */
+/** 不接管的元素（表单内 / 显式豁免 / 菜单与列设置面板自身） */
 const EXCLUDED_SELECTOR =
-  'input, textarea, select, [contenteditable], [data-no-table-menu], [data-scope="menu"]';
+  'input, textarea, select, [contenteditable], [data-no-table-menu], [data-scope="menu"], [data-column-settings-panel]';
 
 /**
  * 解析右键目标（九态判别）。返回 undefined 表示不接管（协议⑥）。
@@ -76,8 +78,8 @@ export function resolveTableContextTarget<T extends DataRecord = DataRecord>(
   if (raw.closest("[data-table-skeleton]")) return { kind: "skeleton" };
   if (raw.closest("[data-table-error]")) return { kind: "error" };
   if (raw.closest("[data-table-empty]")) return { kind: "empty" };
-  if (raw.closest("table")) return { kind: "table" };
-  return { kind: "table" };
+  // 仅表格元素内兜底；工具栏 / 面板等表格外区域交还原生右键
+  return raw.closest("table") ? { kind: "table" } : undefined;
 }
 
 /** useTableContextMenu 入参 */
@@ -87,6 +89,10 @@ export interface UseTableContextMenuOptions<T extends DataRecord = DataRecord> {
   snapshot: () => Pick<TableContextMenuContext<T>, "selection" | "visibleKeys" | "columns">;
   defaults: () => DefaultTableMenuOptions;
   meta: () => ContextTargetMeta<T>;
+  /** 表格根节点（absolute 定位基准；缺失时退视口坐标） */
+  getRoot?: () => HTMLElement | undefined;
+  /** 定位策略：iframe 沙箱返回 fixed（默认 absolute） */
+  anchorPosition?: () => OverlayAnchorPosition;
   /** 无 onSelect 的菜单项点击回调（宿主 emit context-menu-select） */
   onMenuSelect?: (value: string, ctx: TableContextMenuContext<T>) => void;
   /** 菜单打开回调（宿主 emit context-menu） */
@@ -136,23 +142,23 @@ function toMenuOptions<T extends DataRecord>(
 
 /**
  * 右键菜单控制器：解析目标、构建菜单、先关后执行（协议③④⑤）。
- * @param options - 菜单配置/快照/默认项/元数据与宿主回调
+ * `onContextMenu` 返回「是否接管」：resolver 命中即接管（宿主据此屏蔽原生菜单），
+ * 与菜单项是否为空无关；空项时不打开、不 emit。
+ * @param options - 菜单配置/快照/默认项/元数据/根节点与宿主回调
  * @returns 开合状态、菜单项、上下文与动作
  */
 export function useTableContextMenu<T extends DataRecord = DataRecord>(
   options: UseTableContextMenuOptions<T>,
 ): TableContextMenuController<T> {
   const open = ref(false);
-  const anchorStyle = ref<Record<string, string>>({
-    position: "fixed",
-    width: "0",
-    height: "0",
-    left: "0px",
-    top: "0px",
-  });
+  const anchorStyle = ref<Record<string, string>>(
+    buildAnchorStyle({ left: 0, top: 0 }, "absolute"),
+  );
   const items = ref<MenuItemOption[]>([]);
   const context = shallowRef<TableContextMenuContext<T> | undefined>(undefined);
   const handlers = new Map<string, (ctx: TableContextMenuContext<T>) => void | Promise<void>>();
+  /** 「已接管但无菜单项」DEV 警告只发一次 */
+  let warnedEmptyItems = false;
 
   /** 关闭菜单（不清上下文，供先关后执行读取） */
   function close() {
@@ -160,9 +166,10 @@ export function useTableContextMenu<T extends DataRecord = DataRecord>(
   }
 
   /**
-   * 处理根节点 contextmenu：目标/菜单项任一不成立则不接管。
+   * 处理根节点 contextmenu：resolver 命中即接管（返回 true，宿主负责 preventDefault）；
+   * 菜单项为空时仅告警，不打开、不 emit。
    * @param event - contextmenu 事件
-   * @returns 是否已接管并打开
+   * @returns 是否接管（表格区域且未被排除）
    */
   function onContextMenu(event: MouseEvent): boolean {
     const target = resolveTableContextTarget(event, options.meta());
@@ -173,7 +180,6 @@ export function useTableContextMenu<T extends DataRecord = DataRecord>(
       event,
       close,
     };
-    context.value = ctx;
     const configured = options.menu();
     const rawItems =
       typeof configured === "function"
@@ -183,17 +189,24 @@ export function useTableContextMenu<T extends DataRecord = DataRecord>(
           : [];
     if (rawItems.length === 0) {
       context.value = undefined;
-      return false;
+      open.value = false;
+      if (import.meta.env.DEV && !warnedEmptyItems) {
+        warnedEmptyItems = true;
+        console.warn(
+          "[TableRender] contextMenu 已启用但当前右键目标没有可用菜单项（自定义函数返回空数组，或 columnSettings 关闭导致默认项为空）；该区域右键已被接管，仅屏蔽原生菜单。",
+        );
+      }
+      return true;
     }
+    context.value = ctx;
     handlers.clear();
     items.value = toMenuOptions(rawItems, handlers);
-    anchorStyle.value = {
-      position: "fixed",
-      width: "0",
-      height: "0",
-      left: `${Math.round(event.clientX)}px`,
-      top: `${Math.round(event.clientY)}px`,
-    };
+    const position = options.anchorPosition?.() ?? "absolute";
+    const point = { left: event.clientX, top: event.clientY };
+    anchorStyle.value = buildAnchorStyle(
+      position === "fixed" ? point : toRootPoint(options.getRoot?.(), point.left, point.top),
+      position,
+    );
     open.value = true;
     options.onOpen?.(ctx);
     return true;

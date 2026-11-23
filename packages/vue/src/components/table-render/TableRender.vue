@@ -2,7 +2,7 @@
 import type { ComponentPublicInstance, PropType, VNodeChild } from "vue";
 import { useVirtualizer } from "@tanstack/vue-virtual";
 import { columnRenders } from "./column-renders";
-import { computed, inject, ref, watch } from "vue";
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import type { FormRenderDefinition } from "@/components/form-render";
 import { Button } from "@/components/button";
 import { Checkbox } from "@/components/checkbox";
@@ -23,6 +23,7 @@ import TableToolbar from "./TableToolbar.vue";
 import type { TableContextMenuContext, TableMenuItem } from "./context-menu-types";
 import { useColumnSettingsController } from "./useColumnSettingsController";
 import { useTableContextMenu } from "./useTableContextMenu";
+import { strategyFixed, useTuProvider } from "@/components/overlay-shared/config";
 import TablePagination from "./TablePagination.vue";
 import type {
   ColumnVisibilityOptions,
@@ -325,8 +326,22 @@ const { headerRows } = useTableHeaderModel({
 /** 列设置触发器/面板开关（默认 true）；false 时不渲染 UI，受控 API 不受影响 */
 const showColumnSettings = computed(() => props.columnSettings ?? true);
 
+// ---- 浮层定位基准：普通文档 absolute（随表格滚动）；iframe 沙箱回退 fixed ----------
+/** 表格根节点（浮层锚点的 absolute 定位包含块） */
+const rootEl = ref<HTMLElement | null>(null);
+const tuProvider = useTuProvider();
+/** 沙箱（iframe realm）下 absolute 包含块会错位，回退 fixed（与 overlay-shared 口径一致） */
+const overlayStrategy = computed<"absolute" | "fixed">(() =>
+  strategyFixed(tuProvider.mode) ? "fixed" : "absolute",
+);
+/** 两个浮层 controller 共用同一根节点与定位策略，避免两处漂移 */
+const overlayAnchorOptions = {
+  getRoot: () => rootEl.value ?? undefined,
+  anchorPosition: () => overlayStrategy.value,
+};
+
 // ---- 列设置面板：controller（开合/锚点）+ 子组件（面板纯内容） ----------------
-const columnSettings = useColumnSettingsController();
+const columnSettings = useColumnSettingsController(overlayAnchorOptions);
 /** 表头 ⋮ 与工具栏入口互斥：placement=header 时顶栏不再渲染列设置入口 */
 const showToolbarColumnSettings = computed(
   () => showColumnSettings.value && props.columnSettingsPlacement !== "header",
@@ -355,6 +370,7 @@ function findColumnGroup(
 }
 
 const contextMenuController = useTableContextMenu({
+  ...overlayAnchorOptions,
   menu: () => props.contextMenu,
   snapshot: () => ({
     selection: {
@@ -402,10 +418,34 @@ function openContextColumnSettings() {
   else columnSettings.openAt(document.body, columnKey);
 }
 
+/**
+ * 根节点 contextmenu：接管时屏蔽原生菜单（内置菜单与原生菜单不再叠加）
+ * @param event - contextmenu 事件
+ */
+function onTableContextMenu(event: MouseEvent) {
+  if (contextMenuController.onContextMenu(event)) event.preventDefault();
+}
+
 /** 根节点 contextmenu 绑定：默认关闭时不挂 handler（协议①） */
 const contextMenuBindings = computed(() =>
-  props.contextMenu ? { onContextmenu: contextMenuController.onContextMenu } : {},
+  props.contextMenu ? { onContextmenu: onTableContextMenu } : {},
 );
+
+/**
+ * 表体滚动容器滚动：浮层锚点会与内容脱节，直接关闭两个浮层。
+ * 页面滚动不关闭——浮层用 absolute 根相对定位，会随表格一起移动。
+ */
+function onInnerScroll() {
+  contextMenuController.close();
+  columnSettings.close();
+}
+
+onMounted(() => {
+  scrollEl.value?.addEventListener("scroll", onInnerScroll, { passive: true });
+});
+onBeforeUnmount(() => {
+  scrollEl.value?.removeEventListener("scroll", onInnerScroll);
+});
 
 // 受控/非受控均通知：统一投影变化 → 双事件（载荷 = columns 原序可见 key）
 watch(instance.visibleKeys, (keys) => {
@@ -888,7 +928,8 @@ defineExpose({
 
 <template>
   <div
-    :class="cn('w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)"
+    ref="rootEl"
+    :class="cn('relative w-full', fill && 'flex h-full min-h-0 flex-col', $attrs.class)"
     v-bind="contextMenuBindings"
   >
     <!-- 顶栏（搜索表单 + 列设置文字入口）与列设置单例宿主（根级、滚动容器外） -->
@@ -907,6 +948,7 @@ defineExpose({
     <TableColumnSettings
       :open="columnSettings.open.value"
       :anchor-style="columnSettings.anchorStyle.value"
+      :strategy="overlayStrategy"
       @update:open="(next: boolean) => (columnSettings.open.value = next)"
     >
       <ColumnSettingsPanel
@@ -922,6 +964,7 @@ defineExpose({
       :open="contextMenuController.open.value"
       :items="contextMenuController.items.value"
       :anchor-style="contextMenuController.anchorStyle.value"
+      :strategy="overlayStrategy"
       @update:open="(next: boolean) => (contextMenuController.open.value = next)"
       @select="contextMenuController.onSelect"
     />

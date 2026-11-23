@@ -95,20 +95,24 @@ describe("resolveTableContextTarget 九态", () => {
     cell.host.remove();
   });
 
-  it("排除区：input / textarea / contenteditable / data-no-table-menu / menu / defaultPrevented", () => {
+  it("排除区：input / textarea / select / contenteditable / data-no-table-menu / menu / 列设置面板", () => {
     const fixtures = [
       '<table><tbody><tr data-row-key="r1"><td><input /></td></tr></tbody></table>',
       '<table><tbody><tr data-row-key="r1"><td><textarea></textarea></td></tr></tbody></table>',
+      '<table><tbody><tr data-row-key="r1"><td><select><option>x</option></select></td></tr></tbody></table>',
       '<table><tbody><tr data-row-key="r1"><td><div contenteditable="true">x</div></td></tr></tbody></table>',
       '<table><tbody><tr data-row-key="r1"><td><span data-no-table-menu>x</span></td></tr></tbody></table>',
       '<div data-scope="menu"><span>x</span></div>',
+      "<div data-column-settings-panel><button>x</button></div>",
     ];
     const selectors = [
       "input",
       "textarea",
+      "select",
       '[contenteditable="true"]',
       "[data-no-table-menu]",
       "span",
+      "button",
     ];
     fixtures.forEach((html, index) => {
       const { host, event } = dispatch(html, selectors[index]!);
@@ -124,6 +128,16 @@ describe("resolveTableContextTarget 九态", () => {
     expect(resolveTableContextTarget(prevented.event, META)).toBeUndefined();
     prevented.host.remove();
   });
+
+  it("表格外兜底：工具栏等非表格区域不接管（避免吞掉原生右键）", () => {
+    const toolbar = dispatch("<div><button>列设置</button></div>", "button");
+    expect(resolveTableContextTarget(toolbar.event, META)).toBeUndefined();
+    toolbar.host.remove();
+
+    const pagination = dispatch("<div data-table-pagination><button>x</button></div>", "button");
+    expect(resolveTableContextTarget(pagination.event, META)).toMatchObject({ kind: "pagination" });
+    pagination.host.remove();
+  });
 });
 
 describe("useTableContextMenu 控制器协议", () => {
@@ -133,7 +147,8 @@ describe("useTableContextMenu 控制器协议", () => {
     columns: [{ key: "name", title: "姓名" }] as const,
   });
 
-  it("items 为空不打开且不 emit", () => {
+  it("items 为空：仍接管（屏蔽原生菜单）但不打开、不 emit，DEV 警告只发一次", () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const onOpen = vi.fn();
     const controller = useTableContextMenu<Row>({
       menu: () => () => [],
@@ -152,9 +167,13 @@ describe("useTableContextMenu 控制器协议", () => {
       '<table><tbody><tr data-row-key="r1"><td><span>x</span></td></tr></tbody></table>',
       "span",
     );
-    expect(controller.onContextMenu(event)).toBe(false);
+    expect(controller.onContextMenu(event)).toBe(true);
     expect(controller.open.value).toBe(false);
     expect(onOpen).not.toHaveBeenCalled();
+    controller.onContextMenu(event);
+    expect(warn).toHaveBeenCalledTimes(1);
+    expect(warn.mock.calls[0]![0]).toContain("contextMenu 已启用但当前右键目标没有可用菜单项");
+    warn.mockRestore();
     host.remove();
   });
 
@@ -225,7 +244,20 @@ describe("useTableContextMenu 控制器协议", () => {
     expect(defaultTableMenuItems(ctx, { ...base, columnSettingsEnabled: false })).toHaveLength(0);
   });
 
-  it("anchorStyle 记录右键坐标（fixed 0x0）", () => {
+  it("anchorStyle 记录根节点相对坐标（absolute 0x0）", () => {
+    const root = document.createElement("div");
+    root.getBoundingClientRect = () =>
+      ({
+        left: 100,
+        top: 50,
+        width: 400,
+        height: 300,
+        right: 500,
+        bottom: 350,
+        x: 100,
+        y: 50,
+        toJSON: () => ({}),
+      }) as DOMRect;
     const controller = useTableContextMenu<Row>({
       menu: () => () => [{ value: "a", label: "A" }],
       snapshot,
@@ -237,6 +269,37 @@ describe("useTableContextMenu 控制器协议", () => {
         showAllColumns: () => {},
       }),
       meta: () => META,
+      getRoot: () => root,
+    });
+    const { host, event } = dispatch(
+      '<table><tbody><tr data-row-key="r1"><td><span>x</span></td></tr></tbody></table>',
+      "span",
+      { clientX: 128, clientY: 74 },
+    );
+    controller.onContextMenu(event);
+    expect(controller.anchorStyle.value).toMatchObject({
+      position: "absolute",
+      width: "0",
+      height: "0",
+      left: "28px",
+      top: "24px",
+    });
+    host.remove();
+  });
+
+  it("沙箱回退：anchorPosition=fixed 时保留视口坐标", () => {
+    const controller = useTableContextMenu<Row>({
+      menu: () => () => [{ value: "a", label: "A" }],
+      snapshot,
+      defaults: () => ({
+        columnSettingsEnabled: true,
+        hasDefaultVisibleKeys: false,
+        openColumnSettings: () => {},
+        resetColumns: () => {},
+        showAllColumns: () => {},
+      }),
+      meta: () => META,
+      anchorPosition: () => "fixed",
     });
     const { host, event } = dispatch(
       '<table><tbody><tr data-row-key="r1"><td><span>x</span></td></tr></tbody></table>',
@@ -246,8 +309,6 @@ describe("useTableContextMenu 控制器协议", () => {
     controller.onContextMenu(event);
     expect(controller.anchorStyle.value).toMatchObject({
       position: "fixed",
-      width: "0",
-      height: "0",
       left: "12px",
       top: "34px",
     });

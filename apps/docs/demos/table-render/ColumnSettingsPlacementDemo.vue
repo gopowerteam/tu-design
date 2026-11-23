@@ -83,7 +83,8 @@ function usePlacement(next: "auto" | "header") {
     <p class="text-muted-foreground text-xs">
       `auto` / `toolbar` 渲染顶栏「列设置 n/m」文字链接（`auto ≡ toolbar`）；`header` 为
       opt-in，改为叶子表头右侧 `⋮`（多级表头只在叶子渲染，分组单元格不渲染），此时顶栏入口关闭。两种
-      入口打开的是同一个面板：先隐藏几列再切换入口，勾选状态不变。
+      入口打开的是同一个面板：先隐藏几列再切换入口，勾选状态不变。面板随表格滚动而移动，表体横向/纵向
+      滚动时自动关闭。
     </p>
   </div>
 </template>
