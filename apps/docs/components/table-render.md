@@ -721,6 +721,22 @@ const table = defineTable<User>({
 
 `columnSettings`（默认开启）提供「列设置」单例面板（工具栏 / 表头 ⋮ / 右键菜单三处共用同一实例）：勾选控制列的显隐、支持**最少一列**、「重置」恢复默认可见集。入口由 `columnSettingsPlacement` 决定：`auto` / `toolbar`（默认，**`auto ≡ toolbar`**）渲染为顶栏「列设置 n/m」文字链接；`header` 为 **opt-in**，改为表头叶子列右侧 `⋮`（`aria-label="列设置：<title>"`，多级表头只在叶子渲染），此时顶栏入口关闭。渲染（header/body/骨架/colspan）与 **fixed sticky 偏移全部基于可见列集重算**——隐藏 fixed 列后偏移自动收紧，sticky 组因隐藏变空则不输出该组边框。列显隐不触发 onLoad、不重置 pageIndex/sort/selectedKeys。
 
+### 入口位置
+
+三个入口打开的是**同一个面板实例**（同一份勾选状态与搜索/折叠状态），切换入口不会丢面板状态：
+
+| 入口                | 触发方式                                               | 何时出现                                       | 备注                                                                    |
+| ------------------- | ------------------------------------------------------ | ---------------------------------------------- | ----------------------------------------------------------------------- |
+| 顶栏文字链接        | `columnSettingsPlacement="auto"` / `"toolbar"`（默认） | `columnSettings !== false`                     | 文案「列设置 n/m」；无内置搜索区时独占表格上方一行、右对齐              |
+| 表头叶子 `⋮`        | `columnSettingsPlacement="header"`（**opt-in**）       | 同上，且仅叶子表头（分组单元格不渲染）         | 绝对定位不参与布局；点击 `@click.stop` 不触发排序                       |
+| 右键菜单「列设置…」 | `contextMenu` 显式开启                                 | `contextMenu` 为 `true` 或自定义项里包含该动作 | 从表头/单元格右键时自动高亮对应列；`columnSettings: false` 时该项被过滤 |
+
+`auto` 与 `toolbar` 等价（`auto ≡ toolbar`）：即使没有任何顶栏/搜索区，也不自动改走表头入口——需要表头 `⋮` 请显式传 `columnSettingsPlacement="header"`。
+
+<DemoPreview file="table-render/ColumnSettingsPlacementDemo.vue" />
+
+### 受控可见集与持久化
+
 <DemoPreview file="table-render/ColumnVisibilityDemo.vue" />
 
 ```vue
@@ -766,6 +782,11 @@ const visibleKeys = ref(["name", "lead"]);
 行为细则：
 
 - **面板**：清单 = 业务列（columns 原序，**排除选择列**）；列 title 超长 truncate；有效 fixed 列（数字 width）带 Pin 标识；项高 h-8 整行可点
+- **搜索**：可见业务列数 **≥ 6** 时面板顶部出现搜索框（`data-column-search`），按 title / key 过滤；命中叶子时保留其祖先分组，无命中显示「无匹配列」
+- **分组折叠**：分组行有 chevron（`data-column-group` + `data-collapsed`），折叠只影响面板投影，不改 `visibleKeys`、不影响表格渲染
+- **三态勾选**：分组行按子树叶子可见数呈现 全选 / 半选 / 未选，勾选即批量写子树叶子
+- **计数**：头部「已显示 n/m」（`data-column-count`）随显隐实时更新，m = 业务列总数（不含选择列）
+- **高亮定位**：从表头 `⋮` 或右键「列设置…」打开时，`highlightKey` 对应行带 `data-highlight` 并滚动进视野
 - **最少一列**：最后一枚选中项 Checkbox disabled；「全选」已全选时 disabled；禁止 0 列
 - **展开控件跟随可见首列**：树形 caret 在首个可见业务列内（首列隐藏时顺延），选择列/展开控件恒可见不进清单
 - **受控空数组**：钳制为首列可见 + DEV 警告一次；未知 key 静默忽略
@@ -774,7 +795,37 @@ const visibleKeys = ref(["name", "lead"]);
 
 ## 右键命令菜单
 
-`contextMenu` **默认关闭**（不挂根节点 `contextmenu` handler，右键行为零变化）。显式传入 `true` 启用默认项，或传函数返回业务菜单项：
+`contextMenu` **默认关闭**（不挂根节点 `contextmenu` handler，右键行为零变化，不影响业务自己的右键逻辑）。显式传入 `true` 启用默认项，或传函数返回业务菜单项。整个表格只有一个菜单宿主（放在滚动容器外），不为每行/每列实例化。
+
+### 默认项
+
+`:context-menu="true"` 使用内置命令菜单，并按九态 `target` 自动分派：
+
+```vue
+<script setup lang="ts">
+import { ref } from "vue";
+import { defineTable, type TableContextMenuContext } from "@tu-design/vue";
+
+const lastTarget = ref("");
+
+function onMenuOpen(ctx: TableContextMenuContext<Order>) {
+  // ctx.target 为九态判别联合；ctx.selection / ctx.visibleKeys / ctx.columns 同时可得
+  lastTarget.value = ctx.target.kind;
+}
+</script>
+
+<template>
+  <TTableRender :definition="table" row-key="id" :context-menu="true" @context-menu="onMenuOpen" />
+</template>
+```
+
+<DemoPreview file="table-render/ContextMenuDemo.vue" />
+
+默认项：**列设置…**（打开同一个列设置面板；从表头/单元格右键时高亮对应列）/ **重置列**（仅配置了 `defaultVisibleKeys` 时出现）/ **显示全部列**；`columnSettings: false` 时列相关项全部过滤，最终为空则不打开菜单。
+
+### 自定义菜单项
+
+传函数即完全接管菜单内容：返回的项按 `TableMenuItem` 描述，带 `onSelect` 的项先关菜单再执行，无 `onSelect` 的项点击后发 `context-menu-select`：
 
 ```vue
 <TTableRender
@@ -783,19 +834,101 @@ const visibleKeys = ref(["name", "lead"]);
   :context-menu="
     (ctx) => [
       { value: 'detail', label: '查看详情', onSelect: () => openDetail(ctx.target) },
+      { value: 'toggle', label: '切换状态', onSelect: () => toggle(ctx.target) },
       { type: 'separator' },
-      { value: 'export', label: '导出该行' },
+      { value: 'export-row', label: '导出该行' }, // 无 onSelect → 走 context-menu-select
     ]
   "
   @context-menu-select="(value, ctx) => handleSelect(value, ctx)"
 />
 ```
 
-- **target 九态**：`table` / `empty` / `error` / `skeleton` / `pagination` / `header`（叶子带 `columnKey`、分组带 `groupPath`）/ `row` / `cell`（`rawValue = record[columnKey]`，不是渲染 VNode）
-- **协议**：业务 `event.preventDefault()` 后不接管；`input` / `textarea` / `[contenteditable]` / `[data-no-table-menu]` / 菜单内部（`[data-scope="menu"]`）不接管；菜单项为空 → 不打开、不 emit；选中项**先关闭菜单再执行** `onSelect`
-- **默认项**：列设置… / 重置列（仅配置了 `defaultVisibleKeys`）/ 显示全部列；`columnSettings: false` 时列相关项全部过滤
-- **与 `row-contextmenu` 并存**：默认项路径不改 `defaultPrevented`，行右键事件照常发出；业务自行 `preventDefault` 可阻止菜单
-- **类型导出**：`TableContextMenuContext` / `TableContextTarget` / `TableMenuItem` / `defaultTableMenuItems`（可用于完全自管菜单项构建）
+<DemoPreview file="table-render/ContextMenuCustomDemo.vue" />
+
+- **items 为空**（返回 `[]`）→ 不打开菜单、不 emit `context-menu`：常用于「只在行/单元格上给菜单，表头与空白处保持原生」
+- **`disabled`**：置灰但仍占位；**`label` / `group` / `separator`** 用于分组与说明行
+- **业务数据**：`ctx.target` 携带 `record` / `rowKey` / `index`；`cell` 额外带 `columnKey` 与 `rawValue`（取自 `record[columnKey]`，不是渲染 VNode）；`ctx.selection` 是当前页选中快照
+
+### target 判定与 DOM 钩子
+
+判定自上而下、命中即停；`cell` 优先于 `row`（同一 `tr` 内）：
+
+| 优先级 | 命中条件                                                                       | `target.kind`                  | 关键字段                                                 |
+| ------ | ------------------------------------------------------------------------------ | ------------------------------ | -------------------------------------------------------- |
+| 1      | `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` | **不接管**（返回 `undefined`） | —                                                        |
+| 2      | `event.defaultPrevented` 为真                                                  | **不接管**                     | 业务已接管，内置菜单不打开                               |
+| 3      | 菜单自身 `[data-scope="menu"]`                                                 | **不接管**                     | 防止菜单内右键二次打开                                   |
+| 4      | `tr[data-row-key]` + `td[data-column-key]`                                     | `cell`                         | `record` / `rowKey` / `index` / `columnKey` / `rawValue` |
+| 5      | `tr[data-row-key]`                                                             | `row`                          | `record` / `rowKey` / `index`                            |
+| 6      | `th[data-column-key]`                                                          | `header`（叶子）               | `columnKey` / `node`                                     |
+| 7      | `th[data-column-group]`                                                        | `header`（分组）               | `groupPath` / `node`                                     |
+| 8      | `[data-table-empty]` / `[data-table-error]` / `[data-table-skeleton]`          | `empty` / `error` / `skeleton` | —                                                        |
+| 9      | `[data-table-pagination]`                                                      | `pagination`                   | —                                                        |
+| 10     | 兜底（表格内）                                                                 | `table`                        | —                                                        |
+
+依赖的 DOM 钩子（也是业务自建菜单/自动化测试的稳定选择器）：
+
+| 钩子                                                            | 落位                                                               |
+| --------------------------------------------------------------- | ------------------------------------------------------------------ |
+| `data-row-key` / `data-column-key`                              | 业务行 `<tr>` / 业务单元格 `<td>`（选择格与把手格不带 column-key） |
+| `data-column-key` / `data-column-group`                         | 表头叶子 `<th>` / 分组 `<th>`                                      |
+| `data-table-empty` / `data-table-error` / `data-table-skeleton` | 空态 / 错误态 / 骨架行                                             |
+| `data-table-pagination`                                         | 分页条根节点                                                       |
+| `data-column-settings`                                          | 列设置入口（顶栏按钮 / 表头 ⋮）                                    |
+| `data-sort-button`                                              | 表头排序按钮（与列设置 ⋮ 区分）                                    |
+| `data-column-search` / `data-column-count` / `data-column-item` | 面板搜索框 / 计数 / 每行                                           |
+| `data-no-table-menu`                                            | 任意元素：标记该子树内右键**不接管**                               |
+
+### 与 `row-contextmenu` 并存
+
+内置菜单不主动 `preventDefault`：行右键事件照常发出（`(record, index, event)`）。业务在自己的处理器里调用 `event.preventDefault()` 即表示「我已接管」，内置菜单看到 `defaultPrevented` 后不打开——这比文档约定更可靠，也便于逐行/逐条件禁用。
+
+### 扩展点（复制 / 导出由业务实现）
+
+本轮只提供 `context` 与 `onSelect` 扩展点，**内置不含**复制行/列/单元格、复制表格、导出 CSV/Excel：
+
+```ts
+import {
+  defaultTableMenuItems,
+  type TableContextMenuContext,
+  type TableMenuItem,
+} from "@tu-design/vue";
+
+function buildMenu(ctx: TableContextMenuContext<Order>): TableMenuItem<Order>[] {
+  const items: TableMenuItem<Order>[] = [];
+  const target = ctx.target;
+
+  if (target.kind === "cell") {
+    items.push({
+      value: "copy-cell",
+      label: "复制单元格",
+      onSelect: () => void navigator.clipboard.writeText(String(target.rawValue ?? "")),
+    });
+  }
+  if (target.kind === "row" || target.kind === "cell") {
+    items.push({
+      value: "copy-row-tsv",
+      label: "复制该行（TSV）",
+      // visibleKeys 决定列顺序；rawValue 口径与单元格一致
+      onSelect: () =>
+        void navigator.clipboard.writeText(
+          ctx.visibleKeys.map((key) => String(target.record[key] ?? "")).join("\t"),
+        ),
+    });
+  }
+  // 导出等需要服务端全量数据的动作：在 onSelect 里自行请求，不依赖组件内置数据
+  items.push({ value: "export", label: "导出当前页 CSV", onSelect: () => exportCsv(ctx) });
+  return items;
+}
+```
+
+`defaultTableMenuItems(ctx, options)` 也对外导出，供你在**自己的**菜单宿主里复用默认项文案与结构；其中「列设置…」依赖组件内部面板，业务自建菜单如需该入口，建议直接使用 `:context-menu="true"` 或另设业务入口。
+
+### 限制
+
+- **无 Teleport**：菜单宿主挂在表格根节点、滚动容器外，但表格若嵌在 `overflow: hidden` 的弹窗内仍可能被裁剪（后续计划补 portal），此场景请优先使用工具栏/表头入口
+- **鼠标隐藏功能**：不做触屏（长按）与键盘（ContextMenu 键）专项适配
+- **不持久化**：菜单选择结果由业务自行处理（写 store / 请求接口）
 
 ## 表头分组
 
@@ -1201,6 +1334,28 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 | `useTableRender(options)` | 底层组合函数：包装 TanStack `useTable`，供已有实例 / 动态配置的高级场景                                                                                                                          |
 | `defineColumns(columns)`  | 纯类型辅助：补全泛型推导，便于把列配置抽到独立文件；原样返回入参，裸数组同样可直接使用                                                                                                           |
 
+### 源码结构（registry 源码分发）
+
+组件以源码形式安装到项目内，下列文件可直接阅读/改动（升级时 `tu-design add table-render --overwrite` 会覆盖，定制实现请改业务层）：
+
+| 文件                             | 职责                                                                   |
+| -------------------------------- | ---------------------------------------------------------------------- |
+| `TableRender.vue`                | 编排与布局：引擎接线、滚动容器、sticky 层级、body 行渲染、对外 API     |
+| `TableHeader.vue`                | `thead`：表头矩阵、排序、固定/分组 sticky、表头 `⋮` 入口、表头测量回传 |
+| `TableToolbar.vue`               | 搜索区 + 列设置文字链接（`showSearchArea` 与入口互斥关系在此落地）     |
+| `TableColumnSettings.vue`        | 列设置**单例宿主**：受控 Popover、固定锚点、Esc/外点关闭               |
+| `ColumnSettingsPanel.vue`        | 列设置**纯面板**：树形分组、三态、搜索、折叠、计数、高亮（不依赖引擎） |
+| `TableContextMenu.vue`           | 右键菜单**单例宿主**：受控 DropdownMenu + 固定锚点                     |
+| `useTableHeaderModel.ts`         | 可见表头树 / 深度 / 表头矩阵（colSpan/rowSpan）                        |
+| `useStickyLayout.ts`             | sticky 映射、`tableMinWidth`、分组 sticky 降级（混合侧 DEV 警告）      |
+| `useHeaderMeasurement.ts`        | 多行表头测量：`rowTop` 前缀和与 `theadOffset`（虚拟滚动 scrollMargin） |
+| `useColumnSettingsPanel.ts`      | 面板行派生、三态勾选、搜索过滤、折叠投影、全选/重置                    |
+| `useColumnSettingsController.ts` | 面板开合、锚点计算、`highlightKey`                                     |
+| `useTableContextMenu.ts`         | 九态 target 解析、菜单项构建、先关后执行                               |
+| `context-menu-types.ts`          | 右键目标/上下文/菜单项类型 + `defaultTableMenuItems`                   |
+
+依赖关系：`TableRender` → 各 composable 与子组件；子组件只经显式 `model` / `actions` props 取数与回传（不依赖 `provide/inject`），便于单测与追踪数据流。
+
 ## API
 
 按「组件 → 入口函数 → 数据类型」三组组织；单元格预设见上文 [内置列渲染器](#内置列渲染器)。
@@ -1321,18 +1476,18 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 
 #### `TableColumnOptions<T>`
 
-| 字段           | 类型                                               | 说明                                                                                                 |
-| -------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `key`          | `string`                                           | 列标识，同时作为默认取值字段                                                                         |
-| `title`        | `string`                                           | 表头文本                                                                                             |
-| `align?`       | `"left" \| "center" \| "right"`                    | 单元格对齐；默认居中（表头/表体一致），显式 `"left"` 退出默认                                        |
-| `width?`       | `number \| string`                                 | 列宽                                                                                                 |
-| `render?`      | `(record: T, index: number, column) => VNodeChild` | 自定义单元格；优先于 `formatter`；第三参 `column` 供内置渲染器读取字段值                             |
-| `formatter?`   | `(record: T) => string \| number \| Date`          | 纯数据格式化                                                                                         |
-| `ellipsis?`    | `boolean \| "tooltip"`                             | 截断处理：`true` = truncate + 原生 title；`"tooltip"` = 库内 Tooltip（无原生 title），见下方行为细则 |
-| `sortable?`    | `boolean`                                          | 是否可排序（渲染为 `<button>`，带 `aria-sort`）                                                      |
-| `defaultSort?` | `"asc" \| "desc"`                                  | 初始排序方向；须同时 `sortable: true`                                                                |
-| `fixed?`       | `"left" \| "right"`                                | 固定列方向；须同时提供数字 `width`（见[固定列](#固定列)）                                            |
+| 字段           | 类型                                       | 说明                                                                                                                                                                                          |
+| -------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `key`          | `string`                                   | 列标识，同时作为默认取值字段                                                                                                                                                                  |
+| `title`        | `string`                                   | 表头文本                                                                                                                                                                                      |
+| `align?`       | `"left" \| "center" \| "right"`            | 单元格对齐；默认居中（表头/表体一致），显式 `"left"` 退出默认                                                                                                                                 |
+| `width?`       | `number \| string`                         | 列宽                                                                                                                                                                                          |
+| `render?`      | `(r: ColumnRenders<T>) => ColumnRender<T>` | 自定义渲染器**工厂**：返回 `(record, index, column) => VNodeChild`；优先于 `formatter`。内置 `r.dict(...)` / `r.button(...)` / `r.date(...)` 即此形态，第三参 `column` 供内置渲染器读取字段值 |
+| `formatter?`   | `(record: T) => string \| number \| Date`  | 纯数据格式化                                                                                                                                                                                  |
+| `ellipsis?`    | `boolean \| "tooltip"`                     | 截断处理：`true` = truncate + 原生 title；`"tooltip"` = 库内 Tooltip（无原生 title），见下方行为细则                                                                                          |
+| `sortable?`    | `boolean`                                  | 是否可排序（渲染为 `<button>`，带 `aria-sort`）                                                                                                                                               |
+| `defaultSort?` | `"asc" \| "desc"`                          | 初始排序方向；须同时 `sortable: true`                                                                                                                                                         |
+| `fixed?`       | `"left" \| "right"`                        | 固定列方向；须同时提供数字 `width`（见[固定列](#固定列)）                                                                                                                                     |
 
 取值优先级：`render` > `formatter` > `record[key]`（`null`/`undefined` 显示为空）。
 
@@ -1345,6 +1500,39 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 | `children` | `TableColumnNode<T>[]`          | 子列节点（叶子或更深分组），任意层级 |
 
 `TableColumnNode<T> = TableColumnOptions<T> | TableColumnGroupOptions<T>`——`columns` 的元素类型（见[表头分组](#表头分组)）。
+
+#### `TableContextTarget<T>`
+
+右键目标判别联合（九态），由 `ctx.target.kind` 收窄；字段随 kind 不同：
+
+| kind                                                              | 字段                                                                                       | origin                                          |
+| ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| `"table"` / `"empty"` / `"error"` / `"skeleton"` / `"pagination"` | 无额外字段                                                                                 | 表格空白处 / 空态 / 错误态 / 骨架 / 分页条      |
+| `"header"`                                                        | `columnKey?`（叶子）/ `groupPath?`（分组）/ `node`                                         | `th[data-column-key]` / `th[data-column-group]` |
+| `"row"`                                                           | `record` / `index` / `rowKey`                                                              | `tr[data-row-key]`                              |
+| `"cell"`                                                          | `record` / `index` / `rowKey` / `columnKey` / `rawValue`（=`record[columnKey]`，非 VNode） | `td[data-column-key]`                           |
+
+#### `TableContextMenuContext<T>`
+
+| 字段          | 类型                               | 说明                                               |
+| ------------- | ---------------------------------- | -------------------------------------------------- |
+| `target`      | `TableContextTarget<T>`            | 九态目标（见上）                                   |
+| `event`       | `MouseEvent`                       | 原始右键事件（可用于 `preventDefault()` 或读坐标） |
+| `selection`   | `{ keys: string[]; rows: T[] }`    | 当前页选中快照（跨页选中行不在 `rows` 内）         |
+| `visibleKeys` | `readonly string[]`                | 当前可见列 key（columns 原序）                     |
+| `columns`     | `readonly TableColumnOptions<T>[]` | 扁平叶子列配置                                     |
+| `close`       | `() => void`                       | 关闭菜单（内部通常已先关后执行）                   |
+
+#### `TableMenuItem<T>`
+
+| 形态                             | 字段                                                      | 说明                                          |
+| -------------------------------- | --------------------------------------------------------- | --------------------------------------------- |
+| 普通项（`type` 缺省为 `"item"`） | `value` / `label` / `disabled?` / `onSelect?`             | `onSelect` 缺省时点击发 `context-menu-select` |
+| 说明行                           | `{ type: "label"; label }`                                | 纯文本，不可点                                |
+| 分隔线                           | `{ type: "separator" }`                                   | —                                             |
+| 分组                             | `{ type: "group"; label?; children: TableMenuItem<T>[] }` | 子菜单/分组                                   |
+
+`defaultTableMenuItems(ctx, options)` 返回默认项数组（列设置… / 重置列 / 显示全部列），选项含 `columnSettingsEnabled` / `hasDefaultVisibleKeys` 与三个动作回调。
 
 #### `TableLoadParams<T>`
 
@@ -1365,6 +1553,10 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 - **外置了查询按钮但点击没反应？** —— `show-search="false"` 后内置 `search` / `reset` 事件不再触发（二者由内置搜索区发出）；外层按钮请直接调 `table.reload(true)`（需校验时用 `await table.search.submit()`）。
 - **`TTablePagination` 的 `definition` 和手动 props 同时传了？** —— definition 优先并 DEV 警告；混传没有意义，二选一。
 - **金额带千分位但想要 `1,234.50`（无货币符号）？** —— `currency` 固定走货币格式；纯千分位请自定义 `render` 用 `Intl.NumberFormat({ style: "decimal" })`。
+- **右键没有出现命令菜单？** —— 先确认 `contextMenu` 已显式开启（默认 `false`）；再看是否在 `input` / `textarea` / `select` / `[contenteditable]` / `[data-no-table-menu]` 区域内（这些区域一律不接管），或业务行处理器已 `event.preventDefault()`；自定义函数返回 `[]` 时也不会打开。
+- **表头 `⋮` 找不到？** —— 需显式 `columnSettingsPlacement="header"`；`⋮` 平时按 `group-hover` / `focus-visible` 显示（触屏设备常显），且只在叶子表头渲染。
+- **列显隐怎么持久化？** —— 监听 `column-visibility-change`（受控/非受控都触发）写入 localStorage/后端；恢复时作为 `visibleKeys` 或 `defaultVisibleKeys` 传入。`update:visible-keys` 配对回写即 `v-model:visible-keys`。
+- **右键菜单在 Dialog/Drawer 里被裁掉？** —— 当前菜单宿主无 Teleport，嵌在 `overflow: hidden` 的浮层内可能被裁剪；此场景请改用工具栏/表头入口，或把 `contextMenu` 关闭由业务自建浮层。
 
 ## 注意事项
 
@@ -1378,6 +1570,9 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 - **虚拟滚动需要 `height`**：`virtual: true` 缺容器高度时 DEV 警告并降级普通渲染；大分页（如 `pageSize: 10000`）配合虚拟化使用，避免窗口外行进入 DOM。
 - **树形数据的展开是纯客户端状态**：children 随行数据返回即可；`tree` 配置无效（非对象 / `childrenKey` 非字符串）时 DEV 警告并忽略。父子级联勾选、受控 expanded、详情展开行暂不支持。
 - **列显隐基于可见列集**：隐藏 fixed 列后 sticky 偏移自动重算（组空无残留边框）；`columnSettings: false` 只隐藏 UI，受控 `visibleKeys` 不受影响；显隐不触发 onLoad、不重置分页/排序/选择。
+- **列设置是单例**：三个入口共享同一个面板实例与状态；`columnSettingsPlacement="header"` 时顶栏入口关闭（二者互斥），`auto` 与 `toolbar` 等价。
+- **右键命令菜单默认关闭**：开启后只接管表格自身区域；表单控件区、`[data-no-table-menu]`、菜单自身与已 `preventDefault()` 的右键一律交还原生/业务。行级 `row-contextmenu` 载荷与触发不变，两者可并存。
+- **复制 / 导出不在内置范围**：`ctx.target.rawValue`、`ctx.visibleKeys`、`ctx.selection` 已随上下文提供，动作由业务在 `onSelect` 内实现（服务端全量数据同理）。
 - **`ellipsis: "tooltip"`**：单元格改用库内 Tooltip（悬停显示完整文本），不再设置原生 `title`；`render` 工厂列同样支持（VNode 经 cloneVNode 复制进 Tooltip，交互保持）；树形缩进列暂不支持 tooltip 形态（请用 `ellipsis: true`）。
 - **错误态仅服务端模式产生**：静态模式（`data`）不产生 `error`；`#error` 插槽可完全自定义占位，重试即 `reload()`。
 - **`TTablePagination` 两种模式的可见性语义不同**：`definition` 模式单页自隐藏；手动模式恒渲染（缺关键 props 时 DEV 警告并不渲染），可见性由使用方控制。
