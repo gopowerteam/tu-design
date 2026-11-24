@@ -178,6 +178,22 @@ describe("value 形态 widgets", () => {
     expect(field().state.value).toBe("c");
   });
 
+  it("radioGroup：variant/size 命名穿透直传（分段按钮组）", () => {
+    const items = [
+      { label: "A", value: "a" },
+      { label: "B", value: "b" },
+    ];
+    const { wrapper } = makeHost("a", (ctx) =>
+      widgetRenders<{ v: string }>().radioGroup({ items, variant: "segmented", size: "sm" })({
+        ...ctx,
+        item,
+      }),
+    );
+    const group = wrapper.findComponent(RadioGroup);
+    expect(group.props("variant")).toBe("segmented");
+    expect(group.props("size")).toBe("sm");
+  });
+
   it("treeSelect：options 树直传 + modelValue 回显 + update:modelValue 写回", () => {
     const options = [
       { key: "zj", label: "浙江" },

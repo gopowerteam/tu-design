@@ -230,4 +230,134 @@ describe("RadioGroup", () => {
     expect(ids2.root).toBe("explicit-root");
     w2.unmount();
   });
+
+  it("default 外观保持圆点，焦点/禁用样式走 data 属性", async () => {
+    const w = mountGroup();
+    await vi.waitFor(() => expect(items().length).toBe(2));
+    expect(items()[0]!.className).toContain("items-center");
+    expect(itemControls()[0]!.querySelector(".rounded-full")).not.toBeNull();
+    expect(itemControls()[0]!.className).toContain("data-[focus-visible]:ring-[3px]");
+    expect(itemControls()[0]!.className).not.toContain("focus-visible:ring-[3px]");
+    expect(itemControls()[0]!.className).not.toContain("disabled:cursor-not-allowed");
+    w.unmount();
+  });
+});
+
+describe("RadioGroup segmented 外观", () => {
+  it("根元素为分段轨道，选项为等宽按钮且不渲染圆点", async () => {
+    const w = mountGroup({ variant: "segmented" });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    expect(rootEl()!.className).toContain("inline-flex");
+    expect(rootEl()!.className).toContain("bg-muted");
+    expect(items()[0]!.className).toContain("flex-1");
+    expect(items()[0]!.className).toContain("min-w-0");
+    expect(items()[0]!.className).toContain("rounded-md");
+    expect(items()[0]!.className).toContain("h-8");
+    // 长文案在窄容器内省略而非换行撑破固定高度
+    expect(items()[0]!.querySelector('[data-part="item-text"]')!.className).toContain("truncate");
+    // ItemControl 保留 part 结构但不再渲染圆点
+    expect(itemControls().length).toBe(2);
+    expect(itemControls()[0]!.children.length).toBe(0);
+    expect(itemControls()[0]!.className).toContain("sr-only");
+    w.unmount();
+  });
+
+  it("点击选中后按钮进入 checked 态并带主色填充类", async () => {
+    const onUpdate = vi.fn();
+    const w = mountGroup({ variant: "segmented", "onUpdate:value": onUpdate });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    items()[1]!.click();
+    await vi.waitFor(() => expect(onUpdate).toHaveBeenCalledWith("monthly"));
+    await vi.waitFor(() => expect(items()[1]!.dataset.state).toBe("checked"));
+    expect(items()[1]!.className).toContain("data-[state=checked]:bg-primary");
+    expect(items()[0]!.dataset.state).toBe("unchecked");
+    w.unmount();
+  });
+
+  it("size 映射按钮高度刻度", async () => {
+    const w = mountGroup({ variant: "segmented", size: "sm" });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+    expect(items()[0]!.className).toContain("h-7");
+    w.unmount();
+
+    const w2 = mountGroup({ variant: "segmented", size: "lg" });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+    expect(items()[0]!.className).toContain("h-9");
+    w2.unmount();
+  });
+
+  it("单项 disabled 不响应点击，hover 类排除禁用项", async () => {
+    const onUpdate = vi.fn();
+    const w = mount(RadioGroup, {
+      props: {
+        variant: "segmented",
+        items: [
+          { label: "每周", value: "weekly" },
+          { label: "每月", value: "monthly", disabled: true },
+        ],
+        "onUpdate:value": onUpdate,
+      },
+      attachTo: document.body,
+    });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    expect(items()[1]!.className).toContain("data-[disabled]:opacity-50");
+    expect(items()[1]!.className).toContain("not-data-[disabled]");
+    items()[1]!.click();
+    await new Promise((r) => setTimeout(r, 40));
+    expect(onUpdate).not.toHaveBeenCalled();
+    w.unmount();
+  });
+
+  it("invalid 时轨道与选项级联 data-invalid，destructive 仅作用于选中项", async () => {
+    const w = mountGroup({ variant: "segmented", invalid: true });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    expect(rootEl()!.hasAttribute("data-invalid")).toBe(true);
+    expect(items()[0]!.hasAttribute("data-invalid")).toBe(true);
+    const classes = items()[0]!.className.split(/\s+/);
+    expect(classes).toContain("data-[state=checked]:data-[invalid]:bg-destructive");
+    expect(classes).not.toContain("data-[invalid]:bg-destructive");
+    w.unmount();
+  });
+
+  it("segmented 未传 orientation 时默认水平，显式 vertical 覆盖", async () => {
+    const w = mountGroup({ variant: "segmented" });
+    expect(w.findComponent(ArkRadioGroup.Root)!.props("orientation")).toBe("horizontal");
+    w.unmount();
+
+    const w2 = mountGroup({ variant: "segmented", orientation: "vertical" });
+    expect(w2.findComponent(ArkRadioGroup.Root)!.props("orientation")).toBe("vertical");
+    expect(rootEl()!.className).toContain("flex-col");
+    w2.unmount();
+  });
+
+  it("#item 插槽接管内容，隐藏 input 仍保留", async () => {
+    const w = mount(RadioGroup, {
+      props: { variant: "segmented", items: baseItems, name: "plan" },
+      slots: {
+        item: ({ item }: { item: { label: string; value: string } }) =>
+          h("span", { "data-testid": "custom-item" }, item.label),
+      },
+      attachTo: document.body,
+    });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    expect(itemControls().length).toBe(0);
+    expect(document.body.textContent).toContain("每周");
+    expect(hiddenInputs().length).toBe(2);
+    expect(hiddenInputs()[0]!.name).toBe("plan");
+    w.unmount();
+  });
+
+  it("class=w-full 经 twMerge 覆盖 w-fit", async () => {
+    const w = mountGroup({ variant: "segmented", class: "w-full" });
+    await vi.waitFor(() => expect(items().length).toBe(2));
+
+    expect(rootEl()!.className).toContain("w-full");
+    expect(rootEl()!.className).not.toContain("w-fit");
+    w.unmount();
+  });
 });

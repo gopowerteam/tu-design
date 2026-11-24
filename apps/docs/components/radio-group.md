@@ -1,6 +1,6 @@
 ---
 title: RadioGroup 单选组
-description: 单选组：基于 Ark UI Radio Group 原语的单组件 API，items 数据驱动渲染，键盘 ↑/↓ 导航，支持 #item 插槽自定义选项。
+description: 单选组：基于 Ark UI Radio Group 原语的单组件 API，items 数据驱动渲染，键盘 ↑/↓ 导航，支持圆点与分段按钮组两种外观、#item 插槽自定义选项。
 ---
 
 # RadioGroup
@@ -41,6 +41,20 @@ npx @tu-design/cli add radio-group
 
 <DemoPreview file="radio-group/RadioGroupHorizontalDemo.vue" />
 
+## 分段按钮组
+
+`variant="segmented"` 切换为分段按钮组外观：选项以按钮形式排列在 muted 轨道内，选中项主色填充；未显式传 `orientation` 时默认横向，键盘用 `←`/`→` 切换。默认按内容宽度收缩，传 `class="w-full"` 可撑满容器且各项等宽：
+
+<DemoPreview file="radio-group/RadioGroupSegmentedDemo.vue" />
+
+`size` 提供 `sm` / `default` / `lg` 三档按钮尺度（仅 `segmented` 生效）；禁用、单项禁用与 `invalid` 校验态在分段形态下同样生效：
+
+<DemoPreview file="radio-group/RadioGroupSegmentedSizesDemo.vue" />
+
+::: tip 自定义项与可访问性
+`segmented` 下 `#item` 插槽仍可接管按钮内容，但内置的 `ItemText` 不会被渲染——请自行保证自定义内容带有可读名称（例如可见文本），否则隐藏 input 的 `aria-labelledby` 会落空。
+:::
+
 ## 状态
 
 整组禁用（`disabled`）、单项禁用（items 项设 `disabled`）与 `invalid` 校验态对比：
@@ -57,18 +71,20 @@ npx @tu-design/cli add radio-group
 
 ### Props
 
-| Prop            | 类型                                    | 默认值       | 说明                                        |
-| --------------- | --------------------------------------- | ------------ | ------------------------------------------- |
-| `items`         | `{ label, value, disabled?, class? }[]` | 必填         | 选项列表                                    |
-| `v-model:value` | `string`                                | —            | 当前值；不传为非受控（内部 ref 维护）       |
-| `default-value` | `string`                                | —            | 非受控时的初始值                            |
-| `orientation`   | `'horizontal' \| 'vertical'`            | `'vertical'` | 排列方向                                    |
-| `disabled`      | `boolean`                               | `false`      | 整组禁用                                    |
-| `name`          | `string`                                | —            | 隐藏 input 的表单提交字段名                 |
-| `form`          | `string`                                | —            | 关联的 form id                              |
-| `required`      | `boolean`                               | `false`      | 必填（输出 `aria-required`/input required） |
-| `read-only`     | `boolean`                               | `false`      | 只读                                        |
-| `invalid`       | `boolean`                               | `false`      | 校验无效态（级联 `data-invalid`）           |
+| Prop            | 类型                                    | 默认值                                            | 说明                                        |
+| --------------- | --------------------------------------- | ------------------------------------------------- | ------------------------------------------- |
+| `items`         | `{ label, value, disabled?, class? }[]` | 必填                                              | 选项列表                                    |
+| `v-model:value` | `string`                                | —                                                 | 当前值；不传为非受控（内部 ref 维护）       |
+| `default-value` | `string`                                | —                                                 | 非受控时的初始值                            |
+| `orientation`   | `'horizontal' \| 'vertical'`            | `'vertical'`（`segmented` 下缺省 `'horizontal'`） | 排列方向                                    |
+| `variant`       | `'default' \| 'segmented'`              | `'default'`                                       | 外观：圆点单选 / 分段按钮组                 |
+| `size`          | `'sm' \| 'default' \| 'lg'`             | `'default'`                                       | 分段按钮尺寸（仅 `segmented` 生效）         |
+| `disabled`      | `boolean`                               | `false`                                           | 整组禁用                                    |
+| `name`          | `string`                                | —                                                 | 隐藏 input 的表单提交字段名                 |
+| `form`          | `string`                                | —                                                 | 关联的 form id                              |
+| `required`      | `boolean`                               | `false`                                           | 必填（输出 `aria-required`/input required） |
+| `read-only`     | `boolean`                               | `false`                                           | 只读                                        |
+| `invalid`       | `boolean`                               | `false`                                           | 校验无效态（级联 `data-invalid`）           |
 
 `items` 项字段：`value` 唯一标识（必填）、`label` 文案（必填）、`disabled` 禁用该项、`class` 追加到该项根元素的样式类。
 
@@ -80,26 +96,31 @@ npx @tu-design/cli add radio-group
 
 ### Slots
 
-| 插槽    | 作用域              | 说明                                         |
-| ------- | ------------------- | -------------------------------------------- |
-| `#item` | `{ item, checked }` | 自定义单项渲染；未提供时渲染圆点控件与 label |
+| 插槽    | 作用域              | 说明                                                    |
+| ------- | ------------------- | ------------------------------------------------------- |
+| `#item` | `{ item, checked }` | 自定义单项内容；未提供时按 `variant` 渲染圆点或分段按钮 |
 
 ## 说明
 
 - 单组件 API：`items` 数据驱动渲染，不再暴露 `RadioGroupItem` 子组件
 - 键盘 `↑`/`↓`（`horizontal` 时 `←`/`→`）在选项间移动并选中，`Space` 选中当前项
-- `#item` 只接管圆点控件与文本的渲染，隐藏原生 input 始终随选项渲染
+- `variant="segmented"` 不渲染圆点指示器，键盘方向随 `orientation`（缺省横向）；`size` 仅对分段形态生效
+- 分段形态默认按内容宽度收缩，`class="w-full"` 撑满且各项等宽；单项样式可用 items 项的 `class` 覆盖
+- `#item` 只接管选项内容（圆点/按钮内容与文本）的渲染，隐藏原生 input 始终随选项渲染
 
 ## 主题定制
 
 RadioGroup 样式由以下 CSS 变量驱动（完整机制见[主题](/guide/theming)）：
 
-| 变量            | 用途                                               |
-| --------------- | -------------------------------------------------- |
-| `--input`       | 圆点控件边框色                                     |
-| `--primary`     | 选中圆点底色                                       |
-| `--destructive` | `invalid` 态边框、光晕与圆点底色（`data-invalid`） |
-| `--ring`        | 键盘聚焦环（`border-ring` / `ring-ring/50`）       |
+| 变量                   | 用途                                                               |
+| ---------------------- | ------------------------------------------------------------------ |
+| `--input`              | 圆点控件边框色                                                     |
+| `--primary`            | 选中圆点底色 / 分段选中项填充                                      |
+| `--primary-foreground` | 分段选中项文字色                                                   |
+| `--muted`              | 分段轨道底色                                                       |
+| `--background`         | 分段未选中项 hover 底色                                            |
+| `--destructive`        | `invalid` 态边框、光晕、圆点底色与分段选中项填充（`data-invalid`） |
+| `--ring`               | 键盘聚焦环（`data-focus-visible` / 圆点 `border-ring`）            |
 
 在任意容器上覆盖即得到作用域主题：
 

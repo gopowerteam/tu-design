@@ -32,6 +32,10 @@ interface Props {
   /** 校验无效态；zag 会级联 data-invalid 到 root/item/item-control */
   invalid?: boolean;
   orientation?: "horizontal" | "vertical";
+  /** 外观：default 圆点单选（现有）/ segmented 分段按钮组 */
+  variant?: "default" | "segmented";
+  /** segmented 下的按钮尺寸（默认 default；default 外观忽略） */
+  size?: "sm" | "default" | "lg";
   class?: string;
 }
 
@@ -48,6 +52,68 @@ function handleUpdate(value: string | null) {
   if (value === null) return;
   internalValue.value = value;
   emit("update:value", value);
+}
+
+// —— 外观切换：default 圆点单选 / segmented 分段按钮组 ——
+const isSegmented = computed(() => props.variant === "segmented");
+
+// 分段控件天然横向：未显式传 orientation 时回落 horizontal，键盘自动 ←/→
+const effectiveOrientation = computed<"horizontal" | "vertical" | undefined>(() =>
+  isSegmented.value ? (props.orientation ?? "horizontal") : props.orientation,
+);
+
+// 尺寸刻度：轨道内边距 + 按钮高度/内距/字号（仅 segmented 生效）
+const SEGMENTED_SIZES = {
+  sm: { track: "p-0.5", item: "h-7 px-2.5 text-xs" },
+  default: { track: "p-1", item: "h-8 px-3 text-sm" },
+  lg: { track: "p-1", item: "h-9 px-4 text-sm" },
+} as const;
+
+const segmentedSize = computed(() => SEGMENTED_SIZES[props.size ?? "default"]);
+
+/**
+ * 根元素样式：default 保持原 grid 布局；segmented 为 muted 轨道容器。
+ * @returns 消解冲突后的根 class
+ */
+const rootClass = computed(() => {
+  if (!isSegmented.value) {
+    return cn(
+      "grid gap-2",
+      props.orientation === "horizontal" && "grid-flow-col auto-cols-max gap-4",
+      props.class,
+    );
+  }
+  return cn(
+    "inline-flex w-fit items-stretch gap-1 rounded-lg bg-muted",
+    segmentedSize.value.track,
+    effectiveOrientation.value === "vertical" && "flex-col",
+    "data-[invalid]:ring-[3px] data-[invalid]:ring-destructive/20",
+    props.class,
+  );
+});
+
+/**
+ * 选项样式：default 保持原 label 布局；segmented 由 Item 本体充当按钮表面
+ * （Ark 把 data-state/data-focus-visible/data-disabled/data-invalid 都挂在 Item 上，
+ * 且用户的 item.class 直接作用于按钮本体）。
+ * destructive 一律与 data-[state=checked] 复合，避免 invalid 时给未选中项铺底色。
+ * @param item - 选项配置项
+ * @returns 消解冲突后的选项 class
+ */
+function itemClass(item: RadioGroupOption) {
+  if (!isSegmented.value) return cn("flex items-center gap-2", item.class);
+  return cn(
+    "group relative inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center rounded-md font-medium whitespace-nowrap text-muted-foreground outline-none select-none transition-[color,background-color,box-shadow]",
+    segmentedSize.value.item,
+    "data-[state=unchecked]:not-data-[disabled]:hover:bg-background/70",
+    "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:shadow-xs",
+    "data-[state=checked]:data-[invalid]:bg-destructive data-[state=checked]:data-[invalid]:text-destructive-foreground",
+    "data-[invalid]:not-data-[state=checked]:text-destructive",
+    "data-[focus-visible]:ring-[3px] data-[focus-visible]:ring-ring/50",
+    "data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50",
+    "data-[readonly]:cursor-default",
+    item.class,
+  );
 }
 
 // ids 全量覆盖（无冒号）：规避 wujie patch getElementById 对 zag 缺省冒号 id 的
@@ -82,14 +148,8 @@ const rootIds = computed(() => {
     :required="props.required"
     :read-only="props.readOnly"
     :invalid="props.invalid"
-    :orientation="props.orientation"
-    :class="
-      cn(
-        'grid gap-2',
-        props.orientation === 'horizontal' && 'grid-flow-col auto-cols-max gap-4',
-        props.class,
-      )
-    "
+    :orientation="effectiveOrientation"
+    :class="rootClass"
     @update:model-value="handleUpdate"
   >
     <ArkRadioGroup.Item
@@ -97,20 +157,27 @@ const rootIds = computed(() => {
       :key="item.value"
       :value="item.value"
       :disabled="item.disabled"
-      :class="cn('flex items-center gap-2', item.class)"
+      :class="itemClass(item)"
     >
       <!-- 隐藏原生 input 始终渲染：name/required 等表单语义不因自定义渲染丢失 -->
       <ArkRadioGroup.ItemHiddenInput />
       <!-- #item 逃生口：接管圆点控件与文本的渲染；未提供时使用内置渲染 -->
       <slot name="item" :item="item" :checked="item.value === currentValue">
-        <ArkRadioGroup.ItemControl
-          class="border-input text-primary shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 group flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-50 data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]"
-        >
-          <div
-            class="bg-primary group-data-[invalid]:bg-destructive size-2 rounded-full opacity-0 transition-opacity group-data-[state=checked]:opacity-100"
-          />
-        </ArkRadioGroup.ItemControl>
-        <ArkRadioGroup.ItemText class="text-sm">{{ item.label }}</ArkRadioGroup.ItemText>
+        <template v-if="isSegmented">
+          <!-- 分段形态不渲染圆点指示器，仅保留 Ark part 结构；真实焦点在隐藏 input -->
+          <ArkRadioGroup.ItemControl class="sr-only" />
+          <ArkRadioGroup.ItemText class="min-w-0 truncate">{{ item.label }}</ArkRadioGroup.ItemText>
+        </template>
+        <template v-else>
+          <ArkRadioGroup.ItemControl
+            class="border-input text-primary shadow-xs data-[focus-visible]:border-ring data-[focus-visible]:ring-ring/50 group flex aspect-square size-4 shrink-0 items-center justify-center rounded-full border outline-none data-[focus-visible]:ring-[3px] data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-invalid:border-destructive data-invalid:ring-destructive/20 data-invalid:ring-[3px]"
+          >
+            <div
+              class="bg-primary group-data-[invalid]:bg-destructive size-2 rounded-full opacity-0 transition-opacity group-data-[state=checked]:opacity-100"
+            />
+          </ArkRadioGroup.ItemControl>
+          <ArkRadioGroup.ItemText class="text-sm">{{ item.label }}</ArkRadioGroup.ItemText>
+        </template>
       </slot>
     </ArkRadioGroup.Item>
   </ArkRadioGroup.Root>
