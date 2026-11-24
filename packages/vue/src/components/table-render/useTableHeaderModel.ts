@@ -155,6 +155,8 @@ export interface TableHeaderViewModel {
   headerIndeterminate: boolean;
   dragEnabled: boolean;
   dragWidth: number;
+  /** 树形首列列 key（tree 启用时为首个可见业务列，表头同步左对齐） */
+  treeColumnKey?: string;
   /** placement === "header" && columnSettings 开启：叶子表头渲染 ⋮ */
   columnSettingsEntry: boolean;
 }

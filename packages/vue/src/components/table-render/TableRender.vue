@@ -816,6 +816,7 @@ const headerModel = computed<TableHeaderViewModel>(() => ({
   headerIndeterminate: headerIndeterminate.value,
   dragEnabled: dragEnabled.value,
   dragWidth,
+  treeColumnKey: tree ? visibleColumns.value[0]?.key : undefined,
   columnSettingsEntry: props.columnSettingsPlacement === "header" && showColumnSettings.value,
 }));
 
@@ -1022,7 +1023,7 @@ defineExpose({
                   stickyClass(stickyOf, column.key, stickyOpts),
                 ]"
                 :style="[
-                  { textAlign: column.align ?? 'center' },
+                  { textAlign: tree && colIndex === 0 ? 'left' : (column.align ?? 'center') },
                   stickyStyle(stickyOf, column.key, false),
                 ]"
               >

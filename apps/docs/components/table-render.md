@@ -558,7 +558,7 @@ provide("tu-design:page-table-fill", true);
 
 ## 树形数据
 
-`tree` 配置开启树形数据（父子行）：子行字段默认 `children`，展开按钮（caret）位于**首个业务列单元格内**（对齐 antd/element 习惯，不加独立列），按 `depth × indentSize`（默认 16px）层级缩进。底层走 TanStack expanded 行模型——展开后的子行进入当前页行序列，分页/选择/排序语义不变。
+`tree` 配置开启树形数据（父子行）：子行字段默认 `children`，展开按钮（caret）位于**首个业务列单元格内**（对齐 antd/element 习惯，不加独立列），按 `depth × indentSize`（默认 16px）层级缩进。首列**恒左对齐**：caret 占据固定 16px 槽位（叶子行以等宽占位补齐），同层级标签左边缘严格对齐。底层走 TanStack expanded 行模型——展开后的子行进入当前页行序列，分页/选择/排序语义不变。
 
 <DemoPreview file="table-render/TreeTableDemo.vue" />
 
@@ -592,12 +592,14 @@ const table = defineTable<Dept>({
 
 行为细则：
 
-- **展开按钮在首列内**：`getCanExpand()` 的行渲染 caret（`aria-expanded` + 展开态旋转），叶子行无 caret；缩进对首列内容整体生效，叶子行也缩进（对齐父级行头）
+- **展开按钮在首列内（槽位固定）**：`getCanExpand()` 的行渲染 caret（`aria-expanded` + 展开态旋转），叶子行渲染**等宽占位**（`aria-hidden`、无文本）；缩进按 `depth × indentSize` 叠加在槽位外侧，含首层在内所有层级都预留槽位——caret 始终成列，同层级标签左边缘（`depth × indentSize + 20px`）对齐
+- **首列恒左对齐**：树形首列由组件强制 `left`（覆盖该列 `align`），表头首列与加载骨架行同口径；暂不提供居中/右对齐开关
 - **点击隔离**：caret 点击已阻断冒泡，不会误触发 `row-click`；展开/收起是纯客户端状态，不触发取数
 - **子行参与分页/选择**：展开后的子行是当前页行序列的独立行——`selection-change`/全选含展开子行；**不做父子级联勾选**（勾父带子/半选态），受控 `expanded` 与详情展开行暂不支持
 - **服务端模式**：children 随行数据返回、展开为纯客户端状态；翻页/排序重取后展开态会被 TanStack autoReset 重置（收起），**建议树形数据配合静态模式或整树返回**
 - **与其他能力叠加**：固定列（缩进在 sticky 首列内正常渲染）、虚拟滚动（展开后行数变化自动传导虚拟窗口）、行选择均可组合
 - **配置防御**：`tree` 非对象或 `childrenKey` 非字符串时 DEV 警告并按普通表格渲染
+- **升级注意**：树形首列此前随列 `align` 居中，现恒左对齐且标签起点右移 20px（含首层）；首列显式写的 `align` 对该列不再生效，需要居中观感的场景暂不支持
 - **不做**：父子级联勾选、受控 expanded（程序化展开/收起 API）、详情展开行（expandable detail row）、懒加载子树
 
 ## 行拖拽排序
@@ -1493,7 +1495,7 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 - **默认居中**：未配置 `align` 时，业务列单元格与表头默认水平居中（表头/表体一致）；显式 `"left"` / `"right"` 覆盖默认。
 - **选择列恒居中**：checkbox/radio 窄列不随 `align` 配置，表头与表体控件始终居中。
 - **操作列按钮组**：`r.button()` 渲染的按钮组为行内级（inline-flex），随单元格 `align` 对齐。
-- **树形首列**：展开 caret + 层级缩进随列对齐整体居中；若偏好贴左习惯，可显式 `align: "left"`。
+- **树形首列恒左对齐**：启用 `tree` 后首列内容（缩进 + caret 槽位 + 标签）强制贴左，列上的 `align` 对该列不生效；表头首列同步，caret 槽位固定以保证同层级标签左边缘对齐。
 
 ### 类型速查
 
@@ -1503,7 +1505,7 @@ function imagePreviewColumn(): TableColumnOptions<Product>["render"] {
 | -------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `key`          | `string`                                   | 列标识，同时作为默认取值字段                                                                                                                                                                  |
 | `title`        | `string`                                   | 表头文本                                                                                                                                                                                      |
-| `align?`       | `"left" \| "center" \| "right"`            | 单元格对齐；默认居中（表头/表体一致），显式 `"left"` 退出默认                                                                                                                                 |
+| `align?`       | `"left" \| "center" \| "right"`            | 单元格对齐；默认居中（表头/表体一致），显式 `"left"` 退出默认；树形首列恒左对齐，此字段对该列无效                                                                                             |
 | `width?`       | `number \| string`                         | 列宽                                                                                                                                                                                          |
 | `render?`      | `(r: ColumnRenders<T>) => ColumnRender<T>` | 自定义渲染器**工厂**：返回 `(record, index, column) => VNodeChild`；优先于 `formatter`。内置 `r.dict(...)` / `r.button(...)` / `r.date(...)` 即此形态，第三参 `column` 供内置渲染器读取字段值 |
 | `formatter?`   | `(record: T) => string \| number \| Date`  | 纯数据格式化                                                                                                                                                                                  |

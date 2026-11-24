@@ -72,11 +72,18 @@ function headerCellClass(cell: HeaderCell, isLastInRow: boolean) {
 }
 
 /**
- * 分组单元格水平对齐（分组无 align 以外的能力）
+ * 分组单元格水平对齐（分组无 align 以外的能力）；树形首列表头与表体同步左对齐。
  * @param cell - 表头单元格
  * @returns 对齐值，默认居中
  */
 function headerCellAlign(cell: HeaderCell) {
+  if (
+    !cell.isGroup &&
+    props.model.treeColumnKey !== undefined &&
+    cell.key === props.model.treeColumnKey
+  ) {
+    return "left";
+  }
   return cell.isGroup
     ? ((cell.node as { align?: "left" | "center" | "right" }).align ?? "center")
     : ((cell.node as TableColumnOptions).align ?? "center");

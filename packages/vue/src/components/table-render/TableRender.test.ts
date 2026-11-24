@@ -1631,6 +1631,51 @@ describe("TableRender 树形数据（tree）", () => {
     wrapper.unmount();
   });
 
+  it("树形首列恒左对齐（表头/表体一致），覆盖该列 align", () => {
+    const { wrapper } = makeTableRender({
+      data: TREE,
+      pageSize: 100,
+      tree: {},
+      columns: [
+        { key: "name", title: "姓名", align: "right", width: 120 },
+        { key: "age", title: "年龄" },
+      ],
+    });
+
+    const headerCells = wrapper.findAll("thead th");
+    const cells = wrapper.findAll("tbody tr")[0]!.findAll("td");
+    expect(cellStyle(headerCells[0]!).textAlign).toBe("left");
+    expect(cellStyle(cells[0]!).textAlign).toBe("left");
+    // 非树形列不受影响：未配置 align 仍默认居中
+    expect(cellStyle(headerCells[1]!).textAlign).toBe("center");
+    expect(cellStyle(cells[1]!).textAlign).toBe("center");
+    wrapper.unmount();
+  });
+
+  it("caret 槽位固定：分支渲染按钮、叶子渲染等宽占位，同层标签结构一致", async () => {
+    const { wrapper } = makeTableRender({ data: TREE, pageSize: 100, tree: {} });
+
+    // 收起态：总部（分支）caret 按钮；分公司（叶子）等宽占位（无按钮、空文本）
+    let rows = wrapper.findAll("tbody tr");
+    expect(rows[0]!.find('button[data-part="expand"]').exists()).toBe(true);
+    expect(rows[1]!.find("button").exists()).toBe(false);
+    const leafSlot = rows[1]!.find('span[data-part="expand"]');
+    expect(leafSlot.exists()).toBe(true);
+    expect(leafSlot.attributes("aria-hidden")).toBe("true");
+    expect(leafSlot.text()).toBe("");
+    // 占位不污染单元格文本（td.text() 口径）
+    expect(dataRows(wrapper)[1]).toEqual(["分公司", "35岁"]);
+
+    // 展开后同层两行（研发部=分支、市场部=叶子）缩进一致、各自带 caret 槽位
+    await wrapper.find('tbody button[data-part="expand"]').trigger("click");
+    rows = wrapper.findAll("tbody tr");
+    expect(indentSpan(rows[1]!).attributes("style")).toContain("margin-left: 16px");
+    expect(rows[1]!.find('button[data-part="expand"]').exists()).toBe(true);
+    expect(indentSpan(rows[2]!).attributes("style")).toContain("margin-left: 16px");
+    expect(rows[2]!.find('span[data-part="expand"]').exists()).toBe(true);
+    wrapper.unmount();
+  });
+
   it("caret 点击与 row-click 隔离（stop 修饰），行点击不受影响", async () => {
     const onRowClick = vi.fn();
     const { wrapper } = makeTableRender({ data: TREE, pageSize: 100, tree: {} }, { onRowClick });

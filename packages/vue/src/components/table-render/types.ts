@@ -32,7 +32,8 @@ export interface TableColumnOptions<T extends DataRecord = DataRecord> {
   /** 列标识，同时作为默认取值字段 */
   key: string;
   title: string;
-  /** 单元格水平对齐；未配置默认居中（表头/表体一致），显式 "left" 退出默认 */
+  /** 单元格水平对齐；未配置默认居中（表头/表体一致），显式 "left" 退出默认。
+   * 树形首列例外：启用 tree 后恒左对齐（caret 定列 + 同层标签对齐），此字段对该列不生效。 */
   align?: "left" | "center" | "right";
   /** 列宽。数字（px）：布局硬约束 —— 参与表格 min-width 求和与 fixed 列 sticky 偏移推算；
    * 字符串（如 "10rem"）：仅渲染提示值，不参与求和与 sticky。 */
@@ -128,7 +129,8 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   virtual?: boolean;
   /** 虚拟滚动容器高度（数字 px 或 CSS 高度）；仅 virtual: true 时生效 */
   height?: number | string;
-  /** 树形数据：子行展开/收起（展开按钮在首个业务列内）；配置无效时 DEV 警告并忽略 */
+  /** 树形数据：子行展开/收起（展开按钮在首个业务列内；首列恒左对齐、caret 槽位固定）；
+   * 配置无效时 DEV 警告并忽略 */
   tree?: TreeOptions;
   /**
    * 行拖拽排序（仅当前页内，把手列触发）：true 或对象配置。
@@ -180,7 +182,12 @@ export interface TableDragSortPayload<T extends DataRecord = DataRecord> {
   rows: T[];
 }
 
-/** 树形数据配置（T 系列） */
+/**
+ * 树形数据配置（T 系列）。
+ *
+ * 首列恒左对齐（覆盖该列 align）：caret 固定 16px 槽位，叶子行等宽占位，
+ * 保证同层级标签左边缘对齐；暂不提供居中/右对齐开关。
+ */
 export interface TreeOptions {
   /** 子行字段名，默认 "children" */
   childrenKey?: string;

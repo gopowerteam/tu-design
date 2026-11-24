@@ -345,6 +345,11 @@ describe("TableRender 列显隐（column visibility）", () => {
     // tds[0] = 选择列；tds[1] = 可见首列（age），承载缩进与 caret
     expect(tds[1].find('button[aria-label="收起"]').exists()).toBe(true);
     expect(tds[1].find("td span[style], span[style]").exists()).toBe(true);
+    // 树形列顺延后表头/表体对齐同口径（恒左对齐）
+    expect((tds[1].element as HTMLElement).style.textAlign).toBe("left");
+    expect(
+      (wrapper.find('thead th[data-column-key="age"]').element as HTMLElement).style.textAlign,
+    ).toBe("left");
     wrapper.unmount();
   });
 

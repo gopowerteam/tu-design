@@ -58,6 +58,17 @@ function cellText(line: TableBodyLine, index: number): string {
   return isVNode(value) ? "" : String(value ?? "");
 }
 
+/**
+ * 单元格水平对齐：树形首列恒左对齐（caret 定列 + 同层标签左边缘对齐的硬前提，
+ * 覆盖该列 align），其余列沿用配置，未配置默认居中。
+ * @param index - 可见业务列下标
+ * @returns text-align 值
+ */
+function columnAlign(index: number): "left" | "center" | "right" {
+  if (props.treeIndent !== undefined && index === 0) return "left";
+  return props.columns[index]?.align ?? "center";
+}
+
 /** stickyClass 行为开关：列线抑制 + 奇数条纹固色（与父层 tr 条纹同一奇偶口径，行模型索引） */
 const stickyOpts = computed(() => ({
   columnLines: props.columnLines,
@@ -158,7 +169,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
       ]"
       :title="props.columns[index].ellipsis === true ? cellText(props.line, index) : undefined"
       :style="[
-        { textAlign: props.columns[index].align ?? 'center' },
+        { textAlign: columnAlign(index) },
         stickyStyle(props.sticky, props.columns[index].key, false),
       ]"
       @click="emit('cell-click', props.columns[index].key, $event)"
@@ -172,6 +183,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
         <button
           v-if="props.line.row.getCanExpand()"
           type="button"
+          data-part="expand"
           class="hover:bg-muted text-muted-foreground inline-flex size-4 shrink-0 cursor-pointer items-center justify-center rounded-sm"
           :aria-expanded="props.line.row.getIsExpanded()"
           :aria-label="props.line.row.getIsExpanded() ? '收起' : '展开'"
@@ -182,6 +194,8 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
             :class="{ 'rotate-90': props.line.row.getIsExpanded() }"
           />
         </button>
+        <!-- 叶子行同宽占位：caret 槽位固定，标签文本与同层分支行左边缘对齐 -->
+        <span v-else data-part="expand" aria-hidden="true" class="size-4 shrink-0" />
         <!-- VNode 必须走子节点渲染；文本插值会序列化 vnode 导致循环引用 -->
         <component :is="value" v-if="isVNode(value)" />
         <span v-else class="min-w-0 truncate">{{ value }}</span>

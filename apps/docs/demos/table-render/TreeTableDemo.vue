@@ -74,8 +74,10 @@ const table = defineTable<Dept>({
   <div class="w-full space-y-3">
     <TTableRender :definition="table" row-key="id" />
     <p class="text-muted-foreground text-xs">
-      展开按钮位于首个业务列单元格内，按层级缩进；
-      <code>row-click</code> 不会误触发（caret 已阻断冒泡）。 不做父子级联勾选与受控 expanded。
+      展开按钮位于首个业务列单元格内，按层级缩进；caret
+      槽位固定（叶子行等宽占位），同层标签左边缘对齐，
+      首列恒左对齐；<code>row-click</code> 不会误触发（caret 已阻断冒泡）。 不做父子级联勾选与受控
+      expanded。
     </p>
   </div>
 </template>
