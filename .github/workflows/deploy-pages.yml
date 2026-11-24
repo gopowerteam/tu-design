@@ -20,13 +20,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  deploy:
-    name: docs + registry
+  build:
+    name: build docs
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v7
         # VitePress lastUpdated 依赖完整 git 历史
@@ -55,5 +52,16 @@ jobs:
         with:
           path: apps/docs/dist
 
+  # upload 与 deploy 分属两个 job：避免同 job 内 artifact 刚 finalize 就被
+  # deploy-pages 查询导致 “Found 0 artifact(s)”（actions/deploy-pages#451）
+  deploy:
+    name: docs + registry
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
       - id: deployment
         uses: actions/deploy-pages@v5
