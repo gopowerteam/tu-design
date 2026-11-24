@@ -8,7 +8,7 @@ import {
   PaginationPrevTrigger as ArkPaginationPrevTrigger,
   PaginationRoot as ArkPaginationRoot,
 } from "@ark-ui/vue/pagination";
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import { cn } from "@/lib/utils";
 
 // boolean props 用运行时声明 + default: undefined 禁用 Vue 的 Boolean casting
@@ -65,16 +65,25 @@ const pageIndex = computed(() => props.definition?.page.pageIndex ?? props.pageI
 const pageSize = computed(() => props.definition?.page.pageSize ?? props.pageSize);
 const pageSizeOpts = computed(() => props.definition?.page.pageSizeOpts ?? props.pageSizeOpts);
 const total = computed(() => props.definition?.page.total ?? props.total);
-const totalPages = computed(() =>
-  Math.max(1, Math.ceil((total.value ?? 0) / (pageSize.value ?? 1))),
+/** 总页数：definition 提供 pageCount 时以它为准，手工定义回退为 ceil(total/pageSize) */
+const totalPages = computed(
+  () =>
+    props.definition?.page.pageCount ??
+    Math.max(1, Math.ceil((total.value ?? 0) / Math.max(1, pageSize.value ?? 1))),
 );
 
 /** 可见性：definition 模式单页自隐藏；手动模式须 pageIndex/pageSize/total 齐备（缺项 DEV 警告 + 不渲染） */
 const visible = computed(() => {
-  if (props.definition !== undefined) {
-    return Math.ceil((total.value ?? 0) / (pageSize.value ?? 1)) > 1;
-  }
+  if (props.definition !== undefined) return totalPages.value > 1;
   return props.pageIndex !== undefined && props.pageSize !== undefined && props.total !== undefined;
+});
+
+/** 「条/页」选项：当前 pageSize 不在 opts 时自动补齐，避免下拉空白 */
+const sizeOptions = computed(() => {
+  const opts = pageSizeOpts.value ?? [];
+  const size = pageSize.value;
+  if (size === undefined || opts.includes(size)) return opts;
+  return [...opts, size].sort((a, b) => a - b);
 });
 
 const showTotalBar = computed(() => props.showTotal ?? true);
@@ -83,14 +92,41 @@ const iconMode = computed(() => props.navMode === "icon");
 const hasLeft = computed(() => showTotalBar.value || showSelect.value);
 
 // definition 模式经实例动作接线；事件恒 emit（幂等：同值重复设置无害），便于本地联动
+const lastEmitted = {
+  pageIndex: undefined as number | undefined,
+  pageSize: undefined as number | undefined,
+};
+
 function onPageIndex(value: number) {
   props.definition?.setPageIndex(value);
+  lastEmitted.pageIndex = value;
   emit("update:pageIndex", value);
 }
 
 function onPageSize(value: number) {
   props.definition?.setPageSize(value);
+  lastEmitted.pageSize = value;
   emit("update:pageSize", value);
+}
+
+// definition 受控时，非动作路径（钳制/自动归位）的投影变化也要通知父层；动作路径已登记去重
+if (
+  props.definition &&
+  (props.definition.pageControlled?.pageIndex || props.definition.pageControlled?.pageSize)
+) {
+  watch(
+    () => [props.definition!.page.pageIndex, props.definition!.page.pageSize] as const,
+    ([pageIndex, pageSize]) => {
+      if (pageIndex !== lastEmitted.pageIndex) {
+        lastEmitted.pageIndex = pageIndex;
+        emit("update:pageIndex", pageIndex);
+      }
+      if (pageSize !== lastEmitted.pageSize) {
+        lastEmitted.pageSize = pageSize;
+        emit("update:pageSize", pageSize);
+      }
+    },
+  );
 }
 
 /** 页码窗口：首页/尾页 + 当前页 ±1，跳过段用省略号 */
@@ -133,7 +169,7 @@ const pages = computed<(number | string)[]>(() => {
         :value="pageSize"
         @change="onPageSize(Number(($event.target as HTMLSelectElement).value))"
       >
-        <option v-for="size in pageSizeOpts" :key="size" :value="size">{{ size }} 条/页</option>
+        <option v-for="size in sizeOptions" :key="size" :value="size">{{ size }} 条/页</option>
       </select>
     </div>
 

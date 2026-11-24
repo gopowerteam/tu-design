@@ -14,7 +14,10 @@ export interface TableBodyLine {
   /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded；TData 随引擎实例泛型 */
   row: Row<TableRenderFeatures, any>;
   key: string;
+  /** 数据源下标（TanStack row.index；跨页连续、不受排序影响）；事件/自定义渲染第 2 参沿用此值 */
   index: number;
+  /** 当前页内 0-based 显示位次（排序/展开后的可见顺序）；斑马纹、aria 与 serial 使用 */
+  displayIndex: number;
   record: DataRecord;
   /** 行级可选过滤：selectable 谓词交由引擎 enableRowSelection 判定 */
   canSelect: boolean;
@@ -76,9 +79,23 @@ export interface PageableOptions {
   /** 1-based 页码（对外 API 唯一口径） */
   pageIndex: number;
   pageSize: number;
+  /**
+   * 总记录数：
+   * - 静态模式 = 引擎可见行数（树形默认含展开子行，随展开/收起变化）
+   * - 服务端模式 = onLoad 回写的 total
+   */
   total: number;
   /** 只读：状态投影不允许调用方直接改写每页条数选项 */
   pageSizeOpts: readonly number[];
+}
+
+/**
+ * 分页只读投影：在 PageableOptions 基础上补充总页数。
+ * 手工构造 definition 时可省略 pageCount，组件层按 total/pageSize 兜底。
+ */
+export interface TablePageProjection extends PageableOptions {
+  /** 总页数（clamp 判据）；未提供时组件按 ceil(total/pageSize) 计算 */
+  pageCount?: number;
 }
 
 export interface SortableOptions {
@@ -90,6 +107,10 @@ export interface SortableOptions {
 export interface TableLoadParams<T extends DataRecord = DataRecord> {
   /** 搜索表单值（来自 options.search 的表单当前值）；未配置 search 时为 {} */
   form: DataRecord;
+  /**
+   * 分页参数：page.total 为**上一次**的 total（不是本次即将取回的总数），
+   * 可作请求参考；本次总数请经 update(data, total) 回写。
+   */
   page: PageableOptions;
   /** 无排序或已取消排序时为 undefined */
   sort?: SortableOptions;
@@ -103,10 +124,22 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
   columns: TableColumnNode<T>[];
   /** 服务端模式数据源；与 data 二选一，onLoad 优先 */
   onLoad?: (params: TableLoadParams<T>) => void | Promise<unknown>;
-  /** 静态模式数据源（本地分页/排序） */
-  data?: T[];
+  /**
+   * 静态模式数据源（本地分页/排序）：数组、ref 或 getter。
+   * ref/getter 自动跟随；普通数组为快照（原地修改后需 reload()，整体替换外部变量不会被感知）。
+   */
+  data?: MaybeRefOrGetter<T[] | undefined>;
   /** 是否在挂载后自动加载，默认 true；仅服务端模式生效 */
   autoLoad?: boolean;
+  /** 受控加载态（与内部 load 状态取或）；静态模式异步取数时用于骨架占位 */
+  loading?: MaybeRefOrGetter<boolean | undefined>;
+  /** 外部错误态（与内部 onLoad 错误取并，内部优先）；静态模式可由业务注入 */
+  error?: MaybeRefOrGetter<Error | undefined>;
+  /**
+   * 客户端分页数据引用变化时是否归位第 1 页，默认 true（仅静态模式生效）。
+   * 关闭后：数据变化保持当前页，仅在页码越界时钳制到有效页。
+   */
+  autoResetPageIndex?: MaybeRefOrGetter<boolean | undefined>;
   /**
    * 每页条数 / 受控每页条数。约定：传入（非 undefined）即受控，缺省（undefined）时
    * 以默认 10 行运行；页码归位：pageIndex 未受控时内部归位第 1 页并经 update:page-index 通知，
@@ -114,6 +147,11 @@ export interface DefineTableOptions<T extends DataRecord = DataRecord> {
    */
   pageSize?: MaybeRefOrGetter<number | undefined>;
   pageSizeOpts?: number[];
+  /**
+   * 修改每页条数时是否归位第 1 页，默认 true。
+   * false 时沿用 TanStack v9 语义：保持当前首行（按新容量重算页码）。
+   */
+  resetPageOnPageSizeChange?: MaybeRefOrGetter<boolean | undefined>;
   /** 行选择：radio 单选 / checkbox 多选；字符串为简写 */
   rowSelection?: "radio" | "checkbox" | TableSelectionOptions<T>;
   /** 行主键字段；rowSelection 启用且此值无效时禁用选择 */
@@ -195,6 +233,12 @@ export interface TreeOptions {
   defaultExpandAll?: boolean;
   /** 每层缩进 px，默认 16 */
   indentSize?: number;
+  /**
+   * 展开子行是否参与分页，默认 true（展开行与父行共享页码，可能跨页）。
+   * false 时先分页再展开：子行始终跟随父行所在页，单页渲染行数可超过 pageSize；
+   * total/pageCount 按顶层行计算。
+   */
+  paginateExpandedRows?: boolean;
 }
 
 /** 列显隐配置 */
@@ -216,13 +260,8 @@ export interface TableSelectionOptions<T extends DataRecord = DataRecord> {
   reserveOnPageChange?: boolean;
 }
 
-/** useTableRender 的入参：data 额外支持 ref/getter（拆分模式下 props 天然响应式） */
-export interface UseTableRenderOptions<T extends DataRecord = DataRecord> extends Omit<
-  DefineTableOptions<T>,
-  "data"
-> {
-  data?: MaybeRefOrGetter<T[] | undefined>;
-}
+/** useTableRender 的入参（data 已在 DefineTableOptions 支持 ref/getter，此别名保持语义区分） */
+export type UseTableRenderOptions<T extends DataRecord = DataRecord> = DefineTableOptions<T>;
 
 /** defineTable / useTableRender 的返回物：列配置 + 引擎实例 + 只读状态 + 实例动作 */
 export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
@@ -234,7 +273,13 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
   columnTree?: TableColumnNode<T>[];
   /** TanStack 表格实例（逃逸舱口） */
   table: TanstackTable<TableRenderFeatures, T>;
-  page: Readonly<PageableOptions>;
+  page: Readonly<TablePageProjection>;
+  /**
+   * 分页受控标识（聚合式按 options 字段是否传入判定）：
+   * TableRender 据此在"非动作路径"（钳制/自动归位）也回写 update:page-index / update:page-size。
+   * 拆分式由组件 props 判定，不读取此字段。
+   */
+  pageControlled?: { pageIndex: boolean; pageSize: boolean };
   sort: Readonly<{ value: SortableOptions | undefined }>;
   loading: Readonly<{ value: boolean }>;
   /** 重新加载；resetPage 为 true 时先回到第 1 页 */
@@ -275,7 +320,7 @@ export interface TableRenderDefinition<T extends DataRecord = DataRecord> {
    * 服务端模式不改内部数据；返回 drag-sort 载荷（守卫不通过/无效索引时为 undefined）
    */
   reorderRows: (from: number, to: number) => TableDragSortPayload<T> | undefined;
-  /** 最近一次 onLoad 失败的 Error（仅服务端模式产生）；下一次 load 开始时清除 */
+  /** 错误投影：内部 onLoad 失败优先，其次 options.error（静态模式可注入） */
   error: Readonly<Ref<Error | undefined>>;
   /** 可见列 key（columns 原序子集）；受控/非受控统一投影 */
   visibleKeys: Readonly<Ref<readonly string[]>>;

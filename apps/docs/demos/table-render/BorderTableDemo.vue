@@ -81,7 +81,7 @@ const stickyGridTable = defineTable<FixedTask>({
     </section>
     <section>
       <p class="text-muted-foreground mb-2 text-xs">
-        斑马纹：<code>:striped="true"</code>（按行模型索引奇偶，虚拟滚动安全）
+        斑马纹：<code>:striped="true"</code>（按当前页显示位次奇偶，排序/翻页/虚拟滚动安全）
       </p>
       <TTableRender :definition="stripedTable" row-key="id" :striped="true" />
     </section>

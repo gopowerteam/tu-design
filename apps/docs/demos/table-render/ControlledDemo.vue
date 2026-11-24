@@ -15,7 +15,8 @@ const ALL: User[] = Array.from({ length: 100 }, (_, i) => ({
   age: 18 + ((i * 7) % 50),
 }));
 
-// 受控状态：外部控件直接改 ref，表格经受控 watch 同步（内部交互经事件回写 ref，形成 v-model 闭环）
+// 受控状态：defineTable 传 ref 即受控；此处同时把值作为组件 prop 传入，演示标准 v-model 闭环
+// （聚合式只传 defineTable ref、不传 prop 也可以受控；钳制/归位修正仍会经 update 事件回写）
 const pageIndex = ref(1);
 const pageSize = ref(10);
 const sort = ref<SortableOptions | undefined>(undefined);

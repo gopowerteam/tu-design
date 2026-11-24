@@ -7,11 +7,24 @@ import Badge from "../badge/Badge.vue";
 import Button from "../button/Button.vue";
 import Popconfirm from "../popconfirm/Popconfirm.vue";
 
+/** 单元格渲染上下文（第 4 参，可选）：页内序号等显示语义 */
+export interface ColumnRenderContext {
+  /** 当前页内 0-based 显示位次（排序/展开后的可见顺序） */
+  pageRowIndex: number;
+  /** 1-based 当前页码 */
+  pageIndex: number;
+  /** 当前每页条数 */
+  pageSize: number;
+}
+
 /** 单元格渲染器：与 TableColumnOptions.render 同签名（column 用于读取字段值） */
 export type ColumnRender<T extends DataRecord> = (
   record: T,
+  /** 数据源下标（跨页连续、不受排序影响） */
   index: number,
   column: TableColumnOptions<T>,
+  /** 页内显示上下文（可选；serial 等内置渲染器使用） */
+  context?: ColumnRenderContext,
 ) => VNodeChild;
 
 export type DictEntryVariant = BadgeVariants["variant"];
@@ -242,7 +255,7 @@ export function columnRenders<T extends DataRecord>(): ColumnRenders<T> {
     },
 
     serial(base = 1) {
-      return (_record, index) => index + base;
+      return (_record, index, _column, context) => (context?.pageRowIndex ?? index) + base;
     },
 
     // inline-flex（行内级）：按钮组随单元格 align 对齐（默认居中）；块级 flex 占满单元格、恒左起

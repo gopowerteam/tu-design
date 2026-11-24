@@ -69,10 +69,10 @@ function columnAlign(index: number): "left" | "center" | "right" {
   return props.columns[index]?.align ?? "center";
 }
 
-/** stickyClass 行为开关：列线抑制 + 奇数条纹固色（与父层 tr 条纹同一奇偶口径，行模型索引） */
+/** stickyClass 行为开关：列线抑制 + 奇数条纹固色（与父层 tr 条纹同一奇偶口径，页内显示位次） */
 const stickyOpts = computed(() => ({
   columnLines: props.columnLines,
-  striped: props.striped && props.line.index % 2 === 1,
+  striped: props.striped && props.line.displayIndex % 2 === 1,
 }));
 
 /**
@@ -120,14 +120,14 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
         class="accent-primary size-4 cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         :checked="props.selected"
         :disabled="!props.line.canSelect"
-        :aria-label="`选择第 ${props.line.index + 1} 行`"
+        :aria-label="`选择第 ${props.line.displayIndex + 1} 行`"
         @click="emit('select', !props.selected)"
       />
       <Checkbox
         v-else
         :checked="props.selected"
         :disabled="!props.line.canSelect"
-        :aria-label="`选择第 ${props.line.index + 1} 行`"
+        :aria-label="`选择第 ${props.line.displayIndex + 1} 行`"
         @update:checked="(checked: boolean) => emit('select', checked)"
       />
     </td>
@@ -149,7 +149,7 @@ function tooltipCell(value: VNodeChild, text: string): VNodeChild {
         class="text-muted-foreground inline-flex size-6 cursor-grab items-center justify-center rounded-sm active:cursor-grabbing disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="props.dragDisabled"
         :draggable="!props.dragDisabled"
-        :aria-label="`拖拽排序第 ${props.line.index + 1} 行`"
+        :aria-label="`拖拽排序第 ${props.line.displayIndex + 1} 行`"
         @dragstart="emit('drag-start', $event)"
         @dragend="emit('drag-end', $event)"
       >

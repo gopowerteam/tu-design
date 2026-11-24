@@ -78,7 +78,7 @@ tu-design 按用途将组件分为四类：**基础组件**、**表单组件**�
 
 [**FormRender** 表单渲染器<br><span>`defineForm` 配置驱动，Tailwind 栅格自适应布局。</span>](/components/form-render)
 
-[**TableRender** 表格渲染器<br><span>`defineTable` 配置驱动表格，分页/排序/行选择/虚拟滚动开箱即用。</span>](/components/table-render)
+[**TableRender** 表格渲染器<br><span>`defineTable` 配置驱动表格，本地/服务端分页、排序、行选择、树形与虚拟滚动开箱即用。</span>](/components/table-render)
 
 [**Timeline** 时间轴<br><span>数据驱动 items 渲染竖向事件流，支持单列/左右交替布局与语义节点色。</span>](/components/timeline)
 

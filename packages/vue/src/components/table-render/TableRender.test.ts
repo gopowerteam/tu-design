@@ -970,7 +970,7 @@ describe("TableRender 搜索表单联动（search）", () => {
   });
 
   it("onLoad 携带 search 表单当前值；未配置 search 时恒 {}", async () => {
-    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 2), 2));
+    const onLoad = vi.fn(({ update }: any) => update(USERS.slice(0, 2), 100));
     const { wrapper, def, form } = makeSearchRender(onLoad);
     await flushPromises();
 

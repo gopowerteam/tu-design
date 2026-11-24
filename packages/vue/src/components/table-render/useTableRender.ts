@@ -9,6 +9,7 @@ import type {
   SortableOptions,
   TableDraggableOptions,
   TableDragSortPayload,
+  TablePageProjection,
   TableRenderDefinition,
   TableSelectionOptions,
   TreeOptions,
@@ -20,12 +21,12 @@ import { scanRows, toRowId, type ScanResult } from "./row-index";
 const DEFAULT_PAGE_SIZE_OPTS = [10, 20, 50, 100];
 
 /**
- * 数值配置防御：受控 getter（组件层）与数值配置（defineTable 层）同字段共存时只认数字
- * @param value - 待判定的配置值
- * @returns 值为数字时原样返回，否则返回 undefined
+ * 每页条数兜底：只接受正数（避免 0/负数/NaN 让分页窗口失真）
+ * @param value - 待校验的每页条数
+ * @returns 合法正数原样返回，否则 10
  */
-function numericOption(value: unknown): number | undefined {
-  return typeof value === "number" ? value : undefined;
+function validPageSize(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 1 ? Math.floor(value) : 10;
 }
 
 /**
@@ -34,6 +35,32 @@ function numericOption(value: unknown): number | undefined {
  */
 function warn(message: string) {
   if (import.meta.env.DEV) console.warn(`[tu-design] <TableRender> ${message}`);
+}
+
+/**
+ * 静态首帧可见行数：defaultExpandAll 时递归统计全部节点，否则仅顶层行。
+ * 仅用于首屏 total 占位，挂载后由引擎 getRowCount() 接管。
+ * @param list - 当前数据窗口
+ * @param childrenKey - 子行字段名
+ * @param expandAll - 是否默认全展开
+ * @returns 可见行数
+ */
+function initialRowCount<T extends DataRecord>(
+  list: readonly T[],
+  childrenKey: string,
+  expandAll: boolean,
+): number {
+  if (!expandAll) return list.length;
+  let count = 0;
+  const visit = (rows: readonly T[]) => {
+    for (const row of rows) {
+      count += 1;
+      const children = (row as DataRecord)[childrenKey];
+      if (Array.isArray(children)) visit(children as readonly T[]);
+    }
+  };
+  visit(list);
+  return count;
 }
 
 /**
@@ -80,6 +107,13 @@ export function useTableRender<T extends DataRecord>(
       warn("tree.childrenKey 必须是字符串，已忽略。");
     } else {
       tree = options.tree;
+      if (
+        tree.paginateExpandedRows !== undefined &&
+        typeof tree.paginateExpandedRows !== "boolean"
+      ) {
+        warn("tree.paginateExpandedRows 必须是布尔值，已忽略。");
+        tree = { ...tree, paginateExpandedRows: undefined };
+      }
     }
   }
   const childrenKey = tree?.childrenKey ?? "children";
@@ -123,10 +157,37 @@ export function useTableRender<T extends DataRecord>(
 
   const page = reactive({
     pageIndex: 1,
-    pageSize: controlledPageSize() ?? numericOption(options.pageSize) ?? 10,
+    pageSize: validPageSize(controlledPageSize()),
     total: 0,
     pageSizeOpts: options.pageSizeOpts ?? DEFAULT_PAGE_SIZE_OPTS,
   });
+  /** 服务端：首次 update() 落值后置 true；静态模式恒 true（total 立即就绪） */
+  const loadedOnce = ref(!serverMode);
+  /** 总页数：纯派生（禁止缓存，规避 watcher 顺序/过期值） */
+  const pageCount = computed(() => Math.max(1, Math.ceil(page.total / Math.max(1, page.pageSize))));
+  /**
+   * 分页只读投影：getter 读取 reactive page，模板/计算属性可追踪；
+   * pageCount 纯派生，不参与写状态。
+   */
+  const pageProjection: Readonly<TablePageProjection> = {
+    get pageIndex() {
+      return page.pageIndex;
+    },
+    get pageSize() {
+      return page.pageSize;
+    },
+    get total() {
+      return page.total;
+    },
+    get pageSizeOpts() {
+      return page.pageSizeOpts;
+    },
+    get pageCount() {
+      return pageCount.value;
+    },
+  };
+  /** 服务端把总页数交给引擎（未知时 -1），保证 getPageCount/逃逸舱口一致 */
+  const enginePageCount = computed(() => (loadedOnce.value ? pageCount.value : -1));
   // defaultSort：静态模式进 TanStack 初始 sorting，服务端模式进首载 sort 参数
   const defaults = columns.filter((column) => column.defaultSort !== undefined);
   if (defaults.length > 1) {
@@ -142,8 +203,12 @@ export function useTableRender<T extends DataRecord>(
   const sort = ref<SortableOptions | undefined>(
     initialSort ?? (sorted ? { key: sorted.key, direction: sorted.defaultSort! } : undefined),
   );
-  const loading = ref(false);
-  const error = ref<Error | undefined>(undefined);
+  const internalLoading = ref(false);
+  const internalError = ref<Error | undefined>(undefined);
+  /** 加载态投影：内部 load 状态 ∪ options.loading（静态模式异步取数可注入） */
+  const loading = computed(() => toValue(options.loading) === true || internalLoading.value);
+  /** 错误投影：内部 onLoad 错误优先，其次 options.error */
+  const error = computed(() => internalError.value ?? toValue(options.error));
   const rows = shallowRef<T[]>([]);
 
   // ---- 行拖拽排序（draggable） ------------------------------------------------
@@ -320,11 +385,19 @@ export function useTableRender<T extends DataRecord>(
       // 受控初值优先（组件层受控 getter 未传时返回 undefined，须防御性取数值配置）
       pagination: {
         pageIndex: Math.max(0, (controlledPageIndex() ?? 1) - 1),
-        pageSize: controlledPageSize() ?? numericOption(options.pageSize) ?? 10,
+        pageSize: validPageSize(controlledPageSize()),
       },
       // defaultExpandAll：true = 全部展开；否则全收起（TanStack expanded 空对象）
       expanded: tree?.defaultExpandAll === true ? true : {},
     },
+    // 自动归位由库内接管（rows watcher），避免与 clamp 双写者竞态
+    autoResetPageIndex: false,
+    // 展开行是否参与分页（仅树形有意义；未配置时不要显式传 undefined，否则会覆盖特性默认 true）
+    ...(tree?.paginateExpandedRows !== undefined
+      ? { paginateExpandedRows: tree.paginateExpandedRows }
+      : {}),
+    // 服务端总页数交给引擎（-1 = 未知）；静态模式由引擎按 rowCount 派生
+    pageCount: serverMode ? enginePageCount : undefined,
     manualPagination: serverMode,
     manualSorting: serverMode,
     state: selectionSlice,
@@ -375,7 +448,8 @@ export function useTableRender<T extends DataRecord>(
     { immediate: true },
   );
 
-  // 静态数据源：ref/getter 会自动跟随；普通数组为快照，可用 reload() 重同步
+  // 静态数据源：ref/getter 会自动跟随；普通数组为快照（原地修改后 reload() 可重同步，
+  // 整体替换外部变量不会被感知，请改用 ref/getter）。深改嵌套后调用 reload() 或替换顶层引用。
   // 首装已由上方 syncData() 完成；此处不带 immediate，避免构造后再写一次 rows
   // 触发 v9 适配器挂起同步、吞掉一次渲染更新（点击后 DOM 慢一拍的根源）
   function syncData() {
@@ -385,20 +459,44 @@ export function useTableRender<T extends DataRecord>(
     }
     // 复制出新引用：就地修改同一个普通数组时 shallowRef 不会触发，行模型会停留在旧快照
     rows.value = Array.isArray(data) ? [...data] : [];
-    page.total = rows.value.length;
+    if (!serverMode) {
+      const expandAll = tree?.defaultExpandAll === true && tree.paginateExpandedRows !== false;
+      page.total = initialRowCount(rows.value, childrenKey, expandAll);
+    }
   }
 
   watch(() => toValue(options.data), syncData);
 
-  function setPageIndex(pageIndex: number) {
-    table.setPageIndex(Math.max(0, pageIndex - 1));
+  /**
+   * 越界钳制：仅 total 已知后执行（服务端首次 update 前允许任意受控页码）。
+   * 以引擎当前页为准（而非投影），避免投影 watcher 尚未回写时基于旧页码二次钳制。
+   */
+  function clampPageIndex() {
+    if (!loadedOnce.value) return;
+    const current = table.atoms.pagination.get().pageIndex + 1;
+    if (current > pageCount.value) setPageIndex(pageCount.value);
   }
 
+  /**
+   * 页码设置唯一入口：1-based → 引擎 0-based，并按当前 pageCount 即时收紧上限
+   * @param pageIndex - 目标页码（1-based）
+   */
+  function setPageIndex(pageIndex: number) {
+    const max = loadedOnce.value ? pageCount.value - 1 : Number.MAX_SAFE_INTEGER;
+    table.setPageIndex(Math.min(Math.max(0, pageIndex - 1), max));
+  }
+
+  /**
+   * 每页条数设置唯一入口：默认归位第 1 页；关闭开关时沿用 TanStack v9 保首行语义
+   * @param pageSize - 目标每页条数
+   */
   function setPageSize(pageSize: number) {
     table.setPageSize(pageSize);
-    // TanStack 容量变更后停在最后一页（pageCount-1），需回到首页
-    table.setPageIndex(0);
+    if (toValue(options.resetPageOnPageSizeChange) ?? true) table.setPageIndex(0);
   }
+
+  // total/pageCount 落定后钳制（树形收起、pageSize 变化、服务端 total 缩水）
+  watch([pageCount, loadedOnce], clampPageIndex);
 
   /** 排序应用的唯一管线：服务端模式归位第 1 页+ 投影落值 + TanStack setSorting。
    * 受控 sort 的外部同步与此共用（直接 setSorting 会漏服务端重载）
@@ -461,9 +559,9 @@ export function useTableRender<T extends DataRecord>(
 
   async function load() {
     const id = ++requestId;
-    loading.value = true;
+    internalLoading.value = true;
     // 下一次 load 开始时清除上一次的错误（无论该 load 是否为当前请求）
-    error.value = undefined;
+    internalError.value = undefined;
     try {
       await options.onLoad?.({
         // 事件/取数时机读取是安全的（form.state 非响应式但同步）；浅拷贝避免调用方改写真值
@@ -478,19 +576,22 @@ export function useTableRender<T extends DataRecord>(
         update: (data, total) => {
           if (id !== requestId) return;
           rows.value = Array.isArray(data) ? data : [];
-          // total 缺省时保留旧值
-          if (typeof total === "number") page.total = total;
+          // total 缺省时保留旧值；只有拿到 total 才视为总页数已知（可钳制）
+          if (typeof total === "number") {
+            page.total = total;
+            loadedOnce.value = true;
+          }
         },
       });
     } catch (err) {
       // 乱序旧请求的失败直接丢弃（同款竞态守卫）
       if (id === requestId) {
         const normalized = err instanceof Error ? err : new Error(String(err));
-        error.value = normalized;
+        internalError.value = normalized;
         console.error("[tu-design] <TableRender> onLoad 执行失败：", normalized);
       }
     } finally {
-      if (id === requestId) loading.value = false;
+      if (id === requestId) internalLoading.value = false;
     }
   }
 
@@ -508,14 +609,19 @@ export function useTableRender<T extends DataRecord>(
   // pageIndex 受控（1-based；最小归 1）
   watch(controlledPageIndex, (next) => {
     if (next === undefined || page.pageIndex === next) return;
-    table.setPageIndex(Math.max(0, next - 1));
+    setPageIndex(next);
   });
 
-  // pageSize 受控：同步容量；pageIndex 未受控时保持归位第 1 页（两方都受控由父层联动）
+  // pageSize 受控：同步容量；pageIndex 未受控且开关开启时归位第 1 页（两方都受控由父层联动）
   watch(controlledPageSize, (next) => {
     if (next === undefined || page.pageSize === next) return;
-    table.setPageSize(next);
-    if (controlledPageIndex() === undefined) table.setPageIndex(0);
+    table.setPageSize(validPageSize(next));
+    if (
+      (toValue(options.resetPageOnPageSizeChange) ?? true) &&
+      controlledPageIndex() === undefined
+    ) {
+      table.setPageIndex(0);
+    }
   });
 
   // sort 受控：经 applySort 管线（服务端归位 + 重载不漏）；不可排序列警告并忽略
@@ -604,6 +710,18 @@ export function useTableRender<T extends DataRecord>(
   });
 
   onMounted(() => {
+    // 静态模式：挂载后（rowKey 已回填）才首次求值行模型，避免用 index-N 兜底 id 固化行身份
+    if (!serverMode) {
+      page.total = table.getRowCount();
+      watch(
+        () => table.getRowCount(),
+        (count) => {
+          page.total = count;
+        },
+      );
+    }
+    // 初始越界钳制：延迟到挂载后，确保 TableRender 的受控通知 watcher 已安装
+    clampPageIndex();
     if (serverMode && (options.autoLoad ?? true)) void load();
     // rowKey 在 defineTable 阶段可能尚未就绪（聚合式由 TableRender 回填），挂载时终审
     if (selectionConfig && !rowKey.value) {
@@ -686,6 +804,9 @@ export function useTableRender<T extends DataRecord>(
   watch(rows, () => {
     syncRowsState();
     maybeClearSelection();
+    // 客户端分页：数据引用变化默认归位第 1 页（库内接管，替代 TanStack autoResetPageIndex）。
+    // 关闭开关时保持当前页，越界由 pageCount watcher 钳制。
+    if (!serverMode && (toValue(options.autoResetPageIndex) ?? true)) setPageIndex(1);
   });
   // 服务端翻页：新数据到达前先按页码清空（与上方 rows 清空幂等）
   watch(() => page.pageIndex, maybeClearSelection);
@@ -694,7 +815,11 @@ export function useTableRender<T extends DataRecord>(
     columns,
     columnTree,
     table,
-    page: readonly(page),
+    page: pageProjection,
+    pageControlled: {
+      pageIndex: options.pageIndex !== undefined,
+      pageSize: options.pageSize !== undefined,
+    },
     sort: readonly(sort),
     loading: readonly(loading),
     error: readonly(error),

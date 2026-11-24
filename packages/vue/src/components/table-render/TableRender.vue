@@ -60,7 +60,19 @@ const props = defineProps({
   /** 每页条数 / 受控每页条数：传入即受控（pageIndex 未受控时页码归位内部处理并通知） */
   pageSize: { type: Number },
   pageSizeOpts: { type: Array as PropType<number[]> },
+  /** 改每页条数是否归位第 1 页，默认 true（聚合式请在 defineTable 配置） */
+  resetPageOnPageSizeChange: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
+  },
+  /** 客户端分页数据变化是否归位第 1 页，默认 true（聚合式请在 defineTable 配置） */
+  autoResetPageIndex: {
+    type: Boolean as PropType<boolean | undefined>,
+    default: undefined,
+  },
   loading: { type: Boolean as PropType<boolean | undefined>, default: undefined },
+  /** 外部错误态：与内部 onLoad 错误取并（内部优先），静态模式可注入 */
+  error: { type: Object as PropType<Error | undefined> },
   emptyText: { type: String },
   /** 行选择（仅拆分式生效；聚合式请在 defineTable 配置）："radio" | "checkbox" | 对象 */
   rowSelection: {
@@ -201,6 +213,9 @@ const instance: TableRenderDefinition<any> =
     data: () => props.data,
     autoLoad: props.autoLoad,
     pageSizeOpts: props.pageSizeOpts,
+    resetPageOnPageSizeChange: () => props.resetPageOnPageSizeChange,
+    autoResetPageIndex: () => props.autoResetPageIndex,
+    error: () => props.error,
     rowKey: props.rowKey,
     rowSelection: props.rowSelection,
     search: props.search,
@@ -280,7 +295,13 @@ const columns = computed(() => instance.columns);
 const rows = computed(() => instance.table.getRowModel().rows);
 /** 内部加载态 ∪ 外部受控加载态 */
 const loading = computed(() => props.loading === true || instance.loading.value);
-const showPagination = computed(() => Math.ceil(instance.page.total / instance.page.pageSize) > 1);
+/** 总页数：definition 提供 pageCount 时以它为准，手工定义回退为 total/pageSize */
+const pageCount = computed(
+  () =>
+    instance.page.pageCount ??
+    Math.max(1, Math.ceil(instance.page.total / Math.max(1, instance.page.pageSize))),
+);
+const showPagination = computed(() => pageCount.value > 1);
 /** 内置分页条开关：showPagination=false 关闭；单页自隐藏仅作用于缺省模式 */
 const showPaginationBar = computed(() => showPagination.value && props.showPagination !== false);
 /** 内置搜索区开关：配置了 search 且未被 showSearch=false 关闭；列设置触发器不受影响 */
@@ -557,18 +578,24 @@ const body = computed<TableBodyLine[]>(() => {
   const renderFns = new Map(
     columns.value.filter((c) => c.render).map((c) => [c, c.render!(RENDERS)]),
   );
-  return rows.value.map((row) => ({
+  return rows.value.map((row, displayIndex) => ({
     /** TanStack Row：树形渲染读 depth / getCanExpand / getIsExpanded / toggleExpanded */
     row,
     key: row.id,
     index: row.index,
+    displayIndex,
     record: row.original,
     /** 行级可选过滤：selectable 谓词交由引擎 enableRowSelection 判定 */
     canSelect: row.getCanSelect(),
     // 可见列的值矩阵（列显隐只裁剪列；状态不受影响）
     cells: visibleColumns.value.map((column): VNodeChild => {
       const render = renderFns.get(column);
-      if (render) return render(row.original, row.index, column);
+      if (render)
+        return render(row.original, row.index, column, {
+          pageRowIndex: displayIndex,
+          pageIndex: instance.page.pageIndex,
+          pageSize: instance.page.pageSize,
+        });
       if (column.formatter) return column.formatter(row.original) as VNodeChild;
       return String(row.original[column.key] ?? "");
     }),
@@ -867,9 +894,13 @@ function onPageSize(pageSize: number) {
 }
 
 // ---- 受控模式（v-model）：page 投影 → update:* 通知 ---------------------------
-// 仅 page-index/page-size 至少一方受控时安装；lastEmittedPage 去重——
-// 动作路径已 emit 过的值不再重复发（受控回写/内部归位只通知「未通知过的」变化）
-const pageControlled = () => props.pageIndex !== undefined || props.pageSize !== undefined;
+// props 受控（拆分式）或 definition.pageControlled（聚合式）任一成立即安装；
+// lastEmittedPage 去重——动作路径已 emit 过的值不再重复发（钳制/归位属非动作路径，需要通知）
+const pageControlled = () =>
+  props.pageIndex !== undefined ||
+  props.pageSize !== undefined ||
+  (props.definition?.pageControlled?.pageIndex ?? false) ||
+  (props.definition?.pageControlled?.pageSize ?? false);
 const lastEmittedPage = {
   pageIndex: undefined as number | undefined,
   pageSize: undefined as number | undefined,
@@ -1057,7 +1088,7 @@ defineExpose({
               :ref="measureRow"
               :data-index="item.row.index"
               :line="item.line"
-              :class="striped && item.line.index % 2 === 1 ? 'bg-muted/30' : undefined"
+              :class="striped && item.line.displayIndex % 2 === 1 ? 'bg-muted/30' : undefined"
               :row-lines="rowLinesOn"
               :column-lines="columnLinesOn"
               :striped="striped"
@@ -1092,7 +1123,7 @@ defineExpose({
               v-for="line in displayBody"
               :key="line.key"
               :line="line"
-              :class="striped && line.index % 2 === 1 ? 'bg-muted/30' : undefined"
+              :class="striped && line.displayIndex % 2 === 1 ? 'bg-muted/30' : undefined"
               :row-lines="rowLinesOn"
               :column-lines="columnLinesOn"
               :striped="striped"

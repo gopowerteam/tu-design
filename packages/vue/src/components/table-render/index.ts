@@ -3,6 +3,7 @@ export { default as TableRender } from "./TableRender.vue";
 export { columnRenders } from "./column-renders";
 export { PAGE_TABLE_FILL_KEY } from "./constants";
 export type {
+  ColumnRenderContext,
   ColumnRenders,
   DictColumnMapping,
   DictColumnOptions,
@@ -27,6 +28,7 @@ export type {
   TableDraggableOptions,
   TableDragSortPayload,
   TableLoadParams,
+  TablePageProjection,
   TableRenderDefinition,
   TreeOptions,
   UseTableRenderOptions,
